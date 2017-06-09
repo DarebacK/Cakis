@@ -11,8 +11,6 @@ public:
 	virtual							~ADirectXApplication();
 
 	int								Run();
-	virtual bool					Update(float deltaTime) = 0;
-	virtual bool					Render(float deltaTIme) = 0;
 	virtual LRESULT					ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam);
 protected:
 	// WIN32 ATTRIBUTES
@@ -21,6 +19,8 @@ protected:
 	UINT							clientAreaHeight;
 	std::wstring					applicationWindowTitle;
 
+	virtual void					OnUpdate(float deltaTime) = 0;
+	virtual void					OnRender(float deltaTIme) = 0;
 	virtual void					OnApplicationInitialization() = 0;
 	virtual void					OnApplicationQuit() = 0;
 	void							QuitApplication(int exitCode);

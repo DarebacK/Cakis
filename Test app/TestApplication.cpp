@@ -5,14 +5,12 @@ TestApplication::TestApplication(HINSTANCE instanceHandle) :
 {
 }
 
-bool TestApplication::Update(float deltaTime)
+void TestApplication::OnUpdate(float deltaTime)
 {
-	return true;
 }
 
-bool TestApplication::Render(float deltaTIme)
+void TestApplication::OnRender(float deltaTIme)
 {
-	return true;
 }
 
 void TestApplication::OnApplicationInitialization()

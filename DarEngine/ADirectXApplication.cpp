@@ -44,14 +44,13 @@ int ADirectXApplication::Run()
 	OnApplicationInitialization();
 
 	MSG lastMessage{ nullptr };
-
 	while(lastMessage.message != WM_QUIT)
 	{
 		ProcessApplicationMessages(lastMessage);
 
 		//TODO: implement delta time
-		Update(0.01f);
-		Render(0.01f);
+		OnUpdate(0.01f);
+		OnRender(0.01f);
 	}
 
 	return lastMessage.lParam;

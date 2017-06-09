@@ -7,9 +7,9 @@ class TestApplication : public ADirectXApplication
 public:
 	explicit TestApplication(HINSTANCE instanceHandle);
 
-	bool Update(float deltaTime) override;
-	bool Render(float deltaTIme) override;
 protected:
+	void OnUpdate(float deltaTime) override;
+	void OnRender(float deltaTIme) override;
 	void OnApplicationInitialization() override;
 	void OnApplicationQuit() override;
 };

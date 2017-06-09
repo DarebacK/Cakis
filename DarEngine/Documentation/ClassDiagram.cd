@@ -1,14 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1" GroupingSetting="Access" MembersFormat="NameAndType">
-  <Class Name="DirectXApplication">
-    <Position X="3" Y="2" Width="2.25" />
-    <Members>
-      <Method Name="InitializeWindow" Hidden="true" />
-      <Method Name="ProcessApplicationMessages" Hidden="true" />
-    </Members>
+  <Class Name="ADirectXApplication">
+    <Position X="2" Y="1.25" Width="3" />
     <TypeIdentifier>
-      <HashCode>gQQAQAAAAAAEAQAQAAAAAAAAQAQRAAIAABAgAAAAAgI=</HashCode>
-      <FileName>DirectXApplication.h</FileName>
+      <HashCode>gQCgABIAAAAEAAAAAAAAAAAAQCQBAAIAAAEgIAEAAgI=</HashCode>
+      <FileName>ADirectXApplication.h</FileName>
     </TypeIdentifier>
   </Class>
   <Font Name="Segoe UI" Size="9" />
