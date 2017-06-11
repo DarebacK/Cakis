@@ -11,20 +11,34 @@
       <UniqueIdentifier>{194c0e31-cbd9-49b8-a15f-b97378febe78}</UniqueIdentifier>
       <Extensions>cd;pdf</Extensions>
     </Filter>
+    <Filter Include="Header Files\Object">
+      <UniqueIdentifier>{ac251fb2-9ff2-420c-93b6-24abafdc0d09}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ADirectXApplication.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ADirectXApplication.h">
+    <ClInclude Include="Object.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SceneObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderableObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ADirectXApplication.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Documentation\ClassDiagram.cd">
       <Filter>Documentation</Filter>
     </None>
+    <None Include="ObjectHierarchy.cd">
+      <Filter>Documentation</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ADirectXApplication.cpp" />
   </ItemGroup>
 </Project>
