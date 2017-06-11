@@ -1,34 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{66355aad-4908-4836-b6ce-96359a046068}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{d8c05472-bca5-44c2-82cd-4a24ee7c21ae}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Documentation">
       <UniqueIdentifier>{194c0e31-cbd9-49b8-a15f-b97378febe78}</UniqueIdentifier>
       <Extensions>cd;pdf</Extensions>
     </Filter>
-    <Filter Include="Header Files\Object">
-      <UniqueIdentifier>{ac251fb2-9ff2-420c-93b6-24abafdc0d09}</UniqueIdentifier>
+    <Filter Include="Source">
+      <UniqueIdentifier>{d765425d-0b6d-4459-a2f5-acdab78db819}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Application">
+      <UniqueIdentifier>{c848caca-cd63-4cf2-97ef-8aac27d828e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Math">
+      <UniqueIdentifier>{df7449b8-a39c-4f0a-aadb-44208166579a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Object">
+      <UniqueIdentifier>{8729153f-86e6-48f2-8f25-17920e9b3366}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Transform.h">
-      <Filter>Header Files</Filter>
+      <Filter>Source\Object</Filter>
     </ClInclude>
     <ClInclude Include="RenderableObject.h">
-      <Filter>Header Files</Filter>
+      <Filter>Source\Object</Filter>
     </ClInclude>
-    <ClInclude Include="ADirectXApplication.h" />
+    <ClInclude Include="SceneObject.h">
+      <Filter>Source\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="ADirectXApplication.h">
+      <Filter>Source\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>Source\Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Documentation\ClassDiagram.cd">
@@ -39,6 +44,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ADirectXApplication.cpp" />
+    <ClCompile Include="ADirectXApplication.cpp">
+      <Filter>Source\Application</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
