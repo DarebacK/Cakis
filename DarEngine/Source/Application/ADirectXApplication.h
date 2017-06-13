@@ -29,6 +29,8 @@ private:
 	HWND							applicationWindowHandle{ nullptr };
 
 	bool							InitializeWindow();
+	bool							InitializeWindowClass(WNDCLASSEX& windowClass) const;
+	HWND							CreateApplicationWindow(WNDCLASSEX windowClass) const;
 	void							ProcessApplicationMessages(MSG& message);
 	bool							IsApplicationInitialized() const;
 };

@@ -78,10 +78,30 @@ void ADirectXApplication::QuitApplication(int exitCode)
 	PostQuitMessage(exitCode);
 }
 
-//TODO: refactor
 bool ADirectXApplication::InitializeWindow()
 {
 	WNDCLASSEX windowClass;
+	
+	if(!InitializeWindowClass(windowClass))
+	{
+		OutputDebugString(L"error: window class initialization failed");
+		return false;
+	}
+
+	applicationWindowHandle = CreateApplicationWindow(windowClass);
+	if(!applicationWindowHandle)
+	{
+		OutputDebugString(L"error: window creation failed");
+		return false;
+	}
+
+	ShowWindow(applicationWindowHandle, SW_SHOW);
+
+	return true;
+}
+
+bool ADirectXApplication::InitializeWindowClass(WNDCLASSEX& windowClass) const
+{
 	ZeroMemory(&windowClass, sizeof(WNDCLASSEX));
 
 	windowClass.cbSize =			sizeof(WNDCLASSEX);
@@ -97,12 +117,11 @@ bool ADirectXApplication::InitializeWindow()
 	windowClass.lpszMenuName =		nullptr;
 	windowClass.lpszClassName =		L"ADirectXApplication";
 
-	if(!RegisterClassEx(&windowClass))
-	{
-		OutputDebugString(L"error: window class registration failed");
-		return false;
-	}
+	return RegisterClassEx(&windowClass);
+}
 
+HWND ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
+{
 	RECT windowRectangle{
 		0,
 		0,
@@ -110,13 +129,14 @@ bool ADirectXApplication::InitializeWindow()
 		static_cast<LONG>(clientAreaHeight)
 	};
 	AdjustWindowRect(&windowRectangle, applicationWindowStyle, NULL);
+
 	UINT windowWidth = windowRectangle.right - windowRectangle.left;
 	UINT windowHeight = windowRectangle.bottom - windowRectangle.top;
 
 	UINT windowXCoord = GetSystemMetrics(SM_CXSCREEN) / 2 - windowWidth / 2;
 	UINT windowYCoord = GetSystemMetrics(SM_CYSCREEN) / 2 - windowHeight / 2;
 
-	applicationWindowHandle = CreateWindow(
+	return CreateWindow(
 		windowClass.lpszClassName,
 		applicationWindowTitle.c_str(),
 		applicationWindowStyle,
@@ -129,16 +149,6 @@ bool ADirectXApplication::InitializeWindow()
 		applicationInstanceHandle,
 		NULL
 	);
-
-	if(!applicationWindowHandle)
-	{
-		OutputDebugString(L"error: window creation failed");
-		return false;
-	}
-
-	ShowWindow(applicationWindowHandle, SW_SHOW);
-
-	return true;
 }
 
 void ADirectXApplication::ProcessApplicationMessages(MSG& message)
