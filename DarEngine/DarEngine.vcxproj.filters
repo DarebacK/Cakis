@@ -19,26 +19,26 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Object.h">
-      <Filter>Source\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderableObject.h">
-      <Filter>Source\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneObject.h">
-      <Filter>Source\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="ADirectXApplication.h">
-      <Filter>Source\Application</Filter>
-    </ClInclude>
-    <ClInclude Include="Transform.h">
-      <Filter>Source\Math</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Math\Transform.h">
+      <Filter>Source\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application\ADirectXApplication.h">
+      <Filter>Source\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Object\Object.h">
+      <Filter>Source\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Object\RenderableObject.h">
+      <Filter>Source\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Object\SceneObject.h">
+      <Filter>Source\Object</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -50,11 +50,14 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ADirectXApplication.cpp">
-      <Filter>Source\Application</Filter>
-    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Math\Transform.cpp">
+      <Filter>Source\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\ADirectXApplication.cpp">
+      <Filter>Source\Application</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

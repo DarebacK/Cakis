@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ADirectXApplication.h"
+#include "Application/ADirectXApplication.h"
 
 class TestApplication : public ADirectXApplication
 {
