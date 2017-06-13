@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include "TestApplication.h"
 
 TestApplication::TestApplication(HINSTANCE instanceHandle) :
@@ -9,7 +11,7 @@ void TestApplication::OnUpdate(float deltaTime)
 {
 }
 
-void TestApplication::OnRender(float deltaTIme)
+void TestApplication::OnRender(float deltaTime)
 {
 }
 

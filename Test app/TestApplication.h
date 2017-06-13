@@ -9,7 +9,7 @@ public:
 
 protected:
 	void OnUpdate(float deltaTime) override;
-	void OnRender(float deltaTIme) override;
+	void OnRender(float deltaTime) override;
 	void OnApplicationInitialization() override;
 	void OnApplicationQuit() override;
 };

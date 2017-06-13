@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include "TestApplication.h"
 
 int CALLBACK wWinMain(

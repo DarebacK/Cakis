@@ -1,9 +1,8 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN	// excludes some irrelevant headers
-#include <Windows.h>
 #include <string>
 
+//TODO: separate Win32 app and DirectX app
 class ADirectXApplication
 {
 public:
@@ -20,7 +19,7 @@ protected:
 	std::wstring					applicationWindowTitle;
 
 	virtual void					OnUpdate(float deltaTime) = 0;
-	virtual void					OnRender(float deltaTIme) = 0;
+	virtual void					OnRender(float deltaTime) = 0;
 	virtual void					OnApplicationInitialization() = 0;
 	virtual void					OnApplicationQuit() = 0;
 	void							QuitApplication(int exitCode);

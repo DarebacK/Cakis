@@ -8,7 +8,6 @@ namespace UnitTestProject
 	TEST_CLASS(TransformTest)
 	{
 	public:
-		
 		TEST_METHOD(TestMethod1)
 		{
 			// TODO: Your test code here
