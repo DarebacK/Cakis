@@ -141,7 +141,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Documentation\ClassDiagram.cd" />
-    <None Include="ObjectHierarchy.cd" />
+    <None Include="Documentation\ObjectHierarchy.cd" />
     <None Include="Source\Platform\Metrics.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

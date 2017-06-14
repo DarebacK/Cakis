@@ -54,11 +54,11 @@
     <None Include="Documentation\ClassDiagram.cd">
       <Filter>Documentation</Filter>
     </None>
-    <None Include="ObjectHierarchy.cd">
-      <Filter>Documentation</Filter>
-    </None>
     <None Include="Source\Platform\Metrics.inl">
       <Filter>Source\Platform</Filter>
+    </None>
+    <None Include="Documentation\ObjectHierarchy.cd">
+      <Filter>Documentation</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
