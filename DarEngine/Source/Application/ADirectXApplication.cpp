@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "ADirectXApplication.h"
+#include "Platform/Metrics.h"
 
 namespace
 {
@@ -25,10 +26,6 @@ clientAreaHeight(clientAreaHeight),
 applicationWindowTitle(applicationWindowTitle)
 {
 	g_application = this;
-}
-
-ADirectXApplication::~ADirectXApplication()
-{
 }
 
 int ADirectXApplication::Run()
@@ -60,17 +57,8 @@ int ADirectXApplication::Run()
 
 LRESULT ADirectXApplication::ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
-	switch(uMessage)
-	{
-	case WM_DESTROY:
-		QuitApplication(0);
-		return 0;
-
-	default:
-		return DefWindowProc(windowHandle, uMessage, wParam, lParam);
-	}
+	return DoProcessWindowMessage(windowHandle, uMessage, wParam, lParam);
 }
-
 
 void ADirectXApplication::QuitApplication(int exitCode)
 {
@@ -120,6 +108,19 @@ bool ADirectXApplication::InitializeWindowClass(WNDCLASSEX& windowClass) const
 	return RegisterClassEx(&windowClass);
 }
 
+LRESULT ADirectXApplication::DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMessage)
+	{
+	case WM_DESTROY:
+		QuitApplication(0);
+		return 0;
+
+	default:
+		return DefWindowProc(windowHandle, uMessage, wParam, lParam);
+	}
+}
+
 HWND ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
 {
 	RECT windowRectangle{
@@ -133,8 +134,8 @@ HWND ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
 	UINT windowWidth = windowRectangle.right - windowRectangle.left;
 	UINT windowHeight = windowRectangle.bottom - windowRectangle.top;
 
-	UINT windowXCoord = GetSystemMetrics(SM_CXSCREEN) / 2 - windowWidth / 2;
-	UINT windowYCoord = GetSystemMetrics(SM_CYSCREEN) / 2 - windowHeight / 2;
+	UINT windowXCoord = Platform::GetScreenWidth() / 2 - windowWidth / 2;
+	UINT windowYCoord = Platform::GetScreenHeight() / 2 - windowHeight / 2;
 
 	return CreateWindow(
 		windowClass.lpszClassName,

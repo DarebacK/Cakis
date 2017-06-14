@@ -2,15 +2,19 @@
 
 #include <string>
 
-//TODO: separate Win32 app and DirectX app
+//TODO: separate Win32 app and DirectX app if DirectX app is independent from Win32
 class ADirectXApplication
 {
 public:
 	explicit						ADirectXApplication(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, std::wstring applicationWindowTitle);
-	virtual							~ADirectXApplication();
+	virtual							~ADirectXApplication() = default;
+									ADirectXApplication(const ADirectXApplication& other) = delete;
+									ADirectXApplication(ADirectXApplication&& other) noexcept = delete;
+									ADirectXApplication& operator=(const ADirectXApplication& other) = delete;
+									ADirectXApplication& operator=(ADirectXApplication&& other) noexcept = delete;
 
 	int								Run();
-	virtual LRESULT					ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam);
+	LRESULT							ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam);
 protected:
 	// WIN32 ATTRIBUTES
 	//TODO: move to private and expose getters only, for changing these values introduce new methods like ChangeClientAreaWidth
@@ -30,6 +34,7 @@ private:
 
 	bool							InitializeWindow();
 	bool							InitializeWindowClass(WNDCLASSEX& windowClass) const;
+	LRESULT							DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam);
 	HWND							CreateApplicationWindow(WNDCLASSEX windowClass) const;
 	void							ProcessApplicationMessages(MSG& message);
 	bool							IsApplicationInitialized() const;

@@ -17,6 +17,12 @@
     <Filter Include="Source\Object">
       <UniqueIdentifier>{8729153f-86e6-48f2-8f25-17920e9b3366}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Platform">
+      <UniqueIdentifier>{3d2235a2-5d57-4348-a99a-cf64396e6ee1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Diagnostics">
+      <UniqueIdentifier>{c4748f36-708f-4eea-a947-aaba5e51fa33}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -40,6 +46,9 @@
     <ClInclude Include="Source\Object\SceneObject.h">
       <Filter>Source\Object</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Platform\Metrics.h">
+      <Filter>Source\Platform</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Documentation\ClassDiagram.cd">
@@ -47,6 +56,9 @@
     </None>
     <None Include="ObjectHierarchy.cd">
       <Filter>Documentation</Filter>
+    </None>
+    <None Include="Source\Platform\Metrics.inl">
+      <Filter>Source\Platform</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
