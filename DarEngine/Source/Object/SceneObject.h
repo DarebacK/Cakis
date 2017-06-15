@@ -1,14 +1,15 @@
 #pragma once
 
 #include "Object.h"
+#include "Math/Transform.h"
 
-class Transform;
+namespace DarEngine {
+	class SceneObject : public DarEngine::Object
+	{
+	public:
+		SceneObject(long id, const DarEngine::Transform& transform);
 
-class SceneObject : public Object
-{
-public:
-	SceneObject(long id, const Transform& transform);
-
-private:
-	Transform transform;
-};
+	private:
+		DarEngine::Transform transform;
+	};
+}

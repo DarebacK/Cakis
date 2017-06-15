@@ -23,6 +23,9 @@
     <Filter Include="Source\Diagnostics">
       <UniqueIdentifier>{c4748f36-708f-4eea-a947-aaba5e51fa33}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Data">
+      <UniqueIdentifier>{a2c49cc4-155f-486a-8bc3-556413a3135f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -49,6 +52,12 @@
     <ClInclude Include="Source\Platform\Metrics.h">
       <Filter>Source\Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Diagnostics\Log.h">
+      <Filter>Source\Diagnostics</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platform\Time.h">
+      <Filter>Source\Platform</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Documentation\ClassDiagram.cd">
@@ -59,6 +68,12 @@
     </None>
     <None Include="Documentation\ObjectHierarchy.cd">
       <Filter>Documentation</Filter>
+    </None>
+    <None Include="Source\Diagnostics\Log.inl">
+      <Filter>Source\Diagnostics</Filter>
+    </None>
+    <None Include="Source\Platform\Time.inl">
+      <Filter>Source\Platform</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

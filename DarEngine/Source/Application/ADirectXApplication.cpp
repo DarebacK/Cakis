@@ -6,7 +6,7 @@
 namespace
 {
 	// used to forward messages to user defined ProcessWindowMessage method
-	ADirectXApplication* g_application = nullptr;
+	DarEngine::ADirectXApplication* g_application = nullptr;
 }
 
 LRESULT CALLBACK MainProcessWindowMessage(_In_ HWND windowHandle, _In_ UINT uMessage, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -19,7 +19,7 @@ LRESULT CALLBACK MainProcessWindowMessage(_In_ HWND windowHandle, _In_ UINT uMes
 	return DefWindowProc(windowHandle, uMessage, wParam, lParam);
 }
 
-ADirectXApplication::ADirectXApplication(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, std::wstring applicationWindowTitle) :
+DarEngine::ADirectXApplication::ADirectXApplication(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, std::wstring applicationWindowTitle) :
 applicationInstanceHandle(instanceHandle), 
 clientAreaWidth(clientAreaWidth),
 clientAreaHeight(clientAreaHeight),
@@ -28,7 +28,7 @@ applicationWindowTitle(applicationWindowTitle)
 	g_application = this;
 }
 
-int ADirectXApplication::Run()
+int DarEngine::ADirectXApplication::Run()
 {
 	if(IsApplicationInitialized())
 	{
@@ -55,18 +55,18 @@ int ADirectXApplication::Run()
 	return lastMessage.lParam;
 }
 
-LRESULT ADirectXApplication::ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
+LRESULT DarEngine::ADirectXApplication::ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
 	return DoProcessWindowMessage(windowHandle, uMessage, wParam, lParam);
 }
 
-void ADirectXApplication::QuitApplication(int exitCode)
+void DarEngine::ADirectXApplication::QuitApplication(int exitCode)
 {
 	OnApplicationQuit();
 	PostQuitMessage(exitCode);
 }
 
-bool ADirectXApplication::InitializeWindow()
+bool DarEngine::ADirectXApplication::InitializeWindow()
 {
 	WNDCLASSEX windowClass;
 	
@@ -88,7 +88,7 @@ bool ADirectXApplication::InitializeWindow()
 	return true;
 }
 
-bool ADirectXApplication::InitializeWindowClass(WNDCLASSEX& windowClass) const
+bool DarEngine::ADirectXApplication::InitializeWindowClass(WNDCLASSEX& windowClass) const
 {
 	ZeroMemory(&windowClass, sizeof(WNDCLASSEX));
 
@@ -108,7 +108,7 @@ bool ADirectXApplication::InitializeWindowClass(WNDCLASSEX& windowClass) const
 	return RegisterClassEx(&windowClass);
 }
 
-LRESULT ADirectXApplication::DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
+LRESULT DarEngine::ADirectXApplication::DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMessage)
 	{
@@ -121,7 +121,7 @@ LRESULT ADirectXApplication::DoProcessWindowMessage(HWND windowHandle, UINT uMes
 	}
 }
 
-HWND ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
+HWND DarEngine::ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
 {
 	RECT windowRectangle{
 		0,
@@ -134,8 +134,8 @@ HWND ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
 	UINT windowWidth = windowRectangle.right - windowRectangle.left;
 	UINT windowHeight = windowRectangle.bottom - windowRectangle.top;
 
-	UINT windowXCoord = Platform::GetScreenWidth() / 2 - windowWidth / 2;
-	UINT windowYCoord = Platform::GetScreenHeight() / 2 - windowHeight / 2;
+	UINT windowXCoord = DarEngine::GetScreenWidth() / 2 - windowWidth / 2;
+	UINT windowYCoord = DarEngine::GetScreenHeight() / 2 - windowHeight / 2;
 
 	return CreateWindow(
 		windowClass.lpszClassName,
@@ -152,7 +152,7 @@ HWND ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
 	);
 }
 
-void ADirectXApplication::ProcessApplicationMessages(MSG& message)
+void DarEngine::ADirectXApplication::ProcessApplicationMessages(MSG& message)
 {
 	while (PeekMessage(&message, nullptr, NULL, NULL, PM_REMOVE))
 	{
@@ -161,7 +161,7 @@ void ADirectXApplication::ProcessApplicationMessages(MSG& message)
 	}
 }
 
-bool ADirectXApplication::IsApplicationInitialized() const
+bool DarEngine::ADirectXApplication::IsApplicationInitialized() const
 {
 	return applicationWindowHandle;
 }

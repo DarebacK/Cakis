@@ -1,6 +1,8 @@
 #pragma once
 
-class Transform
-{
-	
-};
+namespace DarEngine {
+	class Transform
+	{
+
+	};
+}

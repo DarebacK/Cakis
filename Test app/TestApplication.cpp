@@ -3,16 +3,18 @@
 #include "TestApplication.h"
 
 TestApplication::TestApplication(HINSTANCE instanceHandle) :
-	ADirectXApplication(instanceHandle, 800, 600, L"TestApplication")
+	DarEngine::ADirectXApplication(instanceHandle, 800, 600, L"TestApplication")
 {
 }
 
 void TestApplication::OnUpdate(float deltaTime)
 {
+
 }
 
 void TestApplication::OnRender(float deltaTime)
 {
+
 }
 
 void TestApplication::OnApplicationInitialization()
@@ -22,4 +24,5 @@ void TestApplication::OnApplicationInitialization()
 
 void TestApplication::OnApplicationQuit()
 {
+
 }

@@ -2,7 +2,7 @@
 
 #include "Application/ADirectXApplication.h"
 
-class TestApplication : public ADirectXApplication
+class TestApplication : public DarEngine::ADirectXApplication
 {
 public:
 	explicit TestApplication(HINSTANCE instanceHandle);

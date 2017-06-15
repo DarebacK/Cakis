@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Platform
+namespace DarEngine
 {
 	inline int		GetScreenWidth();
 	inline int		GetScreenHeight();
