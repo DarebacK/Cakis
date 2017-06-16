@@ -1,12 +1,12 @@
 #include "stdafx.h"
 
-#include "ADirectXApplication.h"
+#include "Win32Application.h"
 #include "Platform/Metrics.h"
 
 namespace
 {
 	// used to forward messages to user defined ProcessWindowMessage method
-	DarEngine::ADirectXApplication* g_application = nullptr;
+	DarEngine::Win32Application* g_application = nullptr;
 }
 
 LRESULT CALLBACK MainProcessWindowMessage(_In_ HWND windowHandle, _In_ UINT uMessage, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -19,7 +19,7 @@ LRESULT CALLBACK MainProcessWindowMessage(_In_ HWND windowHandle, _In_ UINT uMes
 	return DefWindowProc(windowHandle, uMessage, wParam, lParam);
 }
 
-DarEngine::ADirectXApplication::ADirectXApplication(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, std::wstring applicationWindowTitle) :
+DarEngine::Win32Application::Win32Application(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, std::wstring applicationWindowTitle) :
 applicationInstanceHandle(instanceHandle), 
 clientAreaWidth(clientAreaWidth),
 clientAreaHeight(clientAreaHeight),
@@ -28,45 +28,55 @@ applicationWindowTitle(applicationWindowTitle)
 	g_application = this;
 }
 
-int DarEngine::ADirectXApplication::Run()
+int DarEngine::Win32Application::Run()
 {
-	if(IsApplicationInitialized())
+	if (IsApplicationInitialized())
 	{
 		OutputDebugString(L"error: trying to run the application multiple times");
 		return 1;
 	}
 
-	if(!InitializeWindow())
+	if (!InitializeWindow())
 	{
 		QuitApplication(1);
 	}
 	OnApplicationInitialization();
 
 	MSG lastMessage{ nullptr };
-	while(lastMessage.message != WM_QUIT)
+	while (lastMessage.message != WM_QUIT)
 	{
 		ProcessApplicationMessages(lastMessage);
-
-		//TODO: implement delta time
-		OnUpdate(0.01f);
-		OnRender(0.01f);
+		OnMessageLoopTick();
 	}
 
 	return lastMessage.lParam;
 }
 
-LRESULT DarEngine::ADirectXApplication::ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
+LRESULT DarEngine::Win32Application::ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
 	return DoProcessWindowMessage(windowHandle, uMessage, wParam, lParam);
 }
 
-void DarEngine::ADirectXApplication::QuitApplication(int exitCode)
+LRESULT DarEngine::Win32Application::DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMessage)
+	{
+	case WM_DESTROY:
+		QuitApplication(0);
+		return 0;
+
+	default:
+		return DefWindowProc(windowHandle, uMessage, wParam, lParam);
+	}
+}
+
+void DarEngine::Win32Application::QuitApplication(int exitCode)
 {
 	OnApplicationQuit();
 	PostQuitMessage(exitCode);
 }
 
-bool DarEngine::ADirectXApplication::InitializeWindow()
+bool DarEngine::Win32Application::InitializeWindow()
 {
 	WNDCLASSEX windowClass;
 	
@@ -88,7 +98,7 @@ bool DarEngine::ADirectXApplication::InitializeWindow()
 	return true;
 }
 
-bool DarEngine::ADirectXApplication::InitializeWindowClass(WNDCLASSEX& windowClass) const
+bool DarEngine::Win32Application::InitializeWindowClass(WNDCLASSEX& windowClass) const
 {
 	ZeroMemory(&windowClass, sizeof(WNDCLASSEX));
 
@@ -103,25 +113,12 @@ bool DarEngine::ADirectXApplication::InitializeWindowClass(WNDCLASSEX& windowCla
 	windowClass.hCursor =			LoadCursor(nullptr, IDC_ARROW);
 	windowClass.hbrBackground =		static_cast<HBRUSH>(GetStockObject(NULL_BRUSH));
 	windowClass.lpszMenuName =		nullptr;
-	windowClass.lpszClassName =		L"ADirectXApplication";
+	windowClass.lpszClassName =		L"Win32Application";
 
 	return RegisterClassEx(&windowClass);
 }
 
-LRESULT DarEngine::ADirectXApplication::DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMessage)
-	{
-	case WM_DESTROY:
-		QuitApplication(0);
-		return 0;
-
-	default:
-		return DefWindowProc(windowHandle, uMessage, wParam, lParam);
-	}
-}
-
-HWND DarEngine::ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowClass) const
+HWND DarEngine::Win32Application::CreateApplicationWindow(WNDCLASSEX windowClass) const
 {
 	RECT windowRectangle{
 		0,
@@ -152,7 +149,7 @@ HWND DarEngine::ADirectXApplication::CreateApplicationWindow(WNDCLASSEX windowCl
 	);
 }
 
-void DarEngine::ADirectXApplication::ProcessApplicationMessages(MSG& message)
+void DarEngine::Win32Application::ProcessApplicationMessages(MSG& message)
 {
 	while (PeekMessage(&message, nullptr, NULL, NULL, PM_REMOVE))
 	{
@@ -161,7 +158,7 @@ void DarEngine::ADirectXApplication::ProcessApplicationMessages(MSG& message)
 	}
 }
 
-bool DarEngine::ADirectXApplication::IsApplicationInitialized() const
+bool DarEngine::Win32Application::IsApplicationInitialized() const
 {
 	return applicationWindowHandle;
 }

@@ -1,16 +1,12 @@
 #pragma once
 
-#include "Application/ADirectXApplication.h"
+#include "Application/DirectX11Application.h"
 
-class TestApplication : public DarEngine::ADirectXApplication
+class TestApplication : public DarEngine::DirectX11Application
 {
 public:
 	explicit TestApplication(HINSTANCE instanceHandle);
 
 protected:
-	void OnUpdate(float deltaTime) override;
-	void OnRender(float deltaTime) override;
-	void OnApplicationInitialization() override;
-	void OnApplicationQuit() override;
 };
 

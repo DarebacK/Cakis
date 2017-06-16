@@ -128,7 +128,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Application\ADirectXApplication.cpp" />
+    <ClCompile Include="Source\Application\DirectX11Application.cpp" />
+    <ClCompile Include="Source\Application\Win32Application.cpp" />
     <ClCompile Include="Source\Math\Transform.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -138,7 +139,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Application\ADirectXApplication.h" />
+    <ClInclude Include="Source\Application\DirectX11Application.h" />
+    <ClInclude Include="Source\Application\Win32Application.h" />
     <ClInclude Include="Source\Diagnostics\Log.h" />
     <ClInclude Include="Source\Math\Transform.h" />
     <ClInclude Include="Source\Object\Object.h" />
@@ -146,6 +148,7 @@
     <ClInclude Include="Source\Object\SceneObject.h" />
     <ClInclude Include="Source\Platform\Metrics.h" />
     <ClInclude Include="Source\Platform\Time.h" />
+    <ClInclude Include="Source\Resource\Memory.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
