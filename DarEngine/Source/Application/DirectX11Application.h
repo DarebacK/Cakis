@@ -4,6 +4,16 @@
 
 namespace DarEngine
 {
+	const std::array<D3D_DRIVER_TYPE, 3> supportedDriverTypes{
+		D3D_DRIVER_TYPE_HARDWARE,
+		D3D_DRIVER_TYPE_WARP,
+		D3D_DRIVER_TYPE_REFERENCE
+	};
+	const std::array<D3D_FEATURE_LEVEL, 2> supportedFeatureLevels{
+		D3D_FEATURE_LEVEL_11_1,
+		D3D_FEATURE_LEVEL_11_0
+	};
+
 	class DirectX11Application : public Win32Application
 	{
 	public:
@@ -13,6 +23,7 @@ namespace DarEngine
 									DirectX11Application(DirectX11Application&& other) noexcept = delete;
 									DirectX11Application& operator=(const DirectX11Application& other) = delete;
 									DirectX11Application& operator=(DirectX11Application&& other) noexcept = delete;
+
 	private:
 		ID3D11Device*				device{ nullptr };
 		ID3D11DeviceContext*		immediateDeviceContext{ nullptr };
@@ -26,6 +37,9 @@ namespace DarEngine
 		void						OnApplicationInitialization() final override;
 		void						OnMessageLoopTick() final override;
 		bool						InitializeDirect3D();
+		bool						InitializeDeviceAndSwapChain();
+		bool						InitializeRenderTargetView();
+		void						InitializeViewport();
 		
 	};
 }
