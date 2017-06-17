@@ -3,7 +3,6 @@
 #include <string>
 
 namespace DarEngine {
-	//TODO: refactor to use composition over inheritance, use std::function to implement callbacks/events
 	class Win32Application
 	{
 	public:
@@ -15,15 +14,16 @@ namespace DarEngine {
 										Win32Application& operator=(Win32Application&& other) noexcept = delete;
 
 		int								Run();
+		void							QuitApplication(int exitCode);
 		LRESULT							ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam);
-	protected:
-		//TODO: move to private and expose getters only, for changing these values introduce new methods like ChangeClientAreaWidth
+		UINT							GetClientAreaWidth() const;
+		UINT							GetClientAreaHeight() const;
+		const std::wstring&				GetAppplicationWindowTitle() const;
+		const HWND						GetApplicationWindowHandle() const;
+	private:
 		UINT							clientAreaWidth;
 		UINT							clientAreaHeight;
 		std::wstring					applicationWindowTitle;
-
-		void							QuitApplication(int exitCode);
-	private:
 		DWORD							applicationWindowStyle{ WS_OVERLAPPEDWINDOW };
 		HINSTANCE						applicationInstanceHandle{ nullptr };
 		HWND							applicationWindowHandle{ nullptr };

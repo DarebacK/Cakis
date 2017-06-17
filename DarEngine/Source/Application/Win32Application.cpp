@@ -35,10 +35,11 @@ int DarEngine::Win32Application::Run()
 		OutputDebugString(L"error: trying to run the application multiple times");
 		return 1;
 	}
-
+	
 	if (!InitializeWindow())
 	{
 		QuitApplication(1);
+		return 1;
 	}
 	OnApplicationInitialization();
 
@@ -55,6 +56,26 @@ int DarEngine::Win32Application::Run()
 LRESULT DarEngine::Win32Application::ProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
 	return DoProcessWindowMessage(windowHandle, uMessage, wParam, lParam);
+}
+
+UINT DarEngine::Win32Application::GetClientAreaWidth() const
+{
+	return clientAreaWidth;
+}
+
+UINT DarEngine::Win32Application::GetClientAreaHeight() const
+{
+	return clientAreaHeight;
+}
+
+const std::wstring& DarEngine::Win32Application::GetAppplicationWindowTitle() const
+{
+	return applicationWindowTitle;
+}
+
+const HWND DarEngine::Win32Application::GetApplicationWindowHandle() const
+{
+	return applicationWindowHandle;
 }
 
 LRESULT DarEngine::Win32Application::DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam)
@@ -78,8 +99,7 @@ void DarEngine::Win32Application::QuitApplication(int exitCode)
 
 bool DarEngine::Win32Application::InitializeWindow()
 {
-	WNDCLASSEX windowClass;
-	
+	WNDCLASSEX windowClass{};
 	if(!InitializeWindowClass(windowClass))
 	{
 		OutputDebugString(L"error: window class initialization failed");
@@ -100,8 +120,6 @@ bool DarEngine::Win32Application::InitializeWindow()
 
 bool DarEngine::Win32Application::InitializeWindowClass(WNDCLASSEX& windowClass) const
 {
-	ZeroMemory(&windowClass, sizeof(WNDCLASSEX));
-
 	windowClass.cbSize =			sizeof(WNDCLASSEX);
 	windowClass.cbClsExtra =		0;
 	windowClass.cbWndExtra =		0;
