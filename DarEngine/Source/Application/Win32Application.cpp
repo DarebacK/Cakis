@@ -73,7 +73,7 @@ const std::wstring& DarEngine::Win32Application::GetAppplicationWindowTitle() co
 	return applicationWindowTitle;
 }
 
-const HWND DarEngine::Win32Application::GetApplicationWindowHandle() const
+HWND DarEngine::Win32Application::GetApplicationWindowHandle() const
 {
 	return applicationWindowHandle;
 }

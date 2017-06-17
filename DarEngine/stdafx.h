@@ -12,4 +12,5 @@
 #include <d3d11_4.h>
 #include <DirectXColors.h>
 
+#include <string>
 #include <array>

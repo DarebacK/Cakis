@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 namespace DarEngine {
 	class Win32Application
 	{
@@ -19,7 +17,7 @@ namespace DarEngine {
 		UINT							GetClientAreaWidth() const;
 		UINT							GetClientAreaHeight() const;
 		const std::wstring&				GetAppplicationWindowTitle() const;
-		const HWND						GetApplicationWindowHandle() const;
+		HWND						GetApplicationWindowHandle() const;
 	private:
 		UINT							clientAreaWidth;
 		UINT							clientAreaHeight;
