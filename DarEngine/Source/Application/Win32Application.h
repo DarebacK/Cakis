@@ -41,9 +41,21 @@ namespace DarEngine {
 		HINSTANCE						applicationInstanceHandle{ nullptr };
 		HWND							applicationWindowHandle{ nullptr };
 
+		/*
+		 * Callback method called after Win32 application has been initialized
+		 */
 		virtual void					OnApplicationInitialization() {};
+		/*
+		 * Callback method called after QuitApplication is called
+		 */
 		virtual void					OnApplicationQuit() {};
+		/*
+		 * Callback method called inside the main message loop
+		 */
 		virtual void					OnMessageLoopTick() {};
+		/*
+		 * Method called after ProcessWindowMessage is called by the operating system
+		 */
 		virtual LRESULT					DoProcessWindowMessage(HWND windowHandle, UINT uMessage, WPARAM wParam, LPARAM lParam);
 		bool							InitializeWindow();
 		bool							InitializeWindowClass(WNDCLASSEX& windowClass) const;

@@ -136,8 +136,8 @@ bool DarEngine::DirectX11Application::InitializeRenderTargetView()
 
 void DarEngine::DirectX11Application::InitializeViewport()
 {
-	viewport.Width = static_cast<float>(GetClientAreaWidth());
-	viewport.Height = static_cast<float>(GetClientAreaHeight());
+	viewport.Width = static_cast<FLOAT>(GetClientAreaWidth());
+	viewport.Height = static_cast<FLOAT>(GetClientAreaHeight());
 	viewport.TopLeftX = 0.0f;
 	viewport.TopLeftY = 0.0f;
 	viewport.MinDepth = 0.0f;
