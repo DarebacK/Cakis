@@ -84,6 +84,7 @@
     <None Include="Documentation\ApplicationHierarchy.cd">
       <Filter>Documentation</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
