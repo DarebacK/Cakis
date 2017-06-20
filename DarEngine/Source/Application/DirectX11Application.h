@@ -14,6 +14,10 @@ namespace DarEngine
 		D3D_FEATURE_LEVEL_11_0
 	};
 
+	/*
+	 * Single window DirectX 11 application
+	 * Derive from this class to implement your game
+	 */
 	class DirectX11Application : public Win32Application
 	{
 	public:
@@ -33,7 +37,16 @@ namespace DarEngine
 		D3D_FEATURE_LEVEL			featureLevel{};
 		D3D11_VIEWPORT				viewport{};
 
-		virtual void				OnTick(float deltaTime) {};
+		void						Update(float deltaTime);
+		void						Render(float deltaTime);
+		/*
+		 * Callback method for updating game state
+		 */
+		virtual void				OnUpdate(float deltaTime) {};
+		/*
+		 * Callback method for rendering game state
+		 */
+		virtual void				OnRender(float deltaTime) {};
 		void						OnApplicationInitialization() final override;
 		void						OnMessageLoopTick() final override;
 		bool						InitializeDirect3D();

@@ -1,6 +1,9 @@
 #pragma once
 
 namespace DarEngine {
+	/*
+	 * Single window Win32 application
+	 */
 	class Win32Application
 	{
 	public:

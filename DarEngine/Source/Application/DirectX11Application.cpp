@@ -19,6 +19,20 @@ DarEngine::DirectX11Application::~DirectX11Application()
 	SafeRelease(device);
 }
 
+void DarEngine::DirectX11Application::Update(float deltaTime)
+{
+	OnUpdate(deltaTime);
+}
+
+void DarEngine::DirectX11Application::Render(float deltaTime)
+{
+	immediateDeviceContext->ClearRenderTargetView(renderTargetView, DirectX::Colors::CornflowerBlue);
+
+	OnRender(deltaTime);
+
+	swapChain->Present(0, 0);
+}
+
 void DarEngine::DirectX11Application::OnApplicationInitialization()
 {
 	if(!InitializeDirect3D())
@@ -31,9 +45,9 @@ void DarEngine::DirectX11Application::OnApplicationInitialization()
 
 void DarEngine::DirectX11Application::OnMessageLoopTick()
 {
-	immediateDeviceContext->ClearRenderTargetView(renderTargetView, DirectX::Colors::CornflowerBlue);
-
-	swapChain->Present(0, 0);
+	//TODO: implement delta time
+	Update(0.01f);
+	Render(0.01f);
 }
 
 bool DarEngine::DirectX11Application::InitializeDirect3D()
