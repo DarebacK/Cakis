@@ -21,38 +21,38 @@ namespace DarEngine
 	class DirectX11Application : public Win32Application
 	{
 	public:
-									DirectX11Application(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, const std::wstring& applicationWindowTitle);
-		virtual						~DirectX11Application();
-									DirectX11Application(const DirectX11Application& other) = delete;
-									DirectX11Application(DirectX11Application&& other) noexcept = delete;
-									DirectX11Application& operator=(const DirectX11Application& other) = delete;
-									DirectX11Application& operator=(DirectX11Application&& other) noexcept = delete;
+					DirectX11Application(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, const std::wstring& applicationWindowTitle);
+		virtual		~DirectX11Application();
+					DirectX11Application(const DirectX11Application& other) = delete;
+					DirectX11Application(DirectX11Application&& other) noexcept = delete;
+					DirectX11Application& operator=(const DirectX11Application& other) = delete;
+					DirectX11Application& operator=(DirectX11Application&& other) noexcept = delete;
 
 	private:
-		ID3D11Device*				device{ nullptr };
-		ID3D11DeviceContext*		immediateDeviceContext{ nullptr };
-		IDXGISwapChain*				swapChain{ nullptr };
-		ID3D11RenderTargetView*		renderTargetView{ nullptr };
-		D3D_DRIVER_TYPE				driverType{};
-		D3D_FEATURE_LEVEL			featureLevel{};
-		D3D11_VIEWPORT				viewport{};
+		Microsoft::WRL::ComPtr<ID3D11Device>			device;
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext>		immediateDeviceContext;
+		Microsoft::WRL::ComPtr<IDXGISwapChain>			swapChain;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>	renderTargetView;
+		D3D_DRIVER_TYPE									driverType{};
+		D3D_FEATURE_LEVEL								featureLevel{};
+		D3D11_VIEWPORT									viewport{};
 
-		void						Update(float deltaTime);
-		void						Render(float deltaTime);
+		void				Update(float deltaTime);
+		void				Render(float deltaTime);
 		/*
 		 * Callback method for updating game state
 		 */
-		virtual void				OnUpdate(float deltaTime) {};
+		virtual void		OnUpdate(float deltaTime) {};
 		/*
 		 * Callback method for rendering game state
 		 */
-		virtual void				OnRender(float deltaTime) {};
-		void						OnApplicationInitialization() final override;
-		void						OnMessageLoopTick() final override;
-		bool						InitializeDirect3D();
-		bool						InitializeDeviceAndSwapChain();
-		bool						InitializeRenderTargetView();
-		void						InitializeViewport();
+		virtual void		OnRender(float deltaTime) {};
+		void				OnApplicationInitialization() final override;
+		void				OnMessageLoopTick() final override;
+		bool				InitializeDirect3D();
+		bool				InitializeDeviceAndSwapChain();
+		bool				InitializeRenderTargetView();
+		void				InitializeViewport();
 		
 	};
 }

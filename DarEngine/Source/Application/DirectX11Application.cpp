@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "DirectX11Application.h"
-#include "Resource/Memory.h"
 
 DarEngine::DirectX11Application::DirectX11Application(HINSTANCE instanceHandle, UINT clientAreaWidth, UINT clientAreaHeight, const std::wstring& applicationWindowTitle)
 	:Win32Application(instanceHandle, clientAreaWidth, clientAreaHeight, applicationWindowTitle)
@@ -9,14 +8,6 @@ DarEngine::DirectX11Application::DirectX11Application(HINSTANCE instanceHandle, 
 
 DarEngine::DirectX11Application::~DirectX11Application()
 {
-	if(immediateDeviceContext)
-	{
-		immediateDeviceContext->ClearState();
-	}
-	SafeRelease(renderTargetView);
-	SafeRelease(swapChain);
-	SafeRelease(immediateDeviceContext);
-	SafeRelease(device);
 }
 
 void DarEngine::DirectX11Application::Update(float deltaTime)
@@ -26,7 +17,7 @@ void DarEngine::DirectX11Application::Update(float deltaTime)
 
 void DarEngine::DirectX11Application::Render(float deltaTime)
 {
-	immediateDeviceContext->ClearRenderTargetView(renderTargetView, DirectX::Colors::CornflowerBlue);
+	immediateDeviceContext->ClearRenderTargetView(renderTargetView.Get(), DirectX::Colors::CornflowerBlue);
 
 	OnRender(deltaTime);
 
@@ -100,10 +91,10 @@ bool DarEngine::DirectX11Application::InitializeDeviceAndSwapChain()
 			supportedFeatureLevels.size(),
 			D3D11_SDK_VERSION,
 			&swapChainDescription,
-			&swapChain,
-			&device,
+			swapChain.ReleaseAndGetAddressOf(),
+			device.ReleaseAndGetAddressOf(),
 			&featureLevel,
-			&immediateDeviceContext
+			immediateDeviceContext.ReleaseAndGetAddressOf()
 		);
 		if (SUCCEEDED(result))
 		{
@@ -123,13 +114,13 @@ bool DarEngine::DirectX11Application::InitializeRenderTargetView()
 {
 	ID3D11Texture2D1* backBufferTexture{ nullptr };
 	swapChain->GetBuffer(NULL, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBufferTexture));
-	HRESULT result = device->CreateRenderTargetView(backBufferTexture, nullptr, &renderTargetView);
+	HRESULT result = device->CreateRenderTargetView(backBufferTexture, nullptr, renderTargetView.ReleaseAndGetAddressOf());
 	if(FAILED(result))
 	{
 		return false;
 	}
 
-	immediateDeviceContext->OMSetRenderTargets(1, &renderTargetView, nullptr);
+	immediateDeviceContext->OMSetRenderTargets(1, renderTargetView.GetAddressOf(), nullptr);
 
 	return true;
 }
