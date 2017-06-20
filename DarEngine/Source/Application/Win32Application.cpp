@@ -32,7 +32,7 @@ int DarEngine::Win32Application::Run()
 {
 	if (IsApplicationInitialized())
 	{
-		OutputDebugString(L"error: trying to run the application multiple times");
+		OutputDebugString(L"warning: trying to run the application multiple times");
 		return 1;
 	}
 	

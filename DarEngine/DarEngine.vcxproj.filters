@@ -69,9 +69,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Documentation\ClassDiagram.cd">
-      <Filter>Documentation</Filter>
-    </None>
     <None Include="Source\Platform\Metrics.inl">
       <Filter>Source\Platform</Filter>
     </None>
@@ -83,6 +80,9 @@
     </None>
     <None Include="Source\Platform\Time.inl">
       <Filter>Source\Platform</Filter>
+    </None>
+    <None Include="Documentation\ApplicationHierarchy.cd">
+      <Filter>Documentation</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

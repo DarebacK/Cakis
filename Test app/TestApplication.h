@@ -7,6 +7,6 @@ class TestApplication : public DarEngine::DirectX11Application
 public:
 	explicit TestApplication(HINSTANCE instanceHandle);
 
-protected:
+private:
 };
 

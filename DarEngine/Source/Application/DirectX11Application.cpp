@@ -55,7 +55,6 @@ bool DarEngine::DirectX11Application::InitializeDirect3D()
 
 bool DarEngine::DirectX11Application::InitializeDeviceAndSwapChain()
 {
-	// CREATE DEVICE AND SWAP CHAIN
 	UINT createDeviceFlags{ 0 };
 
 #ifdef _DEBUG 
