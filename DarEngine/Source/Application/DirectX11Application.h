@@ -29,13 +29,13 @@ namespace DarEngine
 					DirectX11Application& operator=(DirectX11Application&& other) noexcept = delete;
 
 	private:
-		Microsoft::WRL::ComPtr<ID3D11Device>			device;
-		Microsoft::WRL::ComPtr<ID3D11DeviceContext>		immediateDeviceContext;
-		Microsoft::WRL::ComPtr<IDXGISwapChain>			swapChain;
-		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>	renderTargetView;
-		D3D_DRIVER_TYPE									driverType{};
-		D3D_FEATURE_LEVEL								featureLevel{};
-		D3D11_VIEWPORT									viewport{};
+		Microsoft::WRL::ComPtr<ID3D11Device>				device;
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext>			immediateDeviceContext;
+		Microsoft::WRL::ComPtr<IDXGISwapChain>				swapChain;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>		renderTargetView;
+		D3D_DRIVER_TYPE										driverType{};
+		D3D_FEATURE_LEVEL									featureLevel{};
+		D3D11_VIEWPORT										viewport{};
 
 		void				Update(float deltaTime);
 		void				Render(float deltaTime);
