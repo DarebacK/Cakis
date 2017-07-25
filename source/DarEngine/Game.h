@@ -3,6 +3,7 @@
 #include "Time.h"
 #include "Clock.h"
 
+//TODO: decouple events
 namespace DarEngine
 {
 
@@ -40,7 +41,7 @@ namespace DarEngine
 		bool								m_isRunning{ false };
 		Clock								m_clock{};
 		Time								m_gameTime{};
-		std::function<void(const Time&)>	m_onUpdate{};	//TODO: replace with a container or create event class with container
+		std::function<void(const Time&)>	m_onUpdate{};
 		std::function<void(const Time&)>	m_onDraw{};
 		std::function<void()>				m_onInitialization{};
 		std::function<void()>				m_onExit{};
@@ -51,6 +52,5 @@ namespace DarEngine
 		void								InvokeOnDraw() const;
 		void								InvokeOnInitialization() const;
 		void								InvokeOnExit() const;
-		
 	};
 }

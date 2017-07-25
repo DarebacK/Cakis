@@ -152,15 +152,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Exception.cpp" />
-    <ClCompile Include="Game.cpp" />
     <ClCompile Include="wWinMain.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Clock.h" />
-    <ClInclude Include="Game.h" />
-    <ClInclude Include="Exception.h" />
-    <ClInclude Include="Time.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -15,6 +15,11 @@ void DarEngine::Game::Run()
 	Shutdown();
 }
 
+void DarEngine::Game::Exit()
+{
+	m_isRunning = false;
+}
+
 DarEngine::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowClassName, const std::wstring& windowTitle, int showCommand)
 	:m_instanceHandle(instanceHandle), m_windowClassName(windowClassName), m_windowTitle(windowTitle), m_showCommand(showCommand)
 {
