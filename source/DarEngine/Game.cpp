@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Game.h"
+#include "Event.h"
 
 void DarEngine::Game::Run()
 {
@@ -8,11 +9,11 @@ void DarEngine::Game::Run()
 
 	while(m_isRunning)
 	{
-		InvokeOnUpdate();
-		InvokeOnDraw();
+		//InvokeOnUpdate();
+		//InvokeOnDraw();
 	}
-
-	Shutdown();
+	
+	//Shutdown();
 }
 
 void DarEngine::Game::Exit()
@@ -20,9 +21,21 @@ void DarEngine::Game::Exit()
 	m_isRunning = false;
 }
 
+void testing();
+
 DarEngine::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowClassName, const std::wstring& windowTitle, int showCommand)
 	:m_instanceHandle(instanceHandle), m_windowClassName(windowClassName), m_windowTitle(windowTitle), m_showCommand(showCommand)
 {
+	Event<void()> yolo;
+	Event<void(const Time&)> yolo2;
+	auto i = [instanceHandle]() {};
+	yolo.Subscribe(testing);
+	//yolo.Subscribe(std::bind(&decltype(yolo)::testing3, yolo));
+	yolo.Subscribe(i);
+	yolo2.Subscribe(m_onUpdate);
+	yolo += testing;
+	yolo2 += m_onUpdate;
+	//yolo += std::bind(&decltype(yolo)::testing3, yolo);
 }
 
 HINSTANCE DarEngine::Game::GetInstanceHandle() const noexcept

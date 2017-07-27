@@ -1,34 +1,24 @@
 #include "stdafx.h"
 #include "Event.h"
 
-template <typename callable_type, template <typename F> class container_type>
-void Event<callable_type, container_type>::Subscribe(CallbackType callback)
+template<typename callable_type, template<typename, typename...> typename container_type>
+void DarEngine::Event<callable_type, container_type>::Subscribe(CallbackType callback)
 {
+	container.insert(std::move(callback.target));
 }
 
-template <typename callable_type, template <typename F> class container_type>
-void Event<callable_type, container_type>::Unsubscribe(CallbackType callback)
+template<typename callable_type, template<typename, typename...> typename container_type>
+void DarEngine::Event<callable_type, container_type>::Unsubscribe(CallbackType callback)
 {
+	container.erase(std::move(callback.target));
 }
 
-template <typename callable_type, template <typename F> class container_type>
-Event<callable_type, container_type>& Event<callable_type, container_type>::operator+=(Event& other)
-{
-}
-
-template <typename callable_type, template <typename F> class container_type>
-Event<callable_type, container_type>& Event<callable_type, container_type>::operator-=(Event& other)
-{
-}
-
-template <typename callable_type, template <typename F> class container_type>
+template<typename callable_type, template<typename, typename...> typename container_type>
 template <typename ... Args>
-void Event<callable_type, container_type>::Invoke(Args... arguments)
+void DarEngine::Event<callable_type, container_type>::operator()(Args&&... arguments)
 {
-}
-
-template <typename callable_type, template <typename F> class container_type>
-template <typename ... Args>
-void Event<callable_type, container_type>::operator()(Args... arguments)
-{
+	for (auto i : container)
+	{
+		i(std::forward<Args>(arguments));
+	}
 }
