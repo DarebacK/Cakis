@@ -3,8 +3,6 @@
 #include "Clock.h"
 #include "Event.h"
 
-//TODO: decouple events
-//TODO: make getters implicitly inline
 namespace DarEngine
 {
 
@@ -23,14 +21,14 @@ namespace DarEngine
 									Game& operator=(Game&& rhs) = default;
 									~Game() = default;
 
-		int							GetWindowWidth() const noexcept { return m_windowWidth; }
-		int							GetWindowHeight() const noexcept { return m_windowHeight; }
+		int							GetClientAreaWidth() const noexcept { return m_clientAreaWidth; }
+		int							GetClientAreaHeight() const noexcept { return m_clientAreaHeight; }
 		void						Run();
 		void						Exit();
 
 	private:
-		static const int			windowDefaultWidth{ 800 };
-		static const int			windowDefaultHeight{ 600 };
+		static const int			clientAreaDefaultWidth{ 800 };
+		static const int			clientAreaDefaultHeight{ 600 };
 
 		HINSTANCE					m_instanceHandle{};
 		std::wstring				m_windowClassName{};
@@ -38,8 +36,8 @@ namespace DarEngine
 		int							m_showCommand{};
 		HWND						m_windowHandle{};
 		WNDCLASSEX					m_window{};
-		int							m_windowWidth{ windowDefaultWidth };
-		int							m_windowHeight{ windowDefaultHeight };
+		int							m_clientAreaWidth{ clientAreaDefaultWidth };
+		int							m_clientAreaHeight{ clientAreaDefaultHeight };
 		bool						m_isRunning{ false };
 		Clock						m_clock{};
 

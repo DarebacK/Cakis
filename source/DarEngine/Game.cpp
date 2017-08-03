@@ -59,15 +59,15 @@ void DarEngine::Game::InitializeWindow()
 	m_window.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	m_window.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
 	m_window.lpszClassName = m_windowClassName.c_str();
-	RECT windowRectangle = { 0, 0, m_windowWidth, m_windowHeight };
+	RECT windowRectangle = { 0, 0, m_clientAreaWidth, m_clientAreaHeight };
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 	RegisterClassEx(&m_window);
 
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 	POINT upperLeftCorner;
-	upperLeftCorner.x = (screenWidth - m_windowWidth) / 2;
-	upperLeftCorner.y = (screenHeight - m_windowHeight) / 2;
+	upperLeftCorner.x = (screenWidth - m_clientAreaWidth) / 2;
+	upperLeftCorner.y = (screenHeight - m_clientAreaHeight) / 2;
 
 	m_windowHandle = CreateWindow(m_windowClassName.c_str(), m_windowTitle.c_str(),
 		WS_OVERLAPPEDWINDOW, upperLeftCorner.x, upperLeftCorner.y, windowRectangle.right - windowRectangle.left,
