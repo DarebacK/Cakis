@@ -13,9 +13,9 @@ namespace DarEngine {
 		using CallbackType	= std::function<return_type(args...)>;
 		using InvokerType	= std::function<void(args...)>;
 
-		explicit Event(InvokerType& out_invokerRef)
+		explicit Event(InvokerType& out_invoker)
 		{
-			out_invokerRef = Invoke;
+			out_invoker = Invoke;
 		}
 
 		void	Subscribe(CallbackType callback);

@@ -35,7 +35,8 @@ void DarEngine::Game::Exit()
 }
 
 DarEngine::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowClassName, const std::wstring& windowTitle, int showCommand)
-	:m_instanceHandle(instanceHandle), m_windowClassName(windowClassName), m_windowTitle(windowTitle), m_showCommand(showCommand)
+	:OnUpdate{ m_onUpdateInvoker }, OnDraw{ m_onDrawInvoker }, OnInitialization{ m_onInitializationInvoker }, OnExit{m_onExitInvoker}, 
+	m_instanceHandle(instanceHandle), m_windowClassName(windowClassName), m_windowTitle(windowTitle), m_showCommand(showCommand)
 {
 
 }
