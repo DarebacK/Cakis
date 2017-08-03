@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Time.h"
 #include "Clock.h"
 #include "Event.h"
 
@@ -23,8 +22,7 @@ namespace DarEngine
 									Game& operator=(const Game& rhs) = delete;
 									Game& operator=(Game&& rhs) = default;
 									~Game() = default;
-		//HINSTANCE					GetInstanceHandle() const noexcept { return m_instanceHandle; }
-		const HWND					GetWindowHandle() const noexcept { return m_windowHandle; }
+
 		int							GetScreenWidth() const noexcept { return m_screenWidth; }
 		int							GetScreenHeight() const noexcept { return m_screenHeight; }
 		void						Run();
@@ -47,5 +45,6 @@ namespace DarEngine
 		void						InvokeOnDraw() const;
 		void						InvokeOnInitialization() const;
 		void						InvokeOnExit() const;
+		static	LRESULT WINAPI		WndProc(HWND windowHandle, UINT message, WPARAM, LPARAM lParam);
 	};
 }
