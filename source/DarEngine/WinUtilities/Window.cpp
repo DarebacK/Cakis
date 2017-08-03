@@ -2,7 +2,7 @@
 #include "Game.h"
 #include "Window.h"
 
-Dar::Win32::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand)
+Dar::WinUtilities::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand)
 	:m_className{title + L"_class"}, m_title{ title }, m_showCommand{ showCommand }
 {
 	ZeroMemory(&m_class, sizeof(m_class));
@@ -31,13 +31,13 @@ Dar::Win32::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, 
 		nullptr, nullptr, instanceHandle, nullptr);
 }
 
-void Dar::Win32::Window::Show() const
+void Dar::WinUtilities::Window::Show() const
 {
 	ShowWindow(m_handle, m_showCommand);
 	UpdateWindow(m_handle);
 }
 
-LRESULT Dar::Win32::Window::WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT Dar::WinUtilities::Window::WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{

@@ -2,7 +2,7 @@
 
 namespace Dar
 {
-	namespace Win32
+	namespace WinUtilities
 	{
 		class Window
 		{

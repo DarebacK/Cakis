@@ -2,7 +2,7 @@
 
 #include "Clock.h"
 #include "Event.h"
-#include "Win32/Window.h"
+#include "WinUtilities/Window.h"
 
 namespace Dar
 {
@@ -26,7 +26,7 @@ namespace Dar
 
 	private:
 		HINSTANCE							m_instanceHandle{};
-		Win32::Window						m_window;
+		WinUtilities::Window						m_window;
 		Clock								m_clock{};
 		Event<void(LONGLONG)>::InvokerType	m_onUpdateInvoker{};
 		Event<void(LONGLONG)>::InvokerType	m_onDrawInvoker{};
