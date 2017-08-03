@@ -29,6 +29,8 @@ void DarEngine::Game::Run()
 
 void DarEngine::Game::Exit()
 {
+	m_onExitInvoker();
+
 	m_isRunning = false;
 }
 
@@ -41,7 +43,7 @@ DarEngine::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowClassN
 void DarEngine::Game::Initialize()
 {
 	InitializeWindow();
-	InvokeOnInitialization();
+	m_onInitializationInvoker();
 
 	m_isRunning = true;
 }
@@ -89,16 +91,6 @@ void DarEngine::Game::InvokeOnUpdate() const
 }
 
 void DarEngine::Game::InvokeOnDraw() const
-{
-	//TODO: implement
-}
-
-void DarEngine::Game::InvokeOnInitialization() const
-{
-	//TODO: implement
-}
-
-void DarEngine::Game::InvokeOnExit() const
 {
 	//TODO: implement
 }

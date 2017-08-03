@@ -2,44 +2,51 @@
 
 //TODO: description, template arguments requirements
 //TODO: specialize std::hash and std::equal_to
-//TODO: move invocation out so users don't have to encapsulate this
 namespace DarEngine {
-	template<typename callable_type, template<typename, typename...> typename container_type = std::unordered_set>
-	class Event
+	template<typename callable_type>
+	class Event;
+
+	template<typename return_type, typename... args>
+	class Event<return_type(args...)>
 	{
 	public:
-		using CallbackType = std::function<callable_type>;
-		using ContainerType = container_type<CallbackType>;
+		using CallbackType	= std::function<return_type(args...)>;
+		using InvokerType	= std::function<void(args...)>;
+
+		explicit Event(InvokerType& out_invokerRef)
+		{
+			out_invokerRef = Invoke;
+		}
 
 		void	Subscribe(CallbackType callback);
 		void	Unsubscribe(CallbackType callback);
-		template<typename... Args>
-		void	Invoke(Args&&... arguments);
+		
 
 	private:
-		ContainerType container{};
+		std::unordered_set<CallbackType> callbacks{};
+
+		void	Invoke(args&&... arguments);
 	};
 
 
-	template <typename callable_type, template <typename, typename ...> class container_type>
-	void Event<callable_type, container_type>::Subscribe(CallbackType callback)
+	template <typename return_type, typename ... args>
+	void Event<return_type(args...)>::Subscribe(CallbackType callback)
 	{
-		container.insert(std::move(callback)); 
+		callbacks.insert(std::move(callback));
 	}
 
-	template <typename callable_type, template <typename, typename ...> class container_type>
-	void Event<callable_type, container_type>::Unsubscribe(CallbackType callback)
+	template <typename return_type, typename ... args>
+	void Event<return_type(args...)>::Unsubscribe(CallbackType callback)
 	{
-		container.erase(std::move(callback));
+		callbacks.erase(std::move(callback));
 	}
 
-	template <typename callable_type, template <typename, typename ...> class container_type>
-	template <typename ... Args>
-	void Event<callable_type, container_type>::Invoke(Args&&... arguments)
+	template <typename return_type, typename ... args>
+	void Event<return_type(args...)>::Invoke(args&&... arguments)
 	{
-		for (auto i : container)
+		for (auto i : callbacks)
 		{
-			i(std::forward<Args>(arguments)...);
+			i(std::forward<args>(arguments)...);
 		}
 	}
 }
