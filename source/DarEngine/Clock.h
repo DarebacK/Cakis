@@ -5,15 +5,15 @@ namespace DarEngine
 	class Clock
 	{
 	public:
-								Clock();
-								Clock(const Clock& other) = delete;
-								Clock(Clock&& other) noexcept = default;
-								Clock& operator=(const Clock& other) = delete;
-								Clock& operator=(Clock&& other) noexcept = default;
-								~Clock() = default;
+						Clock();
+						Clock(const Clock& other) = delete;
+						Clock(Clock&& other) noexcept = default;
+						Clock& operator=(const Clock& other) = delete;
+						Clock& operator=(Clock&& other) noexcept = default;
+						~Clock() = default;
 
-		void					Update();
-		void					Reset();
+		void			Update();
+		void			Reset();
 		
 	private:
 		LONGLONG		m_startTime{};

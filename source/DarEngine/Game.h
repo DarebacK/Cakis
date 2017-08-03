@@ -12,8 +12,8 @@ namespace DarEngine
 	class Game
 	{
 	public:
-		Event<void(LONGLONG)>	m_onUpdate{};
-		Event<void(LONGLONG)>	m_onDraw{};
+		Event<void(LONGLONG)>		m_onUpdate{};
+		Event<void(LONGLONG)>		m_onDraw{};
 		Event<void()>				m_onInitialization{};
 		Event<void()>				m_onExit{};
 
@@ -23,10 +23,8 @@ namespace DarEngine
 									Game& operator=(const Game& rhs) = delete;
 									Game& operator=(Game&& rhs) = default;
 									~Game() = default;
-		//HINSTANCE			GetInstanceHandle() const noexcept { return m_instanceHandle; }
-		//HWND				GetWindowHandle() const noexcept { return m_windowHandle; }
-		//const std::wstring&	GetWindowClassName() const noexcept { return m_windowClassName; }
-		//const std::wstring&	GetWindowTitle() const noexcept { return m_windowTitle; }
+		//HINSTANCE					GetInstanceHandle() const noexcept { return m_instanceHandle; }
+		const HWND					GetWindowHandle() const noexcept { return m_windowHandle; }
 		int							GetScreenWidth() const noexcept { return m_screenWidth; }
 		int							GetScreenHeight() const noexcept { return m_screenHeight; }
 		void						Run();

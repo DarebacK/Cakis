@@ -15,8 +15,8 @@ int WINAPI wWinMain(HINSTANCE instanceHandle, HINSTANCE previousInstanceHandle, 
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-
-	Game game{ instanceHandle, L"DemoGameClass", L"DarEngine Demo", showCommand };
+	std::wstring windowTitle{ L"DarEngine Demo" };
+	Game game{ instanceHandle, L"DemoGameClass", windowTitle, showCommand };
 	
 	try
 	{
@@ -24,7 +24,7 @@ int WINAPI wWinMain(HINSTANCE instanceHandle, HINSTANCE previousInstanceHandle, 
 	}
 	catch(Exception ex)
 	{
-		MessageBox(game.GetWindowHandle(), ex.message.c_str(), game.GetWindowTitle().c_str(), MB_ABORTRETRYIGNORE);
+		MessageBox(game.GetWindowHandle(), ex.message.c_str(), L"Fatal error", MB_ABORTRETRYIGNORE);
 	}
 
 	return 0;
