@@ -12,8 +12,8 @@ namespace DarEngine
 	class Game
 	{
 	public:
-		Event<void(const Time&)>	m_onUpdate{};
-		Event<void(const Time&)>	m_onDraw{};
+		Event<void(LONGLONG)>	m_onUpdate{};
+		Event<void(LONGLONG)>	m_onDraw{};
 		Event<void()>				m_onInitialization{};
 		Event<void()>				m_onExit{};
 
