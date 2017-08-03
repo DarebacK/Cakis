@@ -29,14 +29,17 @@ namespace DarEngine
 		void						Exit();
 
 	private:
+		static const int			windowDefaultWidth{ 800 };
+		static const int			windowDefaultHeight{ 600 };
+
 		HINSTANCE					m_instanceHandle{};
 		std::wstring				m_windowClassName{};
 		std::wstring				m_windowTitle{};
 		int							m_showCommand{};
 		HWND						m_windowHandle{};
 		WNDCLASSEX					m_window{};
-		int							m_windowWidth{};
-		int							m_windowHeight{};
+		int							m_windowWidth{ windowDefaultWidth };
+		int							m_windowHeight{ windowDefaultHeight };
 		bool						m_isRunning{ false };
 		Clock						m_clock{};
 

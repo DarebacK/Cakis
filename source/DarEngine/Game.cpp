@@ -40,10 +40,10 @@ DarEngine::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowClassN
 
 void DarEngine::Game::Initialize()
 {
-	m_isRunning = true;
-
 	InitializeWindow();
 	InvokeOnInitialization();
+
+	m_isRunning = true;
 }
 
 
@@ -65,12 +65,12 @@ void DarEngine::Game::InitializeWindow()
 
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-	POINT center;
-	center.x = (screenWidth - m_windowWidth) / 2;
-	center.y = (screenHeight - m_windowHeight) / 2;
+	POINT upperLeftCorner;
+	upperLeftCorner.x = (screenWidth - m_windowWidth) / 2;
+	upperLeftCorner.y = (screenHeight - m_windowHeight) / 2;
 
 	m_windowHandle = CreateWindow(m_windowClassName.c_str(), m_windowTitle.c_str(),
-		WS_OVERLAPPEDWINDOW, center.x, center.y, windowRectangle.right - windowRectangle.left,
+		WS_OVERLAPPEDWINDOW, upperLeftCorner.x, upperLeftCorner.y, windowRectangle.right - windowRectangle.left,
 		windowRectangle.bottom - windowRectangle.top,
 		nullptr, nullptr, m_instanceHandle, nullptr);
 
