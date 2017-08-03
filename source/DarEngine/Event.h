@@ -1,8 +1,8 @@
 #pragma once
 
 //TODO: description, template arguments requirements
-//TODO: specialize std::hash and std::equal_to
-namespace DarEngine {
+//TODO: specialize std::less
+namespace Dar {
 	template<typename callable_type>
 	class Event;
 

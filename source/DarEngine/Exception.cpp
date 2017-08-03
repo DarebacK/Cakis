@@ -2,17 +2,17 @@
 #include "Exception.h"
 
 
-DarEngine::Exception::Exception()
+Dar::Exception::Exception()
 	:message{}
 {
 }
 
-DarEngine::Exception::Exception(const std::wstring& message)
+Dar::Exception::Exception(const std::wstring& message)
 	:message{message}
 {
 }
 
-DarEngine::Exception::Exception(const wchar_t* message)
+Dar::Exception::Exception(const wchar_t* message)
 	:message{message}
 {
 }

@@ -9,7 +9,7 @@ namespace
 		LARGE_INTEGER frequency;
 		if (!QueryPerformanceFrequency(&frequency))
 		{
-			throw DarEngine::Exception{ L"QueryPerformanceFrequency() failed." };
+			throw Dar::Exception{ L"QueryPerformanceFrequency() failed." };
 		}
 		return frequency.QuadPart;
 	}
@@ -19,25 +19,25 @@ namespace
 		LARGE_INTEGER time;
 		if(!QueryPerformanceCounter(&time))
 		{
-			throw DarEngine::Exception{ L"QueryPerformanceCounter() failed." };
+			throw Dar::Exception{ L"QueryPerformanceCounter() failed." };
 		}
 		return time.QuadPart;
 	}
 }
 
-DarEngine::Clock::Clock()
+Dar::Clock::Clock()
 {
 	m_frequency = QueryFrequency();
 	Reset();
 }
 
-void DarEngine::Clock::Update()
+void Dar::Clock::Update()
 {
 	m_lastTime = m_actualTime;
 	m_actualTime = QueryTime();
 }
 
-void DarEngine::Clock::Reset()
+void Dar::Clock::Reset()
 {
 	m_startTime = QueryTime();
 	m_actualTime = m_startTime;

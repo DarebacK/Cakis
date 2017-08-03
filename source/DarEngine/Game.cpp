@@ -2,7 +2,7 @@
 #include "Game.h"
 #include "Exception.h"
 
-void DarEngine::Game::Run()
+void Dar::Game::Run()
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -10,7 +10,8 @@ void DarEngine::Game::Run()
 
 	try
 	{
-		Initialize();
+		m_window.Show();
+		m_isRunning = true;
 
 		while (m_isRunning)
 		{
@@ -20,91 +21,43 @@ void DarEngine::Game::Run()
 	}
 	catch (Exception ex)
 	{
-		MessageBox(m_windowHandle, ex.message.c_str(), L"Fatal error", MB_ABORTRETRYIGNORE);
+		MessageBox(m_window.GetHandle(), ex.message.c_str(), L"Fatal error", MB_ABORTRETRYIGNORE);
 		throw;	
 	}
 
 	Shutdown(); //TODO: call Shutdown before throw or not?
 }
 
-void DarEngine::Game::Exit()
+void Dar::Game::Exit()
 {
 	m_onExitInvoker();
 
 	m_isRunning = false;
 }
 
-DarEngine::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowClassName, const std::wstring& windowTitle, int showCommand)
-	:OnUpdate{ m_onUpdateInvoker }, OnDraw{ m_onDrawInvoker }, OnInitialization{ m_onInitializationInvoker }, OnExit{m_onExitInvoker}, 
-	m_instanceHandle(instanceHandle), m_windowClassName(windowClassName), m_windowTitle(windowTitle), m_showCommand(showCommand)
+Dar::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
+	:OnUpdate{ m_onUpdateInvoker }, OnDraw{ m_onDrawInvoker }, OnInitialization{ m_onInitializationInvoker }, OnExit{m_onExitInvoker},
+	m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}
 {
-
+	Initialize();
 }
 
-void DarEngine::Game::Initialize()
+void Dar::Game::Initialize()
 {
-	InitializeWindow();
 	m_onInitializationInvoker();
-
-	m_isRunning = true;
 }
 
-
-void DarEngine::Game::InitializeWindow()
-{
-	ZeroMemory(&m_window, sizeof(m_window));
-	m_window.cbSize = sizeof(WNDCLASSEX);
-	m_window.style = CS_CLASSDC;
-	m_window.lpfnWndProc = WndProc;
-	m_window.hInstance = m_instanceHandle;
-	m_window.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-	m_window.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
-	m_window.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	m_window.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
-	m_window.lpszClassName = m_windowClassName.c_str();
-	RECT windowRectangle = { 0, 0, m_clientAreaWidth, m_clientAreaHeight };
-	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
-	RegisterClassEx(&m_window);
-
-	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-	POINT upperLeftCorner;
-	upperLeftCorner.x = (screenWidth - m_clientAreaWidth) / 2;
-	upperLeftCorner.y = (screenHeight - m_clientAreaHeight) / 2;
-
-	m_windowHandle = CreateWindow(m_windowClassName.c_str(), m_windowTitle.c_str(),
-		WS_OVERLAPPEDWINDOW, upperLeftCorner.x, upperLeftCorner.y, windowRectangle.right - windowRectangle.left,
-		windowRectangle.bottom - windowRectangle.top,
-		nullptr, nullptr, m_instanceHandle, nullptr);
-
-	ShowWindow(m_windowHandle, m_showCommand);
-	UpdateWindow(m_windowHandle);
-}
-
-void DarEngine::Game::Shutdown()
+void Dar::Game::Shutdown()
 {
 	//TODO: implement
 }
 
-void DarEngine::Game::InvokeOnUpdate() const
+void Dar::Game::InvokeOnUpdate() const
 {
 	//TODO: implement
 }
 
-void DarEngine::Game::InvokeOnDraw() const
+void Dar::Game::InvokeOnDraw() const
 {
 	//TODO: implement
-}
-
-LRESULT DarEngine::Game::WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-	default:
-		return DefWindowProc(windowHandle, message, wParam, lParam);
-	}
-	
 }

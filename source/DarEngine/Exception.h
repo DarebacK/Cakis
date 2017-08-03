@@ -1,6 +1,6 @@
 #pragma once
 
-namespace DarEngine
+namespace Dar
 {
 	class Exception
 	{
