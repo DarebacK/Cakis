@@ -15,17 +15,20 @@ namespace DarEngine {
 
 		explicit Event(InvokerType& out_invoker)
 		{
-			out_invoker = Invoke;
+			out_invoker = [this](args&&... arguments)
+			{
+				for (auto i : callbacks)
+				{
+					i(std::forward<args>(arguments)...);
+				}
+			};
 		}
-
 		void	Subscribe(CallbackType callback);
 		void	Unsubscribe(CallbackType callback);
 		
 
 	private:
-		std::unordered_set<CallbackType> callbacks{};
-
-		void	Invoke(args&&... arguments);
+		std::set<CallbackType>	callbacks{};
 	};
 
 
@@ -39,14 +42,5 @@ namespace DarEngine {
 	void Event<return_type(args...)>::Unsubscribe(CallbackType callback)
 	{
 		callbacks.erase(std::move(callback));
-	}
-
-	template <typename return_type, typename ... args>
-	void Event<return_type(args...)>::Invoke(args&&... arguments)
-	{
-		for (auto i : callbacks)
-		{
-			i(std::forward<args>(arguments)...);
-		}
 	}
 }
