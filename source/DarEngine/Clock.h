@@ -12,10 +12,6 @@ namespace DarEngine
 								Clock& operator=(Clock&& other) noexcept = default;
 								~Clock() = default;
 
-		LONGLONG				GetStartTime() const;
-		LONGLONG				GetActualTime() const;
-		LONGLONG				GetLastTime() const;
-		LONGLONG				GetFrequency() const;
 		void					Update();
 		void					Reset();
 		
@@ -24,15 +20,14 @@ namespace DarEngine
 		LONGLONG		m_actualTime{};
 		LONGLONG		m_lastTime{};
 		LONGLONG		m_frequency{};
+
+		friend LONGLONG ComputeDeltaTime(const Clock& clock)
+		{
+			return (clock.m_actualTime - clock.m_lastTime) / clock.m_frequency;
+		}
+		friend LONGLONG ComputeTotalTime(const Clock& clock)
+		{
+			return (clock.m_actualTime - clock.m_startTime) / clock.m_frequency;
+		}
 	};
-
-	inline LONGLONG ComputeDeltaTime(const Clock& clock)
-	{
-		return (clock.GetActualTime() - clock.GetLastTime()) / clock.GetFrequency();
-	}
-
-	inline LONGLONG ComputeTotalTime(const Clock& clock)
-	{
-		return (clock.GetActualTime() - clock.GetStartTime()) / clock.GetFrequency();
-	}
 }

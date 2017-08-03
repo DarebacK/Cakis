@@ -28,28 +28,7 @@ namespace
 DarEngine::Clock::Clock()
 {
 	m_frequency = QueryFrequency();
-
 	Reset();
-}
-
-LONGLONG DarEngine::Clock::GetStartTime() const
-{
-	return m_startTime;
-}
-
-LONGLONG DarEngine::Clock::GetActualTime() const
-{
-	return m_actualTime;
-}
-
-LONGLONG DarEngine::Clock::GetLastTime() const
-{
-	return m_lastTime;
-}
-
-LONGLONG DarEngine::Clock::GetFrequency() const
-{
-	return m_frequency;
 }
 
 void DarEngine::Clock::Update()
