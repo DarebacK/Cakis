@@ -23,8 +23,8 @@ namespace DarEngine
 									Game& operator=(Game&& rhs) = default;
 									~Game() = default;
 
-		int							GetScreenWidth() const noexcept { return m_screenWidth; }
-		int							GetScreenHeight() const noexcept { return m_screenHeight; }
+		int							GetWindowWidth() const noexcept { return m_windowWidth; }
+		int							GetWindowHeight() const noexcept { return m_windowHeight; }
 		void						Run();
 		void						Exit();
 
@@ -34,17 +34,19 @@ namespace DarEngine
 		std::wstring				m_windowTitle{};
 		int							m_showCommand{};
 		HWND						m_windowHandle{};
-		int							m_screenWidth{};
-		int							m_screenHeight{};
+		WNDCLASSEX					m_window{};
+		int							m_windowWidth{};
+		int							m_windowHeight{};
 		bool						m_isRunning{ false };
 		Clock						m_clock{};
 
 		void						Initialize();
+		void						InitializeWindow();
 		void						Shutdown();
 		void						InvokeOnUpdate() const;
 		void						InvokeOnDraw() const;
 		void						InvokeOnInitialization() const;
 		void						InvokeOnExit() const;
-		static	LRESULT WINAPI		WndProc(HWND windowHandle, UINT message, WPARAM, LPARAM lParam);
+		static	LRESULT WINAPI		WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam);
 	};
 }

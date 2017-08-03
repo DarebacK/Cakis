@@ -42,9 +42,40 @@ void DarEngine::Game::Initialize()
 {
 	m_isRunning = true;
 
-
-
+	InitializeWindow();
 	InvokeOnInitialization();
+}
+
+
+void DarEngine::Game::InitializeWindow()
+{
+	ZeroMemory(&m_window, sizeof(m_window));
+	m_window.cbSize = sizeof(WNDCLASSEX);
+	m_window.style = CS_CLASSDC;
+	m_window.lpfnWndProc = WndProc;
+	m_window.hInstance = m_instanceHandle;
+	m_window.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+	m_window.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
+	m_window.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	m_window.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
+	m_window.lpszClassName = m_windowClassName.c_str();
+	RECT windowRectangle = { 0, 0, m_windowWidth, m_windowHeight };
+	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
+	RegisterClassEx(&m_window);
+
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	POINT center;
+	center.x = (screenWidth - m_windowWidth) / 2;
+	center.y = (screenHeight - m_windowHeight) / 2;
+
+	m_windowHandle = CreateWindow(m_windowClassName.c_str(), m_windowTitle.c_str(),
+		WS_OVERLAPPEDWINDOW, center.x, center.y, windowRectangle.right - windowRectangle.left,
+		windowRectangle.bottom - windowRectangle.top,
+		nullptr, nullptr, m_instanceHandle, nullptr);
+
+	ShowWindow(m_windowHandle, m_showCommand);
+	UpdateWindow(m_windowHandle);
 }
 
 void DarEngine::Game::Shutdown()
@@ -72,6 +103,15 @@ void DarEngine::Game::InvokeOnExit() const
 	//TODO: implement
 }
 
-LRESULT DarEngine::Game::WndProc(HWND windowHandle, UINT message, WPARAM, LPARAM lParam)
+LRESULT DarEngine::Game::WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	switch (message)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	default:
+		return DefWindowProc(windowHandle, message, wParam, lParam);
+	}
+	
 }
