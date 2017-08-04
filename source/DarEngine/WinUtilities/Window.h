@@ -19,7 +19,7 @@ namespace DE
 			void	Show() const;
 
 		private:
-			static const int		clientAreaDefaultWidth{ 1024 };
+			static const int		clientAreaDefaultWidth{ 1366 };
 			static const int		clientAreaDefaultHeight{ 768 };
 
 			HWND					m_handle{};

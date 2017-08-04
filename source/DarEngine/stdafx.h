@@ -9,7 +9,7 @@
 #include "targetver.h"
 
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-#include "Windows.h"
+#include <Windows.h>
 
 #if defined(DEBUG) || defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
@@ -18,6 +18,7 @@
 #endif
 
 #include <wrl.h>
+#include <d3d11_4.h>
 #pragma endregion
 
 #pragma region STL

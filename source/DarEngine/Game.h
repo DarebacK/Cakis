@@ -28,6 +28,10 @@ namespace DE
 		Microsoft::WRL::ComPtr<ID3D11Device>		m_d3dDevice;
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext>	m_d3dDeviceContext;
 		D3D_FEATURE_LEVEL							m_d3dFeatureLevel{};
+		UINT										m_d3dMultiSamplingCount{ 4 };
+		UINT										m_d3dMultiSamplingQualityLevelCount{};
+		bool										m_d3disMultiSamplingEnabled{ true };
+		Microsoft::WRL::ComPtr<IDXGISwapChain1>		m_dxgiSwapChain;
 
 		void								Initialize();
 		void								InitializeD3D();
