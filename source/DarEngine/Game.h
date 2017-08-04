@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Clock.h"
-#include "Event.h"
 #include "WinUtilities/Window.h"
 
 namespace Dar
@@ -10,11 +9,6 @@ namespace Dar
 	class Game
 	{
 	public:
-		Event<void(LONGLONG)>	OnUpdate;
-		Event<void(LONGLONG)>	OnDraw;
-		Event<void()>			OnInitialization;
-		Event<void()>			OnExit;
-
 								Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand);
 								Game(const Game& other) = delete;
 								Game(Game&& other) = default;
@@ -26,12 +20,8 @@ namespace Dar
 
 	private:
 		HINSTANCE							m_instanceHandle{};
-		WinUtilities::Window						m_window;
+		WinUtilities::Window				m_window;
 		Clock								m_clock{};
-		Event<void(LONGLONG)>::InvokerType	m_onUpdateInvoker{};
-		Event<void(LONGLONG)>::InvokerType	m_onDrawInvoker{};
-		Event<void()>::InvokerType			m_onInitializationInvoker{};
-		Event<void()>::InvokerType			m_onExitInvoker{};
 		bool								m_isRunning{ false };
 
 		void								Initialize();

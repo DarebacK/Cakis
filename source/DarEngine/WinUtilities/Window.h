@@ -7,7 +7,6 @@ namespace Dar
 		class Window
 		{
 		public:
-
 					Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand);
 
 					Window(const Window& other) = delete;
@@ -22,18 +21,20 @@ namespace Dar
 			void	Show() const;
 
 		private:
-			static const int	clientAreaDefaultWidth{ 800 };
-			static const int	clientAreaDefaultHeight{ 600 };
+			static const int		clientAreaDefaultWidth{ 1024 };
+			static const int		clientAreaDefaultHeight{ 768 };
 
-			HWND				m_handle{};
-			WNDCLASSEX			m_class{};
-			std::wstring		m_className{};
-			std::wstring		m_title{};
-			int					m_showCommand{};
-			int					m_clientAreaWidth{ clientAreaDefaultWidth };
-			int					m_clientAreaHeight{ clientAreaDefaultHeight };
+			HWND					m_handle{};
+			WNDCLASSEX				m_class{};
+			std::wstring			m_className{};
+			std::wstring			m_title{};
+			int						m_showCommand{};
+			int						m_clientAreaWidth{ clientAreaDefaultWidth };
+			int						m_clientAreaHeight{ clientAreaDefaultHeight };
 
 			static	LRESULT WINAPI	WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam);
+			void					InitializeClass(HINSTANCE instanceHandle);
+			HWND					InitializeWindow(HINSTANCE instanceHandle);
 		};
 	}
 }

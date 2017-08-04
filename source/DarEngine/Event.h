@@ -11,17 +11,11 @@ namespace Dar {
 	{
 	public:
 		using CallbackType	= std::function<return_type(args...)>;
-		using InvokerType	= std::function<void(args...)>;
+		using InvokerType	= return_type((Event<return_type(args...)>::*)(args...));
 
-		explicit Event(InvokerType& out_invoker)
+		explicit Event(InvokerType out_invoker)
 		{
-			out_invoker = [this](args&&... arguments)
-			{
-				for (auto i : callbacks)
-				{
-					i(std::forward<args>(arguments)...);
-				}
-			};
+			out_invoker = std::ref(std::bind(&Event<return_type(args...)>::Invoke, this));
 		}
 		void	Subscribe(CallbackType callback);
 		void	Unsubscribe(CallbackType callback);
@@ -29,6 +23,8 @@ namespace Dar {
 
 	private:
 		std::set<CallbackType>	callbacks{};
+
+		void Invoke(args... arguments);
 	};
 
 
@@ -42,5 +38,14 @@ namespace Dar {
 	void Event<return_type(args...)>::Unsubscribe(CallbackType callback)
 	{
 		callbacks.erase(std::move(callback));
+	}
+
+	template <typename return_type, typename ... args>
+	void Event<return_type(args...)>::Invoke(args... arguments)
+	{
+		for (auto i : callbacks)
+		{
+			i(std::forward<args>(arguments)...);
+		}
 	}
 }

@@ -10,7 +10,7 @@ void Dar::Game::Run()
 
 	try
 	{
-		m_window.Show();
+		Initialize();
 		m_isRunning = true;
 
 		while (m_isRunning)
@@ -30,21 +30,18 @@ void Dar::Game::Run()
 
 void Dar::Game::Exit()
 {
-	m_onExitInvoker();
-
 	m_isRunning = false;
 }
 
 Dar::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
-	:OnUpdate{ m_onUpdateInvoker }, OnDraw{ m_onDrawInvoker }, OnInitialization{ m_onInitializationInvoker }, OnExit{m_onExitInvoker},
-	m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}
+	:m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}
 {
-	Initialize();
 }
 
 void Dar::Game::Initialize()
 {
-	m_onInitializationInvoker();
+	m_window.Show();
+	m_clock.Reset();
 }
 
 void Dar::Game::Shutdown()
