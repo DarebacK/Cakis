@@ -2,6 +2,7 @@
 
 #include "Clock.h"
 #include "WinUtilities/Window.h"
+#include <d3d11.h>
 
 namespace DE
 {
@@ -23,8 +24,13 @@ namespace DE
 		WinUtilities::Window				m_window;
 		Clock								m_clock{};
 		bool								m_isRunning{ false };
+		// D3D attributes TODO: extract them to one class
+		Microsoft::WRL::ComPtr<ID3D11Device>		m_d3dDevice;
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext>	m_d3dDeviceContext;
+		D3D_FEATURE_LEVEL							m_d3dFeatureLevel{};
 
 		void								Initialize();
+		void								InitializeD3D();
 		void								RunGameLoop();
 		void								Shutdown();
 	};

@@ -16,12 +16,15 @@
 #include <stdlib.h>
 #include <crtdbg.h>
 #endif
+
+#include <wrl.h>
 #pragma endregion
 
 #pragma region STL
 #include <string>
 #include <exception>
 #include <functional>
+#include <array>
 #include <set>
 #pragma endregion
 
