@@ -2,7 +2,7 @@
 #include "Game.h"
 #include "Exception.h"
 
-void Dar::Game::Run()
+void DE::Game::Run()
 {
 	try
 	{
@@ -18,12 +18,12 @@ void Dar::Game::Run()
 	Shutdown(); //TODO: call Shutdown before throw or not?
 }
 
-void Dar::Game::Exit()
+void DE::Game::Exit()
 {
 	m_isRunning = false;
 }
 
-Dar::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
+DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
 	:m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}
 {
 #if defined(DEBUG) || defined(_DEBUG)
@@ -31,13 +31,13 @@ Dar::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int s
 #endif
 }
 
-void Dar::Game::Initialize()
+void DE::Game::Initialize()
 {
 	m_window.Show();
 	m_clock.Reset();
 }
 
-void Dar::Game::RunGameLoop()
+void DE::Game::RunGameLoop()
 {
 	m_isRunning = true;
 
@@ -60,7 +60,7 @@ void Dar::Game::RunGameLoop()
 	}
 }
 
-void Dar::Game::Shutdown()
+void DE::Game::Shutdown()
 {
 	//TODO: implement
 }

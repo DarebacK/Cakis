@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Dar {
+namespace DE {
 	template<typename callable_type>
 	class Event;
 
@@ -11,20 +11,13 @@ namespace Dar {
 		using CallbackType	= std::function<return_type(args...)>;
 		using InvokerType	= return_type((Event<return_type(args...)>::*)(args...));
 
-		explicit Event(InvokerType out_invoker)
-		{
-			out_invoker = std::ref(std::bind(&Event<return_type(args...)>::Invoke, this));
-		}
+		void	Invoke(args... arguments);
 		void	Subscribe(CallbackType callback);
 		void	Unsubscribe(CallbackType callback);
 		
-
 	private:
 		std::set<CallbackType>	callbacks{};
-
-		void Invoke(args... arguments);
 	};
-
 
 	template <typename return_type, typename ... args>
 	void Event<return_type(args...)>::Subscribe(CallbackType callback)

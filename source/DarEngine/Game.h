@@ -3,7 +3,7 @@
 #include "Clock.h"
 #include "WinUtilities/Window.h"
 
-namespace Dar
+namespace DE
 {
 
 	class Game

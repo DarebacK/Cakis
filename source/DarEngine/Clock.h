@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Dar
+namespace DE
 {
 	class Clock
 	{
