@@ -4,20 +4,10 @@
 
 void Dar::Game::Run()
 {
-#if defined(DEBUG) || defined(_DEBUG)
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
-
 	try
 	{
 		Initialize();
-		m_isRunning = true;
-
-		while (m_isRunning)
-		{
-			InvokeOnUpdate();
-			InvokeOnDraw();
-		}
+		RunGameLoop();
 	}
 	catch (Exception ex)
 	{
@@ -36,12 +26,38 @@ void Dar::Game::Exit()
 Dar::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
 	:m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}
 {
+#if defined(DEBUG) || defined(_DEBUG)
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 }
 
 void Dar::Game::Initialize()
 {
 	m_window.Show();
 	m_clock.Reset();
+}
+
+void Dar::Game::RunGameLoop()
+{
+	m_isRunning = true;
+
+	MSG message;
+	ZeroMemory(&message, sizeof(message));
+
+	while (message.message != WM_QUIT)
+	{
+		if (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+		else
+		{
+			m_clock.Update();
+			auto deltaTime = ComputeDeltaTime(m_clock);
+			//TODO: update and draw
+		}
+	}
 }
 
 void Dar::Game::Shutdown()
