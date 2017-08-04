@@ -55,6 +55,7 @@ void Dar::Game::RunGameLoop()
 		{
 			m_clock.Update();
 			auto deltaTime = ComputeDeltaTime(m_clock);
+
 			//TODO: update and draw
 		}
 	}
