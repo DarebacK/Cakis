@@ -64,13 +64,3 @@ void Dar::Game::Shutdown()
 {
 	//TODO: implement
 }
-
-void Dar::Game::InvokeOnUpdate() const
-{
-	//TODO: implement
-}
-
-void Dar::Game::InvokeOnDraw() const
-{
-	//TODO: implement
-}

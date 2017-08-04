@@ -27,8 +27,6 @@ namespace Dar
 		void								Initialize();
 		void								RunGameLoop();
 		void								Shutdown();
-		void								InvokeOnUpdate() const;
-		void								InvokeOnDraw() const;
 	};
 
 
