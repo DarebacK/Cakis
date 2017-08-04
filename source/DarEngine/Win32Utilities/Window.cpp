@@ -2,20 +2,20 @@
 #include "Game.h"
 #include "Window.h"
 
-DE::WinUtilities::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand)
+DE::Win32Utilities::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand)
 	:m_className{title + L"_class"}, m_title{ title }, m_showCommand{ showCommand }
 {
 	InitializeClass(instanceHandle);
 	m_handle = InitializeWindow(instanceHandle);
 }
 
-void DE::WinUtilities::Window::Show() const
+void DE::Win32Utilities::Window::Show() const
 {
 	ShowWindow(m_handle, m_showCommand);
 	UpdateWindow(m_handle);
 }
 
-LRESULT DE::WinUtilities::Window::WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT DE::Win32Utilities::Window::WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
@@ -28,7 +28,7 @@ LRESULT DE::WinUtilities::Window::WndProc(HWND windowHandle, UINT message, WPARA
 
 }
 
-void DE::WinUtilities::Window::InitializeClass(HINSTANCE instanceHandle)
+void DE::Win32Utilities::Window::InitializeClass(HINSTANCE instanceHandle)
 {
 	ZeroMemory(&m_class, sizeof(m_class));
 	m_class.cbSize = sizeof(WNDCLASSEX);
@@ -43,7 +43,7 @@ void DE::WinUtilities::Window::InitializeClass(HINSTANCE instanceHandle)
 	RegisterClassEx(&m_class);
 }
 
-HWND DE::WinUtilities::Window::InitializeWindow(HINSTANCE instanceHandle)
+HWND DE::Win32Utilities::Window::InitializeWindow(HINSTANCE instanceHandle)
 {
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);

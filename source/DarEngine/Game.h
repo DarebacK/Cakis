@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Clock.h"
-#include "WinUtilities/Window.h"
-#include <d3d11.h>
+#include "Win32Utilities/Window.h"
 
 namespace DE
 {
@@ -21,7 +20,7 @@ namespace DE
 
 	private:
 		HINSTANCE							m_instanceHandle{};
-		WinUtilities::Window				m_window;
+		Win32Utilities::Window				m_window;
 		Clock								m_clock{};
 		bool								m_isRunning{ false };
 		// D3D attributes TODO: extract them to one class

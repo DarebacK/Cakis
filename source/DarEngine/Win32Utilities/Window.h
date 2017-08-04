@@ -2,7 +2,7 @@
 
 namespace DE
 {
-	namespace WinUtilities
+	namespace Win32Utilities
 	{
 		class Window
 		{

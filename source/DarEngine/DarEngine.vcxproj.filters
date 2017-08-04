@@ -33,7 +33,7 @@
     <ClInclude Include="Event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WinUtilities\Window.h">
+    <ClInclude Include="Win32Utilities\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,7 +50,7 @@
     <ClCompile Include="Clock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WinUtilities\Window.cpp">
+    <ClCompile Include="Win32Utilities\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
