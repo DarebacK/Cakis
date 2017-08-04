@@ -1,7 +1,5 @@
 #pragma once
 
-//TODO: description, template arguments requirements
-//TODO: specialize std::less
 namespace Dar {
 	template<typename callable_type>
 	class Event;
