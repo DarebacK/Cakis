@@ -9,6 +9,12 @@ DE::Utilities::Win32::Window::Window(HINSTANCE instanceHandle, const std::wstrin
 	InitializeWindow(instanceHandle);
 }
 
+DE::Utilities::Win32::Window::~Window()
+{
+	DestroyWindow(m_handle);
+	UnregisterClass(m_className.c_str(), m_class.hInstance);
+}
+
 void DE::Utilities::Win32::Window::Show() const
 {
 	ShowWindow(m_handle, m_showCommand);

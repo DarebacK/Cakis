@@ -14,13 +14,11 @@ void DE::Game::Run()
 		MessageBox(m_window.GetHandle(), ex.message.c_str(), L"Fatal error", MB_ABORTRETRYIGNORE);
 		throw;	
 	}
-
-	Shutdown(); //TODO: call Shutdown before throw or not?
 }
 
 void DE::Game::Exit()
 {
-	m_isRunning = false;
+	PostQuitMessage(0);
 }
 
 DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
@@ -40,8 +38,6 @@ void DE::Game::Initialize()
 
 void DE::Game::RunGameLoop()
 {
-	m_isRunning = true;
-
 	MSG message;
 	ZeroMemory(&message, sizeof(message));
 
@@ -59,9 +55,4 @@ void DE::Game::RunGameLoop()
 			//TODO: update and draw
 		}
 	}
-}
-
-void DE::Game::Shutdown()
-{
-	//TODO: implement
 }

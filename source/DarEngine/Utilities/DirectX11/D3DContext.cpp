@@ -15,6 +15,14 @@ DE::Utilities::DirectX11::D3DContext::D3DContext(const Win32::Window& window)
 	SetupViewPort(window);
 }
 
+DE::Utilities::DirectX11::D3DContext::~D3DContext()
+{
+	if (m_d3dDeviceContext != nullptr)
+	{
+		m_d3dDeviceContext->ClearState();
+	}
+}
+
 void DE::Utilities::DirectX11::D3DContext::InitializeDevice()
 {
 	UINT createDeviceFlags = 0;

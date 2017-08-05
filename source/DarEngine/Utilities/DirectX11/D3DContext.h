@@ -21,6 +21,7 @@ namespace DirectX11
 		D3DContext&	operator=(const D3DContext& rhs) = delete;
 					D3DContext(D3DContext&& other) = default;
 		D3DContext&	operator=(D3DContext&& rhs) = default;
+					~D3DContext();
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D11Device>			m_d3dDevice{ nullptr };
@@ -29,11 +30,11 @@ namespace DirectX11
 		UINT											m_d3dMultiSamplingCount{ 4 };
 		UINT											m_d3dMultiSamplingQualityLevelCount{ 0 };
 		bool											m_d3disMultiSamplingEnabled{ true };
+		Microsoft::WRL::ComPtr<IDXGISwapChain1>			m_dxgiSwapChain{ nullptr };
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>	m_d3dRenderTargetView{ nullptr };
 		Microsoft::WRL::ComPtr<ID3D11Texture2D>			m_d3dDepthStencilBuffer{ nullptr };
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilView>	m_d3dDepthStencilView{ nullptr };
 		D3D11_VIEWPORT									m_d3dViewport{};
-		Microsoft::WRL::ComPtr<IDXGISwapChain1>			m_dxgiSwapChain{ nullptr };
 
 		void											InitializeDevice();
 		void											CheckMultiSamplingQualityLevels();

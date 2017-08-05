@@ -6,7 +6,6 @@
 
 namespace DE
 {
-
 	class Game
 	{
 	public:
@@ -24,12 +23,9 @@ namespace DE
 		Utilities::Win32::Window			m_window;
 		Utilities::DirectX11::D3DContext	m_d3dContext;
 		Clock								m_clock{};
-		bool								m_isRunning{ false };
 		
-
 		void								Initialize();
 		void								RunGameLoop();
-		void								Shutdown();
 	};
 
 

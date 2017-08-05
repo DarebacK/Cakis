@@ -14,13 +14,14 @@ namespace Win32
 		Window& operator=(const Window& other) = delete;
 				Window(Window&& other) noexcept = default;
 		Window& operator=(Window&& other) noexcept = default;
-				~Window() = default;
-		HWND	GetHandle() const { return m_handle; }
-		int		GetClientAreaWidth() const { return m_clientAreaWidth; }
-		int		GetClientAreaHeight() const { return m_clientAreaHeight; }
+				~Window();
+		HWND	GetHandle() const noexcept { return m_handle; }
+		int		GetClientAreaWidth() const noexcept { return m_clientAreaWidth; }
+		int		GetClientAreaHeight() const noexcept { return m_clientAreaHeight; }
 		void	Show() const;
 
 	private:
+		//TODO: move this to namespace as global (namespace) constant
 		static const int		clientAreaDefaultWidth{ 1366 };
 		static const int		clientAreaDefaultHeight{ 768 };
 
