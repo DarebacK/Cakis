@@ -136,7 +136,8 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Win32Utilities\Window.h" />
+    <ClInclude Include="Utilities\DirectX11\D3DContext.h" />
+    <ClInclude Include="Utilities\Win32\Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Clock.cpp" />
@@ -148,7 +149,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Win32Utilities\Window.cpp" />
+    <ClCompile Include="Utilities\DirectX11\D3DContext.cpp" />
+    <ClCompile Include="Utilities\Win32\Window.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
