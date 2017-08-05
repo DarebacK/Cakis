@@ -11,9 +11,9 @@ namespace Win32
 	public:
 				Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand);
 				Window(const Window& other) = delete;
+		Window& operator=(const Window& other) = delete;
 				Window(Window&& other) noexcept = default;
-				Window& operator=(const Window& other) = delete;
-				Window& operator=(Window&& other) noexcept = default;
+		Window& operator=(Window&& other) noexcept = default;
 				~Window() = default;
 		HWND	GetHandle() const { return m_handle; }
 		int		GetClientAreaWidth() const { return m_clientAreaWidth; }

@@ -19,13 +19,18 @@
 
 #include <wrl.h>
 #include <d3d11_4.h>
+#include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 #pragma endregion
 
 #pragma region STL
 #include <string>
 #include <exception>
 #include <functional>
+#include <memory>
+#include <vector>
 #include <array>
 #include <set>
+#include <map>
 #pragma endregion
 
