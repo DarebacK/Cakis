@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Game.h"
-#include "Exception.h"
+#include "Diagnostics/Exception.h"
 
 void DE::Game::Run()
 {
@@ -9,7 +9,7 @@ void DE::Game::Run()
 		Initialize();
 		RunGameLoop();
 	}
-	catch (Exception ex)
+	catch (Diagnostics::Exception ex)
 	{
 		MessageBox(m_window.GetHandle(), ex.message.c_str(), L"Fatal error", MB_ABORTRETRYIGNORE);
 		throw;	

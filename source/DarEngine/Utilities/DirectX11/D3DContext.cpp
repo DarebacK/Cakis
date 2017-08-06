@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "D3DContext.h"
-#include "Exception.h"
+#include "Diagnostics/Exception.h"
 #include "Utilities/Win32/Window.h"
 
 
@@ -43,7 +43,7 @@ void DE::Utilities::DirectX11::D3DContext::InitializeDevice()
 			D3D11_SDK_VERSION, m_d3dDevice.GetAddressOf(), &m_d3dFeatureLevel,
 			m_d3dDeviceContext.GetAddressOf())))
 		{
-			throw Exception{ L"D3D11CreateDevice() failed" };
+			throw Diagnostics::Exception{ L"D3D11CreateDevice() failed" };
 		}
 	}
 }
@@ -54,7 +54,7 @@ void DE::Utilities::DirectX11::D3DContext::CheckMultiSamplingQualityLevels()
 		m_d3dMultiSamplingCount, &m_d3dMultiSamplingQualityLevelCount);
 	if (m_d3dMultiSamplingQualityLevelCount == 0)
 	{
-		throw Exception{ L"Unsupported multi-sampling quality" };
+		throw Diagnostics::Exception{ L"Unsupported multi-sampling quality" };
 	}
 }
 
@@ -85,27 +85,27 @@ void DE::Utilities::DirectX11::D3DContext::InitializeSwapChain(const Win32::Wind
 	if (FAILED(hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice),
 		reinterpret_cast< void**>(dxgiDevice.GetAddressOf()))))
 	{
-		throw Exception{ L"ID3D11Device::QueryInterface() failed" };
+		throw Diagnostics::Exception{ L"ID3D11Device::QueryInterface() failed" };
 	}
 
 	Microsoft::WRL::ComPtr<IDXGIAdapter> dxgiAdapter{};
 	if (FAILED(hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter),
 		reinterpret_cast< void**>(dxgiAdapter.GetAddressOf()))))
 	{
-		throw Exception{ L"IDXGIDevice::GetParent() failed" };
+		throw Diagnostics::Exception{ L"IDXGIDevice::GetParent() failed" };
 	}
 
 	Microsoft::WRL::ComPtr<IDXGIFactory2> dxgiFactory{};
 	if (FAILED(hr = dxgiAdapter->GetParent(__uuidof(IDXGIFactory2),
 		reinterpret_cast< void**>(dxgiFactory.GetAddressOf()))))
 	{
-		throw Exception{ L"IDXGIAdapter::GetParent() failed" };
+		throw Diagnostics::Exception{ L"IDXGIAdapter::GetParent() failed" };
 	}
 
 	if (FAILED(hr = dxgiFactory->CreateSwapChainForHwnd(dxgiDevice.Get(),
 		window.GetHandle(), &swapChainDesc, NULL, NULL, m_dxgiSwapChain.GetAddressOf())))
 	{
-		throw Exception{ L"IDXGIFactory2::CreateSwapChainForHwnd() failed" };
+		throw Diagnostics::Exception{ L"IDXGIFactory2::CreateSwapChainForHwnd() failed" };
 	}
 }
 
@@ -117,13 +117,13 @@ void DE::Utilities::DirectX11::D3DContext::InitializeRenderTargetView()
 	if (FAILED(hr = m_dxgiSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
 		reinterpret_cast< void**>(backBuffer.GetAddressOf()))))
 	{
-		throw Exception{ L"IDXGISwapChain::GetBuffer() failed." };
+		throw Diagnostics::Exception{ L"IDXGISwapChain::GetBuffer() failed." };
 	}
 
 	if (FAILED(hr = m_d3dDevice->CreateRenderTargetView(backBuffer.Get(),
 		nullptr, m_d3dRenderTargetView.GetAddressOf())))
 	{
-		throw Exception{ L"IDXGIDevice::CreateRenderTargetView() failed." };
+		throw Diagnostics::Exception{ L"IDXGIDevice::CreateRenderTargetView() failed." };
 	}
 }
 
@@ -154,12 +154,12 @@ void DE::Utilities::DirectX11::D3DContext::InitializeDepthStencilView(const Win3
 	if (FAILED(hr = m_d3dDevice->CreateTexture2D(&depthStencilDesc,
 		nullptr, m_d3dDepthStencilBuffer.GetAddressOf())))
 	{
-		throw Exception{ L"IDXGIDevice::CreateTexture2D() failed." };
+		throw Diagnostics::Exception{ L"IDXGIDevice::CreateTexture2D() failed." };
 	}
 	if (FAILED(hr = m_d3dDevice->CreateDepthStencilView(m_d3dDepthStencilBuffer.Get(), nullptr,
 		m_d3dDepthStencilView.GetAddressOf())))
 	{
-		throw Exception{ L"IDXGIDevice::CreateDepthStencilView() failed." };
+		throw Diagnostics::Exception{ L"IDXGIDevice::CreateDepthStencilView() failed." };
 	}
 }
 

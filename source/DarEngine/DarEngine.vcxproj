@@ -131,8 +131,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Clock.h" />
+    <ClInclude Include="Diagnostics\Exception.h" />
     <ClInclude Include="Event.h" />
-    <ClInclude Include="Exception.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -141,7 +141,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Clock.cpp" />
-    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="Diagnostics\Exception.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -2,6 +2,8 @@
 
 namespace DE
 {
+namespace Diagnostics
+{	
 	class Exception
 	{
 	public:
@@ -12,4 +14,5 @@ namespace DE
 		explicit Exception(const wchar_t* message);
 		virtual ~Exception() = default;
 	};
+}
 }

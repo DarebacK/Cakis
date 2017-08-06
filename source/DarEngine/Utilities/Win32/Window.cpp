@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "Window.h"
 
+//TODO: exceptions
 DE::Utilities::Win32::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand)
 	:m_className{title + L"_class"}, m_title{ title }, m_showCommand{ showCommand }
 {

@@ -18,6 +18,9 @@
     <Filter Include="Source Files\Utilities\DirectX11">
       <UniqueIdentifier>{227a15b7-13c5-4b1b-8fcf-f7eee40dbabc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Diagnostics">
+      <UniqueIdentifier>{615b466a-027a-481e-a5a7-ebe974806da1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\Win32\Window.h">
@@ -27,9 +30,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Event.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Exception.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Game.h">
@@ -44,12 +44,12 @@
     <ClInclude Include="Utilities\DirectX11\D3DContext.h">
       <Filter>Source Files\Utilities\DirectX11</Filter>
     </ClInclude>
+    <ClInclude Include="Diagnostics\Exception.h">
+      <Filter>Source Files\Diagnostics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Exception.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Game.cpp">
@@ -63,6 +63,9 @@
     </ClCompile>
     <ClCompile Include="Utilities\DirectX11\D3DContext.cpp">
       <Filter>Source Files\Utilities\DirectX11</Filter>
+    </ClCompile>
+    <ClCompile Include="Diagnostics\Exception.cpp">
+      <Filter>Source Files\Diagnostics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

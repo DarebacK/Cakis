@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Clock.h"
-#include "Exception.h"
+#include "Diagnostics/Exception.h"
 
 namespace
 {
@@ -9,7 +9,7 @@ namespace
 		LARGE_INTEGER frequency;
 		if (!QueryPerformanceFrequency(&frequency))
 		{
-			throw DE::Exception{ L"QueryPerformanceFrequency() failed." };
+			throw DE::Diagnostics::Exception{ L"QueryPerformanceFrequency() failed." };
 		}
 		return frequency.QuadPart;
 	}
@@ -19,7 +19,7 @@ namespace
 		LARGE_INTEGER time;
 		if(!QueryPerformanceCounter(&time))
 		{
-			throw DE::Exception{ L"QueryPerformanceCounter() failed." };
+			throw DE::Diagnostics::Exception{ L"QueryPerformanceCounter() failed." };
 		}
 		return time.QuadPart;
 	}
