@@ -1,18 +1,21 @@
 #include "stdafx.h"
 #include "D3DContext.h"
 #include "Diagnostics/Exception.h"
-#include "Utilities/Win32/Window.h"
 
-
-DE::Utilities::DirectX11::D3DContext::D3DContext(const Win32::Window& window)
+DE::Utilities::DirectX11::D3DContext::D3DContext(const HWND windowHandle, int clientAreaWidth, int clientAreaHeight)
 {
+	if(!windowHandle)
+	{
+		throw Diagnostics::Exception{ L"D3DContext(HWND, int, int) failed, windowHandle is nullptr." };
+	}
+
 	InitializeDevice();
 	CheckMultiSamplingQualityLevels();
-	InitializeSwapChain(window);
+	InitializeSwapChain(windowHandle, clientAreaWidth, clientAreaHeight);
 	InitializeRenderTargetView();
-	InitializeDepthStencilView(window);
+	InitializeDepthStencilView(clientAreaWidth, clientAreaHeight);
 	BindViewsToOutputMerger();
-	SetupViewPort(window);
+	SetupViewPort(clientAreaWidth, clientAreaHeight);
 }
 
 DE::Utilities::DirectX11::D3DContext::~D3DContext()
@@ -58,14 +61,14 @@ void DE::Utilities::DirectX11::D3DContext::CheckMultiSamplingQualityLevels()
 	}
 }
 
-void DE::Utilities::DirectX11::D3DContext::InitializeSwapChain(const Win32::Window& window)
+void DE::Utilities::DirectX11::D3DContext::InitializeSwapChain(const HWND windowHandle, int clientAreaWidth, int clientAreaHeight)
 { 
 	HRESULT hr;
 
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc;
 	ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
-	swapChainDesc.Width = window.GetClientAreaWidth();
-	swapChainDesc.Height = window.GetClientAreaHeight();
+	swapChainDesc.Width = clientAreaWidth;
+	swapChainDesc.Height = clientAreaHeight;
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	if (m_d3disMultiSamplingEnabled)
 	{
@@ -103,7 +106,7 @@ void DE::Utilities::DirectX11::D3DContext::InitializeSwapChain(const Win32::Wind
 	}
 
 	if (FAILED(hr = dxgiFactory->CreateSwapChainForHwnd(dxgiDevice.Get(),
-		window.GetHandle(), &swapChainDesc, NULL, NULL, m_dxgiSwapChain.GetAddressOf())))
+		windowHandle, &swapChainDesc, NULL, NULL, m_dxgiSwapChain.GetAddressOf())))
 	{
 		throw Diagnostics::Exception{ L"IDXGIFactory2::CreateSwapChainForHwnd() failed" };
 	}
@@ -127,14 +130,14 @@ void DE::Utilities::DirectX11::D3DContext::InitializeRenderTargetView()
 	}
 }
 
-void DE::Utilities::DirectX11::D3DContext::InitializeDepthStencilView(const Win32::Window& window)
+void DE::Utilities::DirectX11::D3DContext::InitializeDepthStencilView(int clientAreaWidth, int clientAreaHeight)
 {
 	HRESULT hr;
 
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
 	ZeroMemory(&depthStencilDesc, sizeof(depthStencilDesc));
-	depthStencilDesc.Width = window.GetClientAreaWidth();
-	depthStencilDesc.Height = window.GetClientAreaHeight();
+	depthStencilDesc.Width = clientAreaWidth;
+	depthStencilDesc.Height = clientAreaHeight;
 	depthStencilDesc.MipLevels = 1;
 	depthStencilDesc.ArraySize = 1;
 	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -168,12 +171,12 @@ void DE::Utilities::DirectX11::D3DContext::BindViewsToOutputMerger()
 	m_d3dDeviceContext->OMSetRenderTargets(1, m_d3dRenderTargetView.GetAddressOf(), m_d3dDepthStencilView.Get());
 }
 
-void DE::Utilities::DirectX11::D3DContext::SetupViewPort(const Win32::Window& window)
+void DE::Utilities::DirectX11::D3DContext::SetupViewPort(int clientAreaWidth, int clientAreaHeight)
 {
 	m_d3dViewport.TopLeftX = 0.0f;
 	m_d3dViewport.TopLeftY = 0.0f;
-	m_d3dViewport.Width = static_cast< float>(window.GetClientAreaWidth());
-	m_d3dViewport.Height = static_cast< float>(window.GetClientAreaHeight());
+	m_d3dViewport.Width = static_cast< float>(clientAreaWidth);
+	m_d3dViewport.Height = static_cast< float>(clientAreaHeight);
 	m_d3dViewport.MinDepth = 0.0f;
 	m_d3dViewport.MaxDepth = 1.0f;
 

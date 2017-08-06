@@ -16,7 +16,7 @@ namespace DirectX11
 	class D3DContext
 	{
 	public:
-		explicit	D3DContext(const Win32::Window& window);
+					D3DContext(const HWND windowHandle, int clientAreaWidth, int clientAreaHeight);
 					D3DContext(const D3DContext& other) = delete;
 		D3DContext&	operator=(const D3DContext& rhs) = delete;
 					D3DContext(D3DContext&& other) = default;
@@ -38,11 +38,11 @@ namespace DirectX11
 
 		void											InitializeDevice();
 		void											CheckMultiSamplingQualityLevels();
-		void											InitializeSwapChain(const Win32::Window& window);
+		void											InitializeSwapChain(const HWND windowHandle, int clientAreaWidth, int clientAreaHeight);
 		void											InitializeRenderTargetView();
-		void											InitializeDepthStencilView(const Win32::Window& window);
+		void											InitializeDepthStencilView(int clientAreaWidth, int clientAreaHeight);
 		void											BindViewsToOutputMerger();
-		void											SetupViewPort(const Win32::Window& window);
+		void											SetupViewPort(int clientAreaWidth, int clientAreaHeight);
 	};
 }
 }

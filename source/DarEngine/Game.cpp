@@ -11,8 +11,12 @@ void DE::Game::Run()
 	}
 	catch (Diagnostics::Exception ex)
 	{
-		MessageBox(m_window.GetHandle(), ex.message.c_str(), L"Fatal error", MB_ABORTRETRYIGNORE);
-		throw;	
+		MessageBox(m_window.GetHandle(), ex.message.c_str(), L"Fatal error", MB_OK);
+		throw;
+	}
+	catch (std::exception ex)
+	{
+		MessageBoxA(m_window.GetHandle(), ex.what(), "Fatal error", MB_OK);
 	}
 }
 
@@ -23,7 +27,7 @@ void DE::Game::Exit()
 
 DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
 	:m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}, 
-	m_d3dContext{ m_window }
+	m_d3dContext{ m_window.GetHandle(), m_window.GetClientAreaWidth(), m_window.GetClientAreaHeight() }
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);

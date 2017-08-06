@@ -1,8 +1,7 @@
 #include "stdafx.h"
-#include "Game.h"
 #include "Window.h"
+#include "Diagnostics/Exception.h"
 
-//TODO: exceptions
 DE::Utilities::Win32::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand)
 	:m_className{title + L"_class"}, m_title{ title }, m_showCommand{ showCommand }
 {
@@ -47,7 +46,11 @@ void DE::Utilities::Win32::Window::InitializeClass(HINSTANCE instanceHandle)
 	m_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	m_class.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
 	m_class.lpszClassName = m_className.c_str();
-	RegisterClassEx(&m_class);
+
+	if(RegisterClassEx(&m_class) == 0)
+	{
+		throw Diagnostics::Exception{ L"RegisterClassEx() failed for " + m_className };
+	}
 }
 
 void DE::Utilities::Win32::Window::InitializeWindow(HINSTANCE instanceHandle)
@@ -65,4 +68,9 @@ void DE::Utilities::Win32::Window::InitializeWindow(HINSTANCE instanceHandle)
 		WS_OVERLAPPEDWINDOW, upperLeftCorner.x, upperLeftCorner.y, windowRectangle.right - windowRectangle.left,
 		windowRectangle.bottom - windowRectangle.top,
 		nullptr, nullptr, instanceHandle, nullptr);
+
+	if(m_handle == NULL)
+	{
+		throw Diagnostics::Exception{ L"CreateWindow() failed for " + m_className };
+	}
 }
