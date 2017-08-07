@@ -56,7 +56,22 @@ void DE::Game::RunGameLoop()
 		{
 			m_clock.Update();
 			auto deltaTime = ComputeDeltaTime(m_clock);
-			//TODO: update and draw
+
+			Update(deltaTime);
+			Draw(deltaTime);
 		}
 	}
+}
+
+void DE::Game::Update(LONGLONG deltaTime)
+{
+}
+
+void DE::Game::Draw(LONGLONG deltaTime)
+{
+	m_d3dContext.Clear();
+
+
+
+	m_d3dContext.Present();
 }

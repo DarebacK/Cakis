@@ -22,19 +22,22 @@ namespace DirectX11
 					D3DContext(D3DContext&& other) = default;
 		D3DContext&	operator=(D3DContext&& rhs) = default;
 					~D3DContext();
+		/*Clears the RenderTargetView (default color is Cornflower Blue) and the DepthStencilView*/
+		void		Clear(const DirectX::XMVECTORF32& color = { 0.392f, 0.584f, 0.929f, 1.0f });
+		void		Present();
 
 	private:
-		Microsoft::WRL::ComPtr<ID3D11Device>			m_d3dDevice{ nullptr };
-		Microsoft::WRL::ComPtr<ID3D11DeviceContext>		m_d3dDeviceContext{ nullptr};
-		D3D_FEATURE_LEVEL								m_d3dFeatureLevel{};
-		UINT											m_d3dMultiSamplingCount{ 4 };
-		UINT											m_d3dMultiSamplingQualityLevelCount{ 0 };
-		bool											m_d3disMultiSamplingEnabled{ true };
-		Microsoft::WRL::ComPtr<IDXGISwapChain1>			m_dxgiSwapChain{ nullptr };
-		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>	m_d3dRenderTargetView{ nullptr };
-		Microsoft::WRL::ComPtr<ID3D11Texture2D>			m_d3dDepthStencilBuffer{ nullptr };
-		Microsoft::WRL::ComPtr<ID3D11DepthStencilView>	m_d3dDepthStencilView{ nullptr };
-		D3D11_VIEWPORT									m_d3dViewport{};
+		Microsoft::WRL::ComPtr<ID3D11Device>			m_device{ nullptr };
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext>		m_deviceContext{ nullptr};
+		D3D_FEATURE_LEVEL								m_featureLevel{};
+		UINT											m_multiSamplingCount{ 4 };
+		UINT											m_multiSamplingQualityLevelCount{ 0 };
+		bool											m_isMultiSamplingEnabled{ true };
+		Microsoft::WRL::ComPtr<IDXGISwapChain1>			m_swapChain{ nullptr };
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>	m_renderTargetView{ nullptr };
+		Microsoft::WRL::ComPtr<ID3D11Texture2D>			m_depthStencilBuffer{ nullptr };
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilView>	m_depthStencilView{ nullptr };
+		D3D11_VIEWPORT									m_viewPort{};
 
 		void											InitializeDevice();
 		void											CheckMultiSamplingQualityLevels();

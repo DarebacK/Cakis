@@ -26,6 +26,8 @@ namespace DE
 		
 		void								Initialize();
 		void								RunGameLoop();
+		void								Update(LONGLONG deltaTime);
+		void								Draw(LONGLONG deltaTime);
 	};
 
 
