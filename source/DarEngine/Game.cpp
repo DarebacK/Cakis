@@ -12,12 +12,13 @@ void DE::Game::Run()
 	catch (Diagnostics::Exception ex)
 	{
 		MessageBox(m_window.GetHandle(), ex.message.c_str(), L"Fatal error", MB_OK);
-		throw;
 	}
 	catch (std::exception ex)
 	{
 		MessageBoxA(m_window.GetHandle(), ex.what(), "Fatal error", MB_OK);
 	}
+
+	Exit();
 }
 
 void DE::Game::Exit()

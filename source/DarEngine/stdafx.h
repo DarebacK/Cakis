@@ -31,6 +31,8 @@
 #include <vector>
 #include <array>
 #include <set>
+#include <unordered_set>
 #include <map>
+#include <type_traits>
 #pragma endregion
 
