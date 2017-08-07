@@ -25,24 +25,22 @@ namespace
 	}
 }
 
-DE::Clock::Clock()
+DE::Timing::Clock::Clock()
 {
 	m_frequency = QueryFrequency();
 	Reset();
 }
 
-void DE::Clock::Update()
+void DE::Timing::Clock::Update()
 {
-	auto timeTemp = QueryTime();
-	m_deltaTime = (timeTemp - m_actualTime) / m_frequency;
-	m_totalTime = (timeTemp - m_startTime) / m_frequency;
+	auto timeTemp = QueryTime() / m_frequency;
+	m_deltaTime = (timeTemp - m_actualTime);
 	m_actualTime = timeTemp;
 }
 
-void DE::Clock::Reset()
+void DE::Timing::Clock::Reset()
 {
-	m_startTime = QueryTime();
+	m_startTime = QueryTime() / m_frequency;
 	m_actualTime = m_startTime;
 	m_deltaTime = 0;
-	m_totalTime = 0;
 }

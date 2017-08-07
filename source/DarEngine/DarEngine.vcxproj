@@ -132,17 +132,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Clock.h" />
     <ClInclude Include="Diagnostics\Exception.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="IDrawableGameObjectComponent.h" />
+    <ClInclude Include="IGameObjectComponent.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="Timing\Clock.h" />
     <ClInclude Include="Utilities\DirectX11\D3DContext.h" />
     <ClInclude Include="Utilities\Win32\Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Clock.cpp" />
     <ClCompile Include="Diagnostics\Exception.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -151,6 +152,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Timing\Clock.cpp" />
     <ClCompile Include="Utilities\DirectX11\D3DContext.cpp" />
     <ClCompile Include="Utilities\Win32\Window.cpp" />
   </ItemGroup>

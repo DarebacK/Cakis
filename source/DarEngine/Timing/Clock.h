@@ -2,6 +2,9 @@
 
 namespace DE
 {
+namespace Timing
+{
+	//TODO: description
 	class Clock
 	{
 	public:
@@ -17,13 +20,12 @@ namespace DE
 		LONGLONG		GetStartTime() const noexcept { return m_startTime; }
 		LONGLONG		GetActualTime() const noexcept { return m_actualTime; }
 		LONGLONG		GetDeltaTime() const noexcept { return m_deltaTime; }
-		LONGLONG		GetTotalTime() const noexcept { return m_totalTime; }
 		
 	private:
 		LONGLONG		m_startTime{ 0 };
 		LONGLONG		m_actualTime{ 0 };
 		LONGLONG		m_frequency{ -1 };
 		LONGLONG		m_deltaTime{ 0 };
-		LONGLONG		m_totalTime{ 0 };
 	};
+}
 }

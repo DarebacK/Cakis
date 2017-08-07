@@ -21,13 +21,13 @@
     <Filter Include="Source Files\Diagnostics">
       <UniqueIdentifier>{615b466a-027a-481e-a5a7-ebe974806da1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Timing">
+      <UniqueIdentifier>{91ddc5a0-2928-4632-940d-902532c13b5a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\Win32\Window.h">
       <Filter>Source Files\Utilities\Win32</Filter>
-    </ClInclude>
-    <ClInclude Include="Clock.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Event.h">
       <Filter>Source Files</Filter>
@@ -47,15 +47,21 @@
     <ClInclude Include="Diagnostics\Exception.h">
       <Filter>Source Files\Diagnostics</Filter>
     </ClInclude>
+    <ClInclude Include="IGameObjectComponent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDrawableGameObjectComponent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Timing\Clock.h">
+      <Filter>Source Files\Timing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Game.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Clock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Utilities\Win32\Window.cpp">
@@ -66,6 +72,9 @@
     </ClCompile>
     <ClCompile Include="Diagnostics\Exception.cpp">
       <Filter>Source Files\Diagnostics</Filter>
+    </ClCompile>
+    <ClCompile Include="Timing\Clock.cpp">
+      <Filter>Source Files\Timing</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Clock.h"
+#include "Timing/Clock.h"
 #include "Utilities/Win32/Window.h"
 #include "Utilities/DirectX11/D3DContext.h"
 
@@ -22,7 +22,7 @@ namespace DE
 		HINSTANCE							m_instanceHandle{ nullptr };
 		Utilities::Win32::Window			m_window;
 		Utilities::DirectX11::D3DContext	m_d3dContext;
-		Clock								m_clock{};
+		Timing::Clock						m_clock{};
 		
 		void								Initialize();
 		void								RunGameLoop();
