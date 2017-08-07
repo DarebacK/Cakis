@@ -14,20 +14,16 @@ namespace DE
 
 		void			Update();
 		void			Reset();
+		LONGLONG		GetStartTime() const noexcept { return m_startTime; }
+		LONGLONG		GetActualTime() const noexcept { return m_actualTime; }
+		LONGLONG		GetDeltaTime() const noexcept { return m_deltaTime; }
+		LONGLONG		GetTotalTime() const noexcept { return m_totalTime; }
 		
 	private:
-		LONGLONG		m_startTime{};
-		LONGLONG		m_actualTime{};
-		LONGLONG		m_lastTime{};
-		LONGLONG		m_frequency{};
-
-		friend LONGLONG ComputeDeltaTime(const Clock& clock)
-		{
-			return (clock.m_actualTime - clock.m_lastTime) / clock.m_frequency;
-		}
-		friend LONGLONG ComputeTotalTime(const Clock& clock)
-		{
-			return (clock.m_actualTime - clock.m_startTime) / clock.m_frequency;
-		}
+		LONGLONG		m_startTime{ 0 };
+		LONGLONG		m_actualTime{ 0 };
+		LONGLONG		m_frequency{ -1 };
+		LONGLONG		m_deltaTime{ 0 };
+		LONGLONG		m_totalTime{ 0 };
 	};
 }

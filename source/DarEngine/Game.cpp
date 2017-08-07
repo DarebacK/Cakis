@@ -54,20 +54,18 @@ void DE::Game::RunGameLoop()
 		}
 		else
 		{
-			m_clock.Update();
-			auto deltaTime = ComputeDeltaTime(m_clock);
-
-			Update(deltaTime);
-			Draw(deltaTime);
+			Update();
+			Draw();
 		}
 	}
 }
 
-void DE::Game::Update(LONGLONG deltaTime)
+void DE::Game::Update()
 {
+	m_clock.Update();
 }
 
-void DE::Game::Draw(LONGLONG deltaTime)
+void DE::Game::Draw()
 {
 	m_d3dContext.Clear();
 

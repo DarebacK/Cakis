@@ -33,13 +33,16 @@ DE::Clock::Clock()
 
 void DE::Clock::Update()
 {
-	m_lastTime = m_actualTime;
-	m_actualTime = QueryTime();
+	auto timeTemp = QueryTime();
+	m_deltaTime = (timeTemp - m_actualTime) / m_frequency;
+	m_totalTime = (timeTemp - m_startTime) / m_frequency;
+	m_actualTime = timeTemp;
 }
 
 void DE::Clock::Reset()
 {
 	m_startTime = QueryTime();
 	m_actualTime = m_startTime;
-	m_lastTime = m_startTime;
+	m_deltaTime = 0;
+	m_totalTime = 0;
 }

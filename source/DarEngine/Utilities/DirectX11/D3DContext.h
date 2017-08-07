@@ -24,6 +24,7 @@ namespace DirectX11
 					~D3DContext();
 		/*Clears the RenderTargetView (default color is Cornflower Blue) and the DepthStencilView*/
 		void		Clear(const DirectX::XMVECTORF32& color = { 0.392f, 0.584f, 0.929f, 1.0f });
+		/*Presents the rendered image to the user*/
 		void		Present();
 
 	private:
