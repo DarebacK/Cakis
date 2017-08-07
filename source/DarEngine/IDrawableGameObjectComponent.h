@@ -14,7 +14,7 @@ namespace DE
 	public:
 		virtual			~IDrawableGameObjectComponent() = 0;
 
-		virtual bool	Draw(const DrawInfo& info) = 0;
+		virtual void	Draw(const DrawInfo& info) = 0;
 	};
 
 	inline IDrawableGameObjectComponent::~IDrawableGameObjectComponent()
