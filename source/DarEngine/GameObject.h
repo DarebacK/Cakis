@@ -29,9 +29,9 @@ namespace DE
 		typename std::enable_if<std::is_base_of<IGameObjectComponent, ComponentType>::value && !std::is_base_of<IDrawableGameObjectComponent, ComponentType>::value, ComponentType>::type*	AddComponent(Args... arguments);
 	
 	private:
-		unsigned long	m_id;
-		std::set<IGameObjectComponent> m_components;
-		std::set<IDrawableGameObjectComponent> m_drawableComponents;
+		unsigned long							m_id;
+		std::set<IGameObjectComponent>			m_components;
+		std::set<IDrawableGameObjectComponent>	m_drawableComponents;
 	};
 
 
