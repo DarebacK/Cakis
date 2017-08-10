@@ -24,6 +24,9 @@
     <Filter Include="Source Files\Timing">
       <UniqueIdentifier>{91ddc5a0-2928-4632-940d-902532c13b5a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\GUI">
+      <UniqueIdentifier>{3315c03f-94d2-42bb-9e8a-fc8106a8c85a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\Win32\Window.h">
@@ -47,17 +50,20 @@
     <ClInclude Include="Diagnostics\Exception.h">
       <Filter>Source Files\Diagnostics</Filter>
     </ClInclude>
-    <ClInclude Include="IGameObjectComponent.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IDrawableGameObjectComponent.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Timing\Clock.h">
       <Filter>Source Files\Timing</Filter>
     </ClInclude>
     <ClInclude Include="GameObject.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawableComponent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI\Widget.h">
+      <Filter>Source Files\GUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -81,6 +87,9 @@
     </ClCompile>
     <ClCompile Include="GameObject.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI\Widget.cpp">
+      <Filter>Source Files\GUI</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

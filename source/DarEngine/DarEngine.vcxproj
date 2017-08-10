@@ -148,8 +148,9 @@
     <ClInclude Include="Event.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObject.h" />
-    <ClInclude Include="IDrawableGameObjectComponent.h" />
-    <ClInclude Include="IGameObjectComponent.h" />
+    <ClInclude Include="DrawableComponent.h" />
+    <ClInclude Include="Component.h" />
+    <ClInclude Include="GUI\Widget.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Timing\Clock.h" />
@@ -160,6 +161,7 @@
     <ClCompile Include="Diagnostics\Exception.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="GUI\Widget.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

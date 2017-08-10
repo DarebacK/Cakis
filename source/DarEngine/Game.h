@@ -3,7 +3,9 @@
 #include "Timing/Clock.h"
 #include "Utilities/Win32/Window.h"
 #include "Utilities/DirectX11/D3DContext.h"
+#include "GameObject.h"
 
+//TODO: pImpl to hide Dx and Win32 stuff
 namespace DE
 {
 	class Game
@@ -23,6 +25,7 @@ namespace DE
 		Utilities::Win32::Window			m_window;
 		Utilities::DirectX11::D3DContext	m_d3dContext;
 		Timing::Clock						m_clock{};
+		std::unordered_set<GameObject>		m_gameObjects{};
 		
 		void								Initialize();
 		void								RunGameLoop();

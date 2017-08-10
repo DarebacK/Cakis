@@ -1,7 +1,10 @@
 #pragma once
 
-#include "IComponent.h"
-#include "IDrawableComponent.h"
+namespace DE
+{
+	class Component;
+	class DrawableComponent;
+}
 
 namespace DE
 {
@@ -19,30 +22,30 @@ namespace DE
 		unsigned long	GetId() const { return m_id; };
 		//Creates and attaches a component to this GameObject.
 		//The component type must derive from one of the
-		//supported component types : IComponent, IDrawableComponent.
+		//supported component types : Component, DrawableComponent.
 		template<typename ComponentType, typename... Args>
-		typename std::enable_if<std::is_base_of<IDrawableComponent, ComponentType>::value, ComponentType>::type*	AddComponent(Args... arguments);
+		typename std::enable_if<std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type*	AddComponent(Args... arguments);
 		//Creates and attaches a component to this GameObject.
 		//The component type must derive from one of the
-		//supported component types : IComponent, IDrawableComponent.
+		//supported component types : Component, DrawableComponent.
 		template<typename ComponentType, typename... Args>
-		typename std::enable_if<std::is_base_of<IComponent, ComponentType>::value && !std::is_base_of<IDrawableComponent, ComponentType>::value, ComponentType>::type*	AddComponent(Args... arguments);
+		typename std::enable_if<std::is_base_of<Component, ComponentType>::value && !std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type*	AddComponent(Args... arguments);
 	
 	private:
-		unsigned long							m_id;
-		std::set<IComponent>			m_components;
-		std::set<IDrawableComponent>	m_drawableComponents;
+		unsigned long				m_id;
+		std::set<Component>			m_components;
+		std::set<DrawableComponent>	m_drawableComponents;
 	};
 
 
 	template <typename ComponentType, typename... Args>
-	typename std::enable_if<std::is_base_of<IDrawableComponent, ComponentType>::value, ComponentType>::type* GameObject::AddComponent(Args... arguments)
+	typename std::enable_if<std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type* GameObject::AddComponent(Args... arguments)
 	{
 		return m_drawableComponents.emplace(std::forward<Args>(arguments)...);
 	}
 
 	template <typename ComponentType, typename... Args>
-	typename std::enable_if<std::is_base_of<IComponent, ComponentType>::value && !std::is_base_of<IDrawableComponent, ComponentType>::value, ComponentType>::type* GameObject::AddComponent(Args... arguments)
+	typename std::enable_if<std::is_base_of<Component, ComponentType>::value && !std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type* GameObject::AddComponent(Args... arguments)
 	{
 		return m_components.emplace(std::forward<Args>(arguments)...);
 	}
