@@ -7,10 +7,10 @@ namespace DE
 
 namespace DE
 {
-	class IGameObjectComponent
+	class IComponent
 	{
 	public:
-		virtual			~IGameObjectComponent() = 0;
+		virtual			~IComponent() = 0;
 
 		virtual void	Update(const UpdateInfo& info) = 0;
 		virtual bool	IsEnabled() = 0;
@@ -18,7 +18,7 @@ namespace DE
 		virtual void	Disable() = 0;
 	};
 
-	inline IGameObjectComponent::~IGameObjectComponent()
+	inline IComponent::~IComponent()
 	{
 	}
 }
