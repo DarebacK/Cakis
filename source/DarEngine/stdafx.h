@@ -23,6 +23,11 @@
 #include <DirectXPackedVector.h>
 #pragma endregion
 
+#pragma region DirectXTK
+#include "SpriteBatch.h"
+#include "SpriteFont.h"
+#pragma endregion
+
 #pragma region STL
 #include <string>
 #include <exception>
@@ -35,5 +40,6 @@
 #include <map>
 #include <type_traits>
 #include <chrono>
+#include <algorithm>
 #pragma endregion
 

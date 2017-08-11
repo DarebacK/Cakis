@@ -1,54 +1,68 @@
 #pragma once
 
+#include "Component.h"
+
 namespace DE
 {
-	class Component;
-	class DrawableComponent;
+	class UpdateInfo;
+	class DrawInfo;
 }
 
 namespace DE
 {
 	//Class which exists in the world (scene), holds it's components.
-	//Has unique Id which is used to compare it to other GameObjects
+	//Has unique Id which is used to compare it to other GameObjects.
 	class GameObject
 	{
 	public:
-						GameObject() = default;
+		explicit		GameObject(unsigned long id);
 						GameObject(const GameObject& other) = delete;
 		GameObject&		operator=(const GameObject& rhs) = delete;
 						GameObject(GameObject&& other) = delete;
 		GameObject&		operator=(GameObject&& other) = delete;
-		virtual			~GameObject() = default;
-		unsigned long	GetId() const { return m_id; };
-		//Creates and attaches a component to this GameObject.
-		//The component type must derive from one of the
-		//supported component types : Component, DrawableComponent.
+		//virtual			~GameObject() = default;
+		auto			GetId() const noexcept { return m_id; };
+		void			OnUpdate(const UpdateInfo& info);
+		void			OnDraw(const DrawInfo& info);
+		//Creates and attaches a component to this GameObject
+		//The component type must derive from Component
 		template<typename ComponentType, typename... Args>
-		typename std::enable_if<std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type*	AddComponent(Args... arguments);
-		//Creates and attaches a component to this GameObject.
-		//The component type must derive from one of the
-		//supported component types : Component, DrawableComponent.
-		template<typename ComponentType, typename... Args>
-		typename std::enable_if<std::is_base_of<Component, ComponentType>::value && !std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type*	AddComponent(Args... arguments);
+		ComponentType*	AddComponent(Args... arguments);
+		// Gets contained component by type.
+		// Returns pointer to the component if found, nullptr otherwise.
+		// Note: Is performance demanding, does dynamic_cast
+		// for every contained component until found.
+		template<typename ComponentType>
+		ComponentType*	GetComponent();
 	
 	private:
-		unsigned long				m_id;
-		std::set<Component>			m_components;
-		std::set<DrawableComponent>	m_drawableComponents;
+		unsigned long			m_id;
+		std::vector<Component>	m_components;
 	};
 
 
-	template <typename ComponentType, typename... Args>
-	typename std::enable_if<std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type* GameObject::AddComponent(Args... arguments)
+	template <typename ComponentType, typename ... Args>
+	ComponentType* GameObject::AddComponent(Args... arguments)
 	{
-		return m_drawableComponents.emplace(std::forward<Args>(arguments)...);
+		return m_components.emplace_back(std::forward<Args>(arguments)...);
 	}
 
-	template <typename ComponentType, typename... Args>
-	typename std::enable_if<std::is_base_of<Component, ComponentType>::value && !std::is_base_of<DrawableComponent, ComponentType>::value, ComponentType>::type* GameObject::AddComponent(Args... arguments)
+	template <typename ComponentType>
+	ComponentType* GameObject::GetComponent()
 	{
-		return m_components.emplace(std::forward<Args>(arguments)...);
+		ComponentType* returnValue{ nullptr };
+
+		for (auto* i : m_components)
+		{
+			if (returnValue = dynamic_cast<ComponentType*>(i))
+			{
+				break;
+			}
+		}
+
+		return returnValue;
 	}
+
 
 	inline bool	operator==(const GameObject& lhs, const GameObject& rhs)
 	{

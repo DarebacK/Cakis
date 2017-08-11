@@ -26,7 +26,7 @@ namespace Timing
 	private:
 		ClockType::time_point			m_startTime;
 		ClockType::time_point			m_actualTime;
-		double							m_deltaTime	{ 0.0 };
+		std::chrono::duration<float>	m_deltaTime	{ m_deltaTime.zero() };
 	};
 }
 }

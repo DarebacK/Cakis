@@ -10,7 +10,7 @@ DE::Timing::Clock::Clock()
 void DE::Timing::Clock::Update()
 {
 	auto timeTemp = ClockType::now();
-	m_deltaTime = (timeTemp - m_actualTime).count();
+	m_deltaTime = timeTemp - m_actualTime;
 	m_actualTime = timeTemp;
 }
 
@@ -18,5 +18,5 @@ void DE::Timing::Clock::Reset()
 {
 	m_startTime = ClockType::now();
 	m_actualTime = m_startTime;
-	m_deltaTime = 0.0;
+	m_deltaTime = m_deltaTime.zero();
 }

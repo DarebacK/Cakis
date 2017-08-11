@@ -32,9 +32,6 @@
     <ClInclude Include="Utilities\Win32\Window.h">
       <Filter>Source Files\Utilities\Win32</Filter>
     </ClInclude>
-    <ClInclude Include="Event.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Game.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -59,11 +56,11 @@
     <ClInclude Include="Component.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="DrawableComponent.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="GUI\Widget.h">
       <Filter>Source Files\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateInfo.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
