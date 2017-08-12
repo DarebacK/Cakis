@@ -56,10 +56,13 @@
     <ClInclude Include="Component.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="GUI\Widget.h">
-      <Filter>Source Files\GUI</Filter>
-    </ClInclude>
     <ClInclude Include="UpdateInfo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprite.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SpriteRenderer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -85,8 +88,11 @@
     <ClCompile Include="GameObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\Widget.cpp">
-      <Filter>Source Files\GUI</Filter>
+    <ClCompile Include="Sprite.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SpriteRenderer.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

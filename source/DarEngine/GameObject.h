@@ -4,6 +4,7 @@
 
 namespace DE
 {
+	class Game;
 	class UpdateInfo;
 	class DrawInfo;
 }
@@ -14,8 +15,10 @@ namespace DE
 	//Has unique Id which is used to compare it to other GameObjects.
 	class GameObject
 	{
+		friend Game;
+
 	public:
-		explicit		GameObject(unsigned long id);
+						GameObject() = default;
 						GameObject(const GameObject& other) = delete;
 		GameObject&		operator=(const GameObject& rhs) = delete;
 						GameObject(GameObject&& other) = delete;
@@ -27,13 +30,13 @@ namespace DE
 		//Creates and attaches a component to this GameObject
 		//The component type must derive from Component
 		template<typename ComponentType, typename... Args>
-		ComponentType*	AddComponent(Args... arguments);
+		ComponentType*	AddComponentByType(Args... arguments);
 		// Gets contained component by type.
 		// Returns pointer to the component if found, nullptr otherwise.
 		// Note: Is performance demanding, does dynamic_cast
 		// for every contained component until found.
 		template<typename ComponentType>
-		ComponentType*	GetComponent();
+		ComponentType*	GetComponentByType();
 	
 	private:
 		unsigned long			m_id;
@@ -42,13 +45,13 @@ namespace DE
 
 
 	template <typename ComponentType, typename ... Args>
-	ComponentType* GameObject::AddComponent(Args... arguments)
+	ComponentType* GameObject::AddComponentByType(Args... arguments)
 	{
 		return m_components.emplace_back(std::forward<Args>(arguments)...);
 	}
 
 	template <typename ComponentType>
-	ComponentType* GameObject::GetComponent()
+	ComponentType* GameObject::GetComponentByType()
 	{
 		ComponentType* returnValue{ nullptr };
 

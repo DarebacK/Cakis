@@ -1,6 +1,19 @@
 #include "stdafx.h"
 #include "GameObject.h"
 
-DE::GameObject::GameObject(unsigned long id)
-	:m_id{id}
-{}
+
+void DE::GameObject::OnUpdate(const UpdateInfo& info)
+{
+	for(auto& component : m_components)
+	{
+		component.OnUpdate(info);
+	}
+}
+
+void DE::GameObject::OnDraw(const DrawInfo& info)
+{
+	for(auto& component: m_components)
+	{
+		component.OnDraw(info);
+	}
+}
