@@ -26,6 +26,8 @@ namespace DirectX11
 		void		Clear(const DirectX::XMVECTORF32& color = { 0.392f, 0.584f, 0.929f, 1.0f });
 		/*Presents the rendered image to the user*/
 		void		Present();
+		ID3D11Device&	GetDevice() const noexcept { return *m_device.Get(); }
+		ID3D11DeviceContext& GetDeviceContext() const noexcept { return *m_deviceContext.Get(); }
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D11Device>			m_device{ nullptr };

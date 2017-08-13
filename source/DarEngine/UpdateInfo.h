@@ -10,11 +10,15 @@ namespace Timing
 
 namespace DE
 {
-	struct UpdateInfo
+	class UpdateInfo
 	{
-		explicit UpdateInfo(const Timing::Clock& clock)
-			:Clock{clock}
-		{}
+	public:
+					UpdateInfo() = delete;
+					UpdateInfo(const UpdateInfo& other) = delete;
+		UpdateInfo&	operator=(const UpdateInfo& other) = delete;
+					UpdateInfo(UpdateInfo&& other) = delete;
+		UpdateInfo&	operator=(UpdateInfo&& other) = delete;
+					~UpdateInfo() = default;
 
 		const Timing::Clock&	Clock;
 	};

@@ -23,7 +23,7 @@ namespace DE
 		GameObject&		operator=(const GameObject& rhs) = delete;
 						GameObject(GameObject&& other) = delete;
 		GameObject&		operator=(GameObject&& other) = delete;
-		//virtual			~GameObject() = default;
+		virtual			~GameObject() = default;
 		auto			GetId() const noexcept { return m_id; };
 		void			OnUpdate(const UpdateInfo& info);
 		void			OnDraw(const DrawInfo& info);

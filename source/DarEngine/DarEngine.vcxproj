@@ -145,11 +145,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Diagnostics\Exception.h" />
+    <ClInclude Include="DrawInfo.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="Sprite.h" />
-    <ClInclude Include="SpriteRenderer.h" />
+    <ClInclude Include="SpriteText.h" />
     <ClInclude Include="UpdateInfo.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -162,7 +163,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Sprite.cpp" />
-    <ClCompile Include="SpriteRenderer.cpp" />
+    <ClCompile Include="SpriteText.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -28,7 +28,9 @@ void DE::Game::Exit()
 
 DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
 	:m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}, 
-	m_d3dContext{ m_window.GetHandle(), m_window.GetClientAreaWidth(), m_window.GetClientAreaHeight() }
+	m_d3dContext{ m_window.GetHandle(), m_window.GetClientAreaWidth(), m_window.GetClientAreaHeight() },
+	m_spriteDrawer{ m_d3dContext.GetDeviceContext() }, m_spriteFontDrawer{ m_d3dContext.GetDevice(), m_d3dContext.GetDeviceContext()},
+	m_updateInfo{ m_clock }, m_drawInfo{ m_spriteDrawer, m_spriteFontDrawer}
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -64,13 +66,35 @@ void DE::Game::RunGameLoop()
 void DE::Game::Update()
 {
 	m_clock.Update();
+
+	for(auto& gameObject : m_gameObjects)
+	{
+		gameObject.OnUpdate(m_updateInfo);
+	}
+}
+
+void DE::Game::PreDraw()
+{
+	m_spriteDrawer.OnPreDraw();
+	m_spriteFontDrawer.OnPreDraw();
 }
 
 void DE::Game::Draw()
 {
 	m_d3dContext.Clear();
+	PreDraw();
 
+	for(auto& gameObject : m_gameObjects)
+	{
+		gameObject.OnDraw(m_drawInfo);
+	}
 
-
+	PostDraw();
 	m_d3dContext.Present();
+}
+
+void DE::Game::PostDraw()
+{
+	m_spriteDrawer.OnPostDraw();
+	m_spriteFontDrawer.OnPostDraw();
 }
