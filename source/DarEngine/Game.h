@@ -23,14 +23,14 @@ namespace DE
 		void			Run();
 		void			Exit();
 		template<typename GameObjectType, typename... Args>
-		GameObjectType&	AddGameObjectByType(Args... arguments);
+		GameObjectType*	AddGameObjectByType(Args... arguments);
 
 	private:
 		HINSTANCE							m_instanceHandle{ nullptr };
 		Utilities::Win32::Window			m_window;
 		Utilities::DirectX11::D3DContext	m_d3dContext;
-		Timing::Clock						m_clock{};
-		std::vector<GameObject>				m_gameObjects{};
+		Timing::Clock<std::chrono::high_resolution_clock>	m_clock{};
+		std::vector<std::unique_ptr<GameObject>>			m_gameObjects{};
 		SpriteDrawer						m_spriteDrawer;
 		SpriteTextDrawer					m_spriteFontDrawer;
 		UpdateInfo							m_updateInfo;
@@ -47,10 +47,11 @@ namespace DE
 
 
 	template <typename GameObjectType, typename ... Args>
-	GameObjectType& Game::AddGameObjectByType(Args... arguments)
+	GameObjectType* Game::AddGameObjectByType(Args... arguments)
 	{
-		auto newGameObject = &m_gameObjects.emplace_back(std::forward<Args>(arguments)...);
-		newGameObject.m_id = m_gameObjectIdCounter++;
-		return newGameObject;
+		m_gameObjects.push_back(std::make_unique<GameObjectType>(std::forward<Args>(arguments)...));
+		GameObjectType* newGameObjectPtr = static_cast<GameObjectType*>(m_gameObjects.back().get());
+		newGameObjectPtr->m_id = m_gameObjectIdCounter++;
+		return newGameObjectPtr;
 	}
 }

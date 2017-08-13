@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Game.h"
 #include "Diagnostics/Exception.h"
+#include "Utilities/Win32/Paths.h"
 
 void DE::Game::Run()
 {
@@ -35,6 +36,8 @@ DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int sh
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
+
+	SetCurrentDirectory(Utilities::Win32::ExecutableDirectory().c_str());
 }
 
 void DE::Game::Initialize()
@@ -67,9 +70,9 @@ void DE::Game::Update()
 {
 	m_clock.Update();
 
-	for(auto& gameObject : m_gameObjects)
+	for(auto& gameObjectPtr : m_gameObjects)
 	{
-		gameObject.OnUpdate(m_updateInfo);
+		gameObjectPtr->OnUpdate(m_updateInfo);
 	}
 }
 
@@ -84,9 +87,9 @@ void DE::Game::Draw()
 	m_d3dContext.Clear();
 	PreDraw();
 
-	for(auto& gameObject : m_gameObjects)
+	for(auto& gameObjectPtr : m_gameObjects)
 	{
-		gameObject.OnDraw(m_drawInfo);
+		gameObjectPtr->OnDraw(m_drawInfo);
 	}
 
 	PostDraw();

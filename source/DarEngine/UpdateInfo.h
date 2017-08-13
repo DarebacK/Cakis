@@ -4,6 +4,7 @@ namespace DE
 {
 namespace Timing
 {
+	template<typename>
 	class Clock;
 }
 }
@@ -20,6 +21,6 @@ namespace DE
 		UpdateInfo&	operator=(UpdateInfo&& other) = delete;
 					~UpdateInfo() = default;
 
-		const Timing::Clock&	Clock;
+		const Timing::Clock<std::chrono::high_resolution_clock>&	Clock;
 	};
 }

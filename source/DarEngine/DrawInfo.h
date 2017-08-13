@@ -18,7 +18,7 @@ namespace DE
 		DrawInfo&	operator=(DrawInfo&& rhs) = delete;
 					~DrawInfo() = default;
 
-		const SpriteDrawer&		SpriteDrawer;
-		const SpriteTextDrawer&	SpriteTextDrawer;
+		SpriteDrawer&		SpriteDrawer;
+		SpriteTextDrawer&	SpriteTextDrawer;
 	};
 }

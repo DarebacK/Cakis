@@ -17,6 +17,8 @@
 #include <crtdbg.h>
 #endif
 
+#include <Shlwapi.h>
+
 #include <wrl.h>
 #include <d3d11_4.h>
 #include <DirectXMath.h>
@@ -41,6 +43,9 @@
 #include <unordered_map>
 #include <type_traits>
 #include <chrono>
+#include <ctime>
 #include <algorithm>
+#include <numeric>
+#include <fstream>
 #pragma endregion
 

@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "SpriteText.h"
 
-const std::wstring DE::SpriteTextDrawer::m_fontDirectory{ L"content\\" };
+const std::wstring DE::SpriteTextDrawer::m_fontDirectory{ L"content\\DarEngine\\fonts\\" };
 
 const std::unordered_map<DE::SpriteFontName, std::wstring> DE::SpriteTextDrawer::m_namesToPaths{
-	{SpriteFontName::SegoeUI_14, m_fontDirectory + L"SegoeUI_14"}
+	{SpriteFontName::SegoeUI_14, m_fontDirectory + L"SegoeUI_14.spritefont"}
 };
 
 std::unordered_map<std::wstring, DirectX::SpriteFont> DE::SpriteTextDrawer::m_pathsToFonts{};

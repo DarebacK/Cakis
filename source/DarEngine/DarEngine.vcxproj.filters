@@ -29,9 +29,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Utilities\Win32\Window.h">
-      <Filter>Source Files\Utilities\Win32</Filter>
-    </ClInclude>
     <ClInclude Include="Game.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -68,6 +65,12 @@
     <ClInclude Include="Sprite.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Utilities\Win32\Paths.h">
+      <Filter>Source Files\Utilities\Win32</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Win32\Window.h">
+      <Filter>Source Files\Utilities\Win32</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -76,17 +79,11 @@
     <ClCompile Include="Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Utilities\Win32\Window.cpp">
-      <Filter>Source Files\Utilities\Win32</Filter>
-    </ClCompile>
     <ClCompile Include="Utilities\DirectX11\D3DContext.cpp">
       <Filter>Source Files\Utilities\DirectX11</Filter>
     </ClCompile>
     <ClCompile Include="Diagnostics\Exception.cpp">
       <Filter>Source Files\Diagnostics</Filter>
-    </ClCompile>
-    <ClCompile Include="Timing\Clock.cpp">
-      <Filter>Source Files\Timing</Filter>
     </ClCompile>
     <ClCompile Include="GameObject.cpp">
       <Filter>Source Files</Filter>
@@ -96,6 +93,12 @@
     </ClCompile>
     <ClCompile Include="Sprite.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\Win32\Paths.cpp">
+      <Filter>Source Files\Utilities\Win32</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\Win32\Window.cpp">
+      <Filter>Source Files\Utilities\Win32</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

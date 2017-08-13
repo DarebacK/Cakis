@@ -4,16 +4,16 @@
 
 void DE::GameObject::OnUpdate(const UpdateInfo& info)
 {
-	for(auto& component : m_components)
+	for(auto& componentPtr : m_components)
 	{
-		component.OnUpdate(info);
+		componentPtr->OnUpdate(info);
 	}
 }
 
 void DE::GameObject::OnDraw(const DrawInfo& info)
 {
-	for(auto& component: m_components)
+	for(auto& componentPtr: m_components)
 	{
-		component.OnDraw(info);
+		componentPtr->OnDraw(info);
 	}
 }

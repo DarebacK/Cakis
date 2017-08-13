@@ -21,8 +21,8 @@ namespace DE
 						GameObject() = default;
 						GameObject(const GameObject& other) = delete;
 		GameObject&		operator=(const GameObject& rhs) = delete;
-						GameObject(GameObject&& other) = delete;
-		GameObject&		operator=(GameObject&& other) = delete;
+						GameObject(GameObject&& other) = default;
+		GameObject&		operator=(GameObject&& other) = default;
 		virtual			~GameObject() = default;
 		auto			GetId() const noexcept { return m_id; };
 		void			OnUpdate(const UpdateInfo& info);
@@ -30,36 +30,35 @@ namespace DE
 		//Creates and attaches a component to this GameObject
 		//The component type must derive from Component
 		template<typename ComponentType, typename... Args>
-		ComponentType&	AddComponentByType(Args... arguments);
+		ComponentType*	AddComponentByType(Args... arguments);
 		// Gets contained component by type.
 		// Returns pointer to the component if found, nullptr otherwise.
 		// Note: Is performance demanding, does dynamic_cast
 		// for every contained component until found.
 		template<typename ComponentType>
-		ComponentType&	GetComponentByType();
+		ComponentType*	GetComponentByType();
 	
 	private:
-		unsigned long			m_id;
-		std::vector<Component>	m_components;
+		unsigned long							m_id;
+		std::vector<std::unique_ptr<Component>>	m_components;
 	};
 
 
 	template <typename ComponentType, typename ... Args>
-	ComponentType& GameObject::AddComponentByType(Args... arguments)
+	ComponentType* GameObject::AddComponentByType(Args... arguments)
 	{
-		auto newComponent = m_components.emplace_back(std::forward<Args>(arguments)...);
-		newComponent.m_parent = this;
-		return newComponent;
+		m_components.push_back(std::make_unique<ComponentType>(std::forward<Args>(arguments)...));
+		return static_cast<ComponentType*>(m_components.back().get());
 	}
 
 	template <typename ComponentType>
-	ComponentType& GameObject::GetComponentByType()
+	ComponentType* GameObject::GetComponentByType()
 	{
-		ComponentType& returnValue{ nullptr };
+		ComponentType* returnValue{ nullptr };
 
 		for (auto& i : m_components)
 		{
-			if (returnValue = dynamic_cast<ComponentType&>(i))
+			if (returnValue = dynamic_cast<ComponentType*>(i.get()))
 			{
 				break;
 			}

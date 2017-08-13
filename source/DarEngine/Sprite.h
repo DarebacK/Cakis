@@ -13,7 +13,7 @@ namespace DE
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>	Texture{ nullptr };
 		DirectX::XMFLOAT2									Position{ 0.0f, 0.0f };
 		std::unique_ptr<RECT>								SourceRectangle{ nullptr };
-		DirectX::XMVECTORF32								Color{ 0.0f, 0.0f, 0.0f, 0.0f };
+		DirectX::XMVECTORF32								Color{ 0.0f, 0.0f, 0.0f, 1.0f };
 		float												Rotation{ 0.0f };
 		DirectX::XMFLOAT2									Origin{ 0.0f, 0.0f };
 		float												Scale{ 1.0f };

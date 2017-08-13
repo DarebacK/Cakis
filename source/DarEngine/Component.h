@@ -14,7 +14,7 @@ namespace DE
 		friend	GameObject;	// to set m_parent
 
 	public:
-		virtual			~Component() = 0;
+		virtual			~Component() {};
 
 		bool			IsEnabled() const noexcept { return m_isEnabled; }
 		void			Enable() noexcept { m_isEnabled = true; }
@@ -38,7 +38,5 @@ namespace DE
 		virtual void	OnDraw(const DrawInfo& info) {};
 
 	};
-
-	inline Component::~Component() {}
 }
 
