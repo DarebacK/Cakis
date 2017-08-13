@@ -47,7 +47,9 @@ namespace DE
 	template <typename ComponentType, typename ... Args>
 	ComponentType& GameObject::AddComponentByType(Args... arguments)
 	{
-		return m_components.emplace_back(std::forward<Args>(arguments)...);
+		auto newComponent = m_components.emplace_back(std::forward<Args>(arguments)...);
+		newComponent.m_parent = this;
+		return newComponent;
 	}
 
 	template <typename ComponentType>

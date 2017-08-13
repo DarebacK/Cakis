@@ -25,7 +25,7 @@ namespace DE
 		bool			IsOnDrawEnabled() const noexcept { return m_isOnDrawEnabled; }
 		void			EnableOnDraw() noexcept { m_isOnDrawEnabled = true; }
 		void			DisableOnDraw() noexcept { m_isOnDrawEnabled = false; }
-		GameObject*		GetParent() const noexcept { return m_parent; }
+		GameObject&		GetParent() const noexcept { return *m_parent; }
 
 	private:
 		GameObject*		m_parent{ nullptr };
