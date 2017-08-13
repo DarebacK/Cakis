@@ -23,7 +23,7 @@ namespace DE
 		void			Run();
 		void			Exit();
 		template<typename GameObjectType, typename... Args>
-		GameObjectType*	AddGameObjectByType(Args... arguments);
+		GameObjectType&	AddGameObjectByType(Args... arguments);
 
 	private:
 		HINSTANCE							m_instanceHandle{ nullptr };
@@ -47,10 +47,10 @@ namespace DE
 
 
 	template <typename GameObjectType, typename ... Args>
-	GameObjectType* Game::AddGameObjectByType(Args... arguments)
+	GameObjectType& Game::AddGameObjectByType(Args... arguments)
 	{
-		auto* newGameObject = &m_gameObjects.emplace_back(std::forward<Args>(arguments)...);
-		newGameObject->m_id = m_gameObjectIdCounter++;
+		auto newGameObject = &m_gameObjects.emplace_back(std::forward<Args>(arguments)...);
+		newGameObject.m_id = m_gameObjectIdCounter++;
 		return newGameObject;
 	}
 }

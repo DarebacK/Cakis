@@ -30,13 +30,13 @@ namespace DE
 		//Creates and attaches a component to this GameObject
 		//The component type must derive from Component
 		template<typename ComponentType, typename... Args>
-		ComponentType*	AddComponentByType(Args... arguments);
+		ComponentType&	AddComponentByType(Args... arguments);
 		// Gets contained component by type.
 		// Returns pointer to the component if found, nullptr otherwise.
 		// Note: Is performance demanding, does dynamic_cast
 		// for every contained component until found.
 		template<typename ComponentType>
-		ComponentType*	GetComponentByType();
+		ComponentType&	GetComponentByType();
 	
 	private:
 		unsigned long			m_id;
@@ -45,19 +45,19 @@ namespace DE
 
 
 	template <typename ComponentType, typename ... Args>
-	ComponentType* GameObject::AddComponentByType(Args... arguments)
+	ComponentType& GameObject::AddComponentByType(Args... arguments)
 	{
 		return m_components.emplace_back(std::forward<Args>(arguments)...);
 	}
 
 	template <typename ComponentType>
-	ComponentType* GameObject::GetComponentByType()
+	ComponentType& GameObject::GetComponentByType()
 	{
-		ComponentType* returnValue{ nullptr };
+		ComponentType& returnValue{ nullptr };
 
-		for (auto* i : m_components)
+		for (auto& i : m_components)
 		{
-			if (returnValue = dynamic_cast<ComponentType*>(i))
+			if (returnValue = dynamic_cast<ComponentType&>(i))
 			{
 				break;
 			}
