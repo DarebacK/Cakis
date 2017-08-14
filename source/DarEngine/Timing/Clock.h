@@ -22,12 +22,12 @@ namespace Timing
 		void			Reset();
 		auto			GetStartTimePoint() const noexcept { return m_startTime; }
 		auto			GetActualTimePoint() const noexcept { return m_actualTime; }
-		auto			GetDeltaTimeDuration() const noexcept { return m_deltaTime; };
+		auto			GetPreviousTimePoint() const noexcept { return m_previousTime; }
 		
 	private:
-		typename ClockType::time_point	m_startTime;
-		typename ClockType::time_point	m_actualTime;
-		std::chrono::duration<float>	m_deltaTime	{ m_deltaTime.zero() };
+		typename ClockType::time_point				m_startTime{};
+		typename ClockType::time_point				m_previousTime{};
+		typename ClockType::time_point				m_actualTime{};
 	};
 
 	template <typename clock_type>
@@ -39,29 +39,46 @@ namespace Timing
 	template <typename clock_type>
 	void Clock<clock_type>::Update()
 	{
-		auto timeTemp = ClockType::now();
-		m_deltaTime = timeTemp - m_actualTime;
-		m_actualTime = timeTemp;
+		m_previousTime = m_actualTime;
+		m_actualTime = ClockType::now();
 	}
 
 	template <typename clock_type>
 	void Clock<clock_type>::Reset()
 	{
 		m_startTime = ClockType::now();
+		m_previousTime = m_startTime;
 		m_actualTime = m_startTime;
-		m_deltaTime = m_deltaTime.zero();
 	}
 
-	template<typename clock_type>
-	float GetDeltaTime(const Clock<clock_type>& clock)
+	//Helper function which returns elapsed time since the clock's start (reset).
+	template<typename ratio_type,
+		typename value_type,
+		typename clock_type>
+		value_type GetElapsedTime(const clock_type& clock)
 	{
-		return clock.GetDeltaTimeDuration().count();
+		return std::chrono::duration_cast<std::chrono::duration<value_type, ratio_type>>(
+			clock.GetActualTimePoint() - clock.GetStartTimePoint()
+			).count();
 	}
 
 	template<typename clock_type>
 	auto GetElapsedTime(const Clock<clock_type>& clock)
 	{
-		return (clock.GetActualTimePoint() - clock.GetStartTimePoint()).count();
+		return GetElapsedTime<
+			typename clock_type::time_point::duration::period, 
+			typename clock_type::time_point::duration::rep>
+		(clock);
+	}
+
+	template<typename ratio_type = std::ratio<1>,
+			typename value_type = float,
+			typename clock_type>
+	auto GetDeltaTime(const Clock<clock_type>& clock) 
+	{
+		return std::chrono::duration_cast<std::chrono::duration<value_type, ratio_type>>(
+			clock.GetActualTimePoint() - clock.GetPreviousTimePoint()
+			).count();
 	}
 }
 }

@@ -10,7 +10,7 @@ namespace DE
 	class SpriteText
 	{
 	public:
-		std::wstring		Text{};
+		std::wstring			Text{};
 		DirectX::XMFLOAT2		Position{ 0.0f, 0.0f };
 		DirectX::XMVECTORF32	Color{ DirectX::Colors::Black };
 		float					Rotation{ 0.0f };
