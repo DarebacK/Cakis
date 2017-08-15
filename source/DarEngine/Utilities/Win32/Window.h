@@ -22,16 +22,16 @@ namespace Win32
 
 	private:
 		//TODO: move this to namespace as global (namespace) constant
-		static const int		clientAreaDefaultWidth{ 1366 };
-		static const int		clientAreaDefaultHeight{ 768 };
+		static const int	clientAreaDefaultWidth{ 1366 };
+		static const int	clientAreaDefaultHeight{ 768 };
 
-		HWND					m_handle{};
-		WNDCLASSEX				m_class{};
-		std::wstring			m_className{};
-		std::wstring			m_title{};
-		int						m_showCommand{};
-		int						m_clientAreaWidth{ clientAreaDefaultWidth };
-		int						m_clientAreaHeight{ clientAreaDefaultHeight };
+		HWND				m_handle{};
+		WNDCLASSEX			m_class{};
+		std::wstring		m_className{};
+		std::wstring		m_title{};
+		int					m_showCommand{};
+		int					m_clientAreaWidth{ clientAreaDefaultWidth };
+		int					m_clientAreaHeight{ clientAreaDefaultHeight };
 
 		static	LRESULT WINAPI	WndProc(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam);
 		void					InitializeClass(HINSTANCE instanceHandle);

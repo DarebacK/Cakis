@@ -28,10 +28,14 @@ LRESULT DE::Utilities::Win32::Window::WndProc(HWND windowHandle, UINT message, W
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	case WM_KEYDOWN:
+		//TODO: process keydown and fire event (in separate class, ie. InputProcessor)
+		break;
 	default:
-		return DefWindowProc(windowHandle, message, wParam, lParam);
+		break;
 	}
 
+	return DefWindowProc(windowHandle, message, wParam, lParam);
 }
 
 void DE::Utilities::Win32::Window::InitializeClass(HINSTANCE instanceHandle)

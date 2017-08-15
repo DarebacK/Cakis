@@ -38,12 +38,12 @@ namespace DE
 		DrawInfo							m_drawInfo;
 		unsigned long						m_gameObjectIdCounter{ 0 }; //TODO: refactor this outside GameClass, something like GameObjectManager
 		
-		void								Initialize();
-		void								RunGameLoop();
-		void								Update();
-		void								PreDraw();
-		void								Draw();
-		void								PostDraw();
+		void Initialize();
+		void RunGameLoop();
+		void Update();
+		void PreDraw();
+		void Draw();
+		void PostDraw();
 	};
 
 

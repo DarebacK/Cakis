@@ -149,6 +149,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="Input\KeyCode.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteText.h" />
     <ClInclude Include="Timing\Clock.h" />

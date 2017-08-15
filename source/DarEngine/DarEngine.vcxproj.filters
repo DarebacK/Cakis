@@ -27,6 +27,9 @@
     <Filter Include="Source Files\GUI">
       <UniqueIdentifier>{3315c03f-94d2-42bb-9e8a-fc8106a8c85a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Input">
+      <UniqueIdentifier>{dcf01a83-0071-40fd-bbd5-3e9a77d2e525}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h">
@@ -70,6 +73,9 @@
     </ClInclude>
     <ClInclude Include="Timing\Clock.h">
       <Filter>Source Files\Timing</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\KeyCode.h">
+      <Filter>Source Files\Input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
