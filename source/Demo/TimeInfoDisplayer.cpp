@@ -33,11 +33,6 @@ void Demo::TimeInfoDisplayer::OnUpdate(const UpdateInfo& info)
 		L"Fps: " + to_wstring(averageFps) + L"\n" +
 		L"Time elapsed: " + to_wstring(timeElapsed) + L" s\n" +
 		L"Local time: " + to_wstring(localTime);
-
-	
-	
-	//TODO: display current local time
-
 }
 
 void Demo::TimeInfoDisplayer::OnDraw(const DrawInfo& info)

@@ -11,25 +11,25 @@ namespace DE
 		class Clock
 		{
 		public:
-			using			ClockType = clock_type;
+			using ClockType = clock_type;
 
-			Clock();
-			Clock(const Clock& other) = default;
-			Clock(Clock&& other) noexcept = default;
-			Clock& operator=(const Clock& other) = delete;
-			Clock& operator=(Clock&& other) noexcept = default;
-			~Clock() = default;
+					Clock();
+					Clock(const Clock& other) = default;
+					Clock(Clock&& other) noexcept = default;
+			Clock&	operator=(const Clock& other) = delete;
+			Clock&	operator=(Clock&& other) noexcept = default;
+					~Clock() = default;
 
-			void			Update();
-			void			Reset();
-			auto			GetStartTimePoint() const noexcept { return m_startTimePoint; }
-			auto			GetCurrentTimePoint() const noexcept { return m_actualTimePoint; }
-			auto			GetPreviousTimePoint() const noexcept { return m_currentTimePoint; }
+			void	Update();
+			void	Reset();
+			auto	GetStartTimePoint() const noexcept { return m_startTimePoint; }
+			auto	GetCurrentTimePoint() const noexcept { return m_actualTimePoint; }
+			auto	GetPreviousTimePoint() const noexcept { return m_currentTimePoint; }
 
 		private:
-			typename ClockType::time_point				m_startTimePoint{};
-			typename ClockType::time_point				m_currentTimePoint{};
-			typename ClockType::time_point				m_actualTimePoint{};
+			typename ClockType::time_point	m_startTimePoint{};
+			typename ClockType::time_point	m_currentTimePoint{};
+			typename ClockType::time_point	m_actualTimePoint{};
 		};
 
 		template <typename clock_type>
