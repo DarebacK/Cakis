@@ -29,7 +29,8 @@ namespace DE
 		HINSTANCE							m_instanceHandle{ nullptr };
 		Utilities::Win32::Window			m_window;
 		Utilities::DirectX11::D3DContext	m_d3dContext;
-		Timing::Clock<std::chrono::high_resolution_clock>	m_clock{};
+		Timing::Clock<std::chrono::high_resolution_clock>	m_highResolutionClock{};
+		Timing::Clock<std::chrono::system_clock>			m_systemClock{};
 		std::vector<std::unique_ptr<GameObject>>			m_gameObjects{};
 		SpriteDrawer						m_spriteDrawer;
 		SpriteTextDrawer					m_spriteFontDrawer;

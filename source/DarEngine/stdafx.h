@@ -42,7 +42,10 @@
 #include <map>
 #include <unordered_map>
 #include <type_traits>
+#define __STDC_WANT_LIB_EXT1__ 1 /// to be able to use safe version functions (localtime_s, gmtime_s ...)
 #include <chrono>
+#include <iomanip>
+#include <sstream>
 #include <ctime>
 #include <algorithm>
 #include <numeric>

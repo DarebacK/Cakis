@@ -3,6 +3,7 @@
 #include "UpdateInfo.h"
 #include "DrawInfo.h"
 #include "Timing/Clock.h"
+#include <iomanip>
 
 using namespace DE;
 using namespace DE::Timing;
@@ -11,9 +12,7 @@ const size_t Demo::TimeInfoDisplayer::m_defaultFrameTimesSize{ 60 };
 
 Demo::TimeInfoDisplayer::TimeInfoDisplayer()
 {
-	m_fpsText.Position = { 0.0f, 0.0f };
-	m_frameTimeText.Position = { 0.0f, 20.0f };
-	m_timeElapsedText.Position = { 0.0f, 40.0f };	
+	m_text.Position = { 0.0f, 0.0f };
 }
 
 void Demo::TimeInfoDisplayer::OnUpdate(const UpdateInfo& info)
@@ -23,20 +22,24 @@ void Demo::TimeInfoDisplayer::OnUpdate(const UpdateInfo& info)
 		m_iterator = 0;
 	}
 
-	auto frameTime = GetDeltaTime(info.Clock);
-	m_frameTimeText.Text = L"Frame time: " + std::to_wstring(frameTime) + L" s";
-	
+	auto frameTime = GetDeltaTime(info.HighResolutionClock);
 	m_frameTimes[m_iterator++] = frameTime;
 	int averageFps = static_cast<int>(m_frameTimes.size() / std::accumulate(m_frameTimes.cbegin(), m_frameTimes.cend(), 0.0));
-	m_fpsText.Text = L"Fps: " + std::to_wstring(averageFps);
+	auto timeElapsed = GetElapsedTime<std::ratio<1>, double>(info.HighResolutionClock);
+	std::tm currentLocalTime = TimePointToLocalTime(info.SystemClock.GetCurrentTimePoint());
 
-	auto timeElapsed = GetElapsedTime<std::ratio<1>, double>(info.Clock);
-	m_timeElapsedText.Text = L"Time elapsed: " + std::to_wstring(timeElapsed) + L" s";
+	m_text.Text = L"Frame time: " + std::to_wstring(frameTime) + L" s\n" +
+		L"Fps: " + std::to_wstring(averageFps) + L"\n" +
+		L"Time elapsed: " + std::to_wstring(timeElapsed) + L" s\n" +
+		L"Current local time: " + TimeToWString(currentLocalTime);
+
+	
+	
+	//TODO: display current local time
+
 }
 
 void Demo::TimeInfoDisplayer::OnDraw(const DrawInfo& info)
 {
-	info.SpriteTextDrawer.EnqueueDrawCall(SpriteFontName::SegoeUI_14, m_timeElapsedText);
-	info.SpriteTextDrawer.EnqueueDrawCall(SpriteFontName::SegoeUI_14, m_frameTimeText);
-	info.SpriteTextDrawer.EnqueueDrawCall(SpriteFontName::SegoeUI_14, m_fpsText);
+	info.SpriteTextDrawer.EnqueueDrawCall(SpriteFontName::SegoeUI_14, m_text);
 }

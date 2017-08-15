@@ -25,6 +25,8 @@ namespace DE
 		SegoeUI_14
 	};
 
+	//TODO: add string measurement by font
+	//TODO: overload EnqueueDrawCall with all the variables in SpriteText as default arguments
 	class SpriteTextDrawer
 	{
 		friend Game;

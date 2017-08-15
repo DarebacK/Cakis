@@ -151,10 +151,10 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteText.h" />
+    <ClInclude Include="Timing\Clock.h" />
     <ClInclude Include="UpdateInfo.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Timing\Clock.h" />
     <ClInclude Include="Utilities\DirectX11\D3DContext.h" />
     <ClInclude Include="Utilities\Win32\Paths.h" />
     <ClInclude Include="Utilities\Win32\Window.h" />
@@ -171,6 +171,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Timing\Clock.cpp" />
     <ClCompile Include="Utilities\DirectX11\D3DContext.cpp" />
     <ClCompile Include="Utilities\Win32\Paths.cpp" />
     <ClCompile Include="Utilities\Win32\Window.cpp" />

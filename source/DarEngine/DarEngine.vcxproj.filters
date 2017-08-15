@@ -44,9 +44,6 @@
     <ClInclude Include="Diagnostics\Exception.h">
       <Filter>Source Files\Diagnostics</Filter>
     </ClInclude>
-    <ClInclude Include="Timing\Clock.h">
-      <Filter>Source Files\Timing</Filter>
-    </ClInclude>
     <ClInclude Include="GameObject.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -70,6 +67,9 @@
     </ClInclude>
     <ClInclude Include="Utilities\Win32\Window.h">
       <Filter>Source Files\Utilities\Win32</Filter>
+    </ClInclude>
+    <ClInclude Include="Timing\Clock.h">
+      <Filter>Source Files\Timing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +99,9 @@
     </ClCompile>
     <ClCompile Include="Utilities\Win32\Window.cpp">
       <Filter>Source Files\Utilities\Win32</Filter>
+    </ClCompile>
+    <ClCompile Include="Timing\Clock.cpp">
+      <Filter>Source Files\Timing</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

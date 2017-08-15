@@ -18,9 +18,7 @@ namespace Demo
 		static const size_t m_defaultFrameTimesSize;
 
 		std::vector<float>	m_frameTimes = std::vector<float>(m_defaultFrameTimesSize);
-		DE::SpriteText		m_fpsText{};
-		DE::SpriteText		m_frameTimeText{};
-		DE::SpriteText		m_timeElapsedText{};
+		DE::SpriteText		m_text;
 		int					m_iterator{ 0 };
 
 

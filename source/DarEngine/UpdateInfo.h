@@ -21,6 +21,7 @@ namespace DE
 		UpdateInfo&	operator=(UpdateInfo&& other) = delete;
 					~UpdateInfo() = default;
 
-		const Timing::Clock<std::chrono::high_resolution_clock>&	Clock;
+		const Timing::Clock<std::chrono::high_resolution_clock>&	HighResolutionClock;
+		const Timing::Clock<std::chrono::system_clock>&				SystemClock;
 	};
 }

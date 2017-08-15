@@ -31,7 +31,7 @@ DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int sh
 	:m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}, 
 	m_d3dContext{ m_window.GetHandle(), m_window.GetClientAreaWidth(), m_window.GetClientAreaHeight() },
 	m_spriteDrawer{ m_d3dContext.GetDeviceContext() }, m_spriteFontDrawer{ m_d3dContext.GetDevice(), m_d3dContext.GetDeviceContext()},
-	m_updateInfo{ m_clock }, m_drawInfo{ m_spriteDrawer, m_spriteFontDrawer}
+	m_updateInfo{ m_highResolutionClock, m_systemClock }, m_drawInfo{ m_spriteDrawer, m_spriteFontDrawer}
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -43,7 +43,8 @@ DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int sh
 void DE::Game::Initialize()
 {
 	m_window.Show();
-	m_clock.Reset();
+	m_highResolutionClock.Reset();
+	m_systemClock.Reset();
 }
 
 void DE::Game::RunGameLoop()
@@ -68,7 +69,8 @@ void DE::Game::RunGameLoop()
 
 void DE::Game::Update()
 {
-	m_clock.Update();
+	m_highResolutionClock.Update();
+	m_systemClock.Update();
 
 	for(auto& gameObjectPtr : m_gameObjects)
 	{
