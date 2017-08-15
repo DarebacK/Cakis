@@ -83,21 +83,23 @@ namespace DE
 				).count();
 		}
 
-		inline std::tm TimePointToLocalTime(const std::chrono::system_clock::time_point& timePoint)
+		inline std::tm to_LocalTime(const std::chrono::system_clock::time_point& timePoint)
 		{
 			std::time_t tempTime = std::chrono::system_clock::to_time_t(timePoint);
 			struct tm returnValue;
 
-			// returns zero if successful, which contradicts the cppreference page http://en.cppreference.com/w/c/chrono/localtime
+			// localtime_s() returns zero if successful, which contradicts the cppreference page http://en.cppreference.com/w/c/chrono/localtime
 			if(localtime_s(&returnValue, &tempTime))
 			{
-				throw DE::Diagnostics::Exception{ L"DE::Timing::TimePointToLocalTime() failed." };
+				throw DE::Diagnostics::Exception{ L"DE::Timing::to_LocalTime() failed." };
 			}
 
 			return returnValue;
 		}
 
-		inline std::wstring TimeToWString(const std::tm& time,const std::wstring& format = L"%c")
+		// fake "overload" for std::to_wstring,
+		// cannot overload directly in std namespace since it's prohibited by the standard
+		inline std::wstring to_wstring(const std::tm& time, const std::wstring& format = L"%c")
 		{
 			std::wstringstream tempWStringStream;
 			tempWStringStream << std::put_time(&time, format.c_str());

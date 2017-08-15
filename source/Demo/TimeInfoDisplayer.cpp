@@ -5,6 +5,7 @@
 #include "Timing/Clock.h"
 #include <iomanip>
 
+using namespace std;
 using namespace DE;
 using namespace DE::Timing;
 
@@ -24,14 +25,14 @@ void Demo::TimeInfoDisplayer::OnUpdate(const UpdateInfo& info)
 
 	auto frameTime = GetDeltaTime(info.HighResolutionClock);
 	m_frameTimes[m_iterator++] = frameTime;
-	int averageFps = static_cast<int>(m_frameTimes.size() / std::accumulate(m_frameTimes.cbegin(), m_frameTimes.cend(), 0.0));
-	auto timeElapsed = GetElapsedTime<std::ratio<1>, double>(info.HighResolutionClock);
-	std::tm currentLocalTime = TimePointToLocalTime(info.SystemClock.GetCurrentTimePoint());
+	int averageFps = static_cast<int>(m_frameTimes.size() / accumulate(m_frameTimes.cbegin(), m_frameTimes.cend(), 0.0));
+	auto timeElapsed = GetElapsedTime<ratio<1>, double>(info.HighResolutionClock);
+	std::tm localTime = to_LocalTime(info.SystemClock.GetCurrentTimePoint());
 
-	m_text.Text = L"Frame time: " + std::to_wstring(frameTime) + L" s\n" +
-		L"Fps: " + std::to_wstring(averageFps) + L"\n" +
-		L"Time elapsed: " + std::to_wstring(timeElapsed) + L" s\n" +
-		L"Current local time: " + TimeToWString(currentLocalTime);
+	m_text.Text = L"Frame time: " + to_wstring(frameTime) + L" s\n" +
+		L"Fps: " + to_wstring(averageFps) + L"\n" +
+		L"Time elapsed: " + to_wstring(timeElapsed) + L" s\n" +
+		L"Local time: " + to_wstring(localTime);
 
 	
 	
