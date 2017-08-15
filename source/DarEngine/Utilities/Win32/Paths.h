@@ -109,11 +109,6 @@ namespace Win32
 		file.close();
 	}
 
-	void ToWideString(const std::string& source, std::wstring& dest)
-	{
-		dest.assign(source.begin(), source.end());
-	}
-
 	std::wstring ToWideString(const std::string& source)
 	{
 		std::wstring dest;
