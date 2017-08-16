@@ -2,6 +2,7 @@
 #include "Game.h"
 #include "Diagnostics/Exception.h"
 #include "Utilities/Win32/Paths.h"
+#include "Keyboard.h"
 
 void DE::Game::Run()
 {
@@ -28,10 +29,10 @@ void DE::Game::Exit()
 }
 
 DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int showCommand)
-	:m_instanceHandle {instanceHandle}, m_window{instanceHandle, windowTitle, showCommand}, 
+	:m_instanceHandle{ instanceHandle }, m_window{ instanceHandle, windowTitle, showCommand },
 	m_d3dContext{ m_window.GetHandle(), m_window.GetClientAreaWidth(), m_window.GetClientAreaHeight() },
 	m_spriteDrawer{ m_d3dContext.GetDeviceContext() }, m_spriteFontDrawer{ m_d3dContext.GetDevice(), m_d3dContext.GetDeviceContext()},
-	m_updateInfo{ m_highResolutionClock, m_systemClock }, m_drawInfo{ m_spriteDrawer, m_spriteFontDrawer}
+	m_updateInfo{ m_highResolutionClock, m_systemClock, m_keyboardStateTracker}, m_drawInfo{ m_spriteDrawer, m_spriteFontDrawer}
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -71,6 +72,9 @@ void DE::Game::Update()
 {
 	m_highResolutionClock.Update();
 	m_systemClock.Update();
+
+	m_keyboardStateTracker.Update(m_keyboard->GetState());
+	m_updateInfo.KeyboardState = m_keyboard->GetState();
 
 	for(auto& gameObjectPtr : m_gameObjects)
 	{

@@ -28,6 +28,7 @@
 #pragma region DirectXTK
 #include "SpriteBatch.h"
 #include "SpriteFont.h"
+#include "Keyboard.h"
 #pragma endregion
 
 #pragma region STL

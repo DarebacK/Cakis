@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Window.h"
 #include "Diagnostics/Exception.h"
+#include "Keyboard.h"
 
 DE::Utilities::Win32::Window::Window(HINSTANCE instanceHandle, const std::wstring& title, int showCommand)
 	:m_className{title + L"_class"}, m_title{ title }, m_showCommand{ showCommand }
@@ -28,9 +29,18 @@ LRESULT DE::Utilities::Win32::Window::WndProc(HWND windowHandle, UINT message, W
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
-	case WM_KEYDOWN:
-		//TODO: process keydown and fire event (in separate class, ie. InputProcessor)
+
+	case WM_ACTIVATEAPP:
+		DirectX::Keyboard::ProcessMessage(message, wParam, lParam);
 		break;
+
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		DirectX::Keyboard::ProcessMessage(message, wParam, lParam);
+		break;
+
 	default:
 		break;
 	}

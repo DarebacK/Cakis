@@ -74,9 +74,6 @@
     <ClInclude Include="Timing\Clock.h">
       <Filter>Source Files\Timing</Filter>
     </ClInclude>
-    <ClInclude Include="Input\KeyCode.h">
-      <Filter>Source Files\Input</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

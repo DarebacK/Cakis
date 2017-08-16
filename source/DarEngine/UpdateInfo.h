@@ -23,5 +23,8 @@ namespace DE
 
 		const Timing::Clock<std::chrono::high_resolution_clock>&	HighResolutionClock;
 		const Timing::Clock<std::chrono::system_clock>&				SystemClock;
+		const DirectX::Keyboard::KeyboardStateTracker&				KeyboardStateTracker;
+		DirectX::Keyboard::State									KeyboardState;
+		
 	};
 }
