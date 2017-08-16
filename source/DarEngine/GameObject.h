@@ -48,7 +48,11 @@ namespace DE
 	ComponentType* GameObject::AddComponentByType(Args... arguments)
 	{
 		m_components.push_back(std::make_unique<ComponentType>(std::forward<Args>(arguments)...));
-		return static_cast<ComponentType*>(m_components.back().get());
+
+		auto newComponent = m_components.back().get();
+		newComponent->m_parent = this;
+
+		return static_cast<ComponentType*>(newComponent);
 	}
 
 	template <typename ComponentType>

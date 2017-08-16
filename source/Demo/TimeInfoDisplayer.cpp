@@ -18,6 +18,11 @@ Demo::TimeInfoDisplayer::TimeInfoDisplayer()
 
 void Demo::TimeInfoDisplayer::OnUpdate(const UpdateInfo& info)
 {
+	if(info.KeyboardStateTracker.pressed.F1)
+	{
+		m_isDisplayerEnabled = !m_isDisplayerEnabled;
+	}
+
 	if(m_iterator >= m_defaultFrameTimesSize)
 	{
 		m_iterator = 0;
@@ -37,5 +42,8 @@ void Demo::TimeInfoDisplayer::OnUpdate(const UpdateInfo& info)
 
 void Demo::TimeInfoDisplayer::OnDraw(const DrawInfo& info)
 {
-	info.SpriteTextDrawer.EnqueueDrawCall(SpriteFontName::SegoeUI_14, m_text);
+	if(m_isDisplayerEnabled)
+	{
+		info.SpriteTextDrawer.EnqueueDrawCall(SpriteFontName::SegoeUI_14, m_text);
+	}
 }
