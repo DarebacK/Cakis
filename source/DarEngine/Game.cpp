@@ -32,13 +32,15 @@ DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int sh
 	:m_instanceHandle{ instanceHandle }, m_window{ instanceHandle, windowTitle, showCommand },
 	m_d3dContext{ m_window.GetHandle(), m_window.GetClientAreaWidth(), m_window.GetClientAreaHeight() },
 	m_spriteDrawer{ m_d3dContext.GetDeviceContext() }, m_spriteFontDrawer{ m_d3dContext.GetDevice(), m_d3dContext.GetDeviceContext()},
-	m_updateInfo{ m_highResolutionClock, m_systemClock, m_keyboardStateTracker}, m_drawInfo{ m_spriteDrawer, m_spriteFontDrawer}
+	m_updateInfo{ m_highResolutionClock, m_systemClock, m_mouseState, m_mouseButtonStateTracker,
+		m_keyboardState, m_keyboardStateTracker}, m_drawInfo{ m_spriteDrawer, m_spriteFontDrawer}
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
 	SetCurrentDirectory(Utilities::Win32::ExecutableDirectory().c_str());
+	m_mouse.SetWindow(m_window.GetHandle());
 }
 
 void DE::Game::Initialize()
@@ -73,8 +75,11 @@ void DE::Game::Update()
 	m_highResolutionClock.Update();
 	m_systemClock.Update();
 
-	m_keyboardStateTracker.Update(m_keyboard->GetState());
-	m_updateInfo.KeyboardState = m_keyboard->GetState();
+	m_keyboardState = m_keyboard.GetState();
+	m_keyboardStateTracker.Update(m_keyboardState);
+
+	m_mouseState = m_mouse.GetState();
+	m_mouseButtonStateTracker.Update(m_mouseState);
 
 	for(auto& gameObjectPtr : m_gameObjects)
 	{

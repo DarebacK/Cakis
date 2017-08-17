@@ -9,6 +9,7 @@
 #include "UpdateInfo.h"
 #include "DrawInfo.h"
 
+//TODO: extract keyboard and mouse stuff, add option to change mouse mode
 namespace DE
 {
 	class Game
@@ -27,7 +28,11 @@ namespace DE
 
 	private:
 		HINSTANCE							m_instanceHandle{ nullptr };
-		std::unique_ptr<DirectX::Keyboard>	m_keyboard{ std::make_unique<DirectX::Keyboard>() };
+		DirectX::Mouse						m_mouse{};
+		DirectX::Mouse::State				m_mouseState{};
+		DirectX::Mouse::ButtonStateTracker	m_mouseButtonStateTracker{};
+		DirectX::Keyboard					m_keyboard{};
+		DirectX::Keyboard::State			m_keyboardState{};
 		DirectX::Keyboard::KeyboardStateTracker m_keyboardStateTracker{};
 		Utilities::Win32::Window			m_window;
 		Utilities::DirectX11::D3DContext	m_d3dContext;

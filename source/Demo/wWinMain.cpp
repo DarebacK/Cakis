@@ -8,6 +8,7 @@ int WINAPI wWinMain(HINSTANCE instanceHandle, HINSTANCE previousInstanceHandle, 
 {
 	Game game{ instanceHandle, L"DE Demo", showCommand };
 	game.AddGameObjectByType<GameObject>()->AddComponentByType<Demo::TimeInfoDisplayer>();
+
 	game.Run();
 
 	return 0;
