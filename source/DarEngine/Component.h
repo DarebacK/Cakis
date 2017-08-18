@@ -11,10 +11,10 @@ namespace DE
 {
 	class Component
 	{
-		friend	GameObject;	// to set m_parent
+		friend	GameObject;	// to set m_parentGameObject
 
 	public:
-		virtual			~Component() {};
+		virtual			~Component() = 0;
 
 		bool			IsEnabled() const noexcept { return m_isEnabled; }
 		void			Enable() noexcept { m_isEnabled = true; }
@@ -25,10 +25,10 @@ namespace DE
 		bool			IsOnDrawEnabled() const noexcept { return m_isOnDrawEnabled; }
 		void			EnableOnDraw() noexcept { m_isOnDrawEnabled = true; }
 		void			DisableOnDraw() noexcept { m_isOnDrawEnabled = false; }
-		GameObject&		GetParent() const noexcept { return *m_parent; }
+		GameObject&		GetParentGameObject() const noexcept { return *m_parentGameObject; }
 
 	private:
-		GameObject*		m_parent{ nullptr };
+		GameObject*		m_parentGameObject{ nullptr };
 		bool			m_isEnabled{ true };
 		bool			m_isOnUpdateEnabled{ true };
 		bool			m_isOnDrawEnabled{ true };
@@ -38,5 +38,9 @@ namespace DE
 		virtual void	OnDraw(const DrawInfo& info) {};
 
 	};
+
+	inline Component::~Component()
+	{
+	}
 }
 
