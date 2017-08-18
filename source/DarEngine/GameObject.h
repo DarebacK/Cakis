@@ -37,10 +37,12 @@ namespace DE
 		// for every contained component until found.
 		template<typename ComponentType>
 		ComponentType*	GetComponentByType();
+		Game&			GetParentGame() const { return *m_parentGame; }
 	
 	private:
+		std::vector<std::unique_ptr<Component>>	m_components{};
 		unsigned long							m_id;
-		std::vector<std::unique_ptr<Component>>	m_components;
+		Game*									m_parentGame{ nullptr };
 	};
 
 
@@ -50,7 +52,7 @@ namespace DE
 		m_components.push_back(std::make_unique<ComponentType>(std::forward<Args>(arguments)...));
 
 		auto newComponent = m_components.back().get();
-		newComponent->m_parent = this;
+		newComponent->m_parentGameObject = this;
 
 		return static_cast<ComponentType*>(newComponent);
 	}
