@@ -3,6 +3,7 @@
 #include "Diagnostics/Exception.h"
 #include "Utilities/Win32/Paths.h"
 #include "Keyboard.h"
+#include "Camera.h"
 
 void DE::Game::Run()
 {
@@ -41,6 +42,9 @@ DE::Game::Game(HINSTANCE instanceHandle, const std::wstring& windowTitle, int sh
 
 	SetCurrentDirectory(Utilities::Win32::ExecutableDirectory().c_str());
 	m_mouse.SetWindow(m_window.GetHandle());
+
+	// add default camera
+	AddGameObjectByType<Camera>();
 }
 
 void DE::Game::Initialize()
