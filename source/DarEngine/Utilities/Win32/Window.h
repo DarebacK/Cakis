@@ -37,6 +37,11 @@ namespace Win32
 		void					InitializeClass(HINSTANCE instanceHandle);
 		void					InitializeWindow(HINSTANCE instanceHandle);
 	};
+
+	inline float GetAspectRatio(const Window& window) noexcept
+	{
+		return float(window.GetClientAreaWidth()) / window.GetClientAreaHeight();
+	}
 }
 }
 }
