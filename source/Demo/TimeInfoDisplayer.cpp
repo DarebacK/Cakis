@@ -3,7 +3,6 @@
 #include "UpdateInfo.h"
 #include "DrawInfo.h"
 #include "Timing/Clock.h"
-#include <iomanip>
 
 using namespace std;
 using namespace DE;
