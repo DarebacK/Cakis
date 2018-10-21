@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="detail\LinuxLibrary.cpp" />
+    <ClCompile Include="detail\Win32Library.cpp" />
     <ClCompile Include="Exception.cpp">
       <SubType>
       </SubType>
@@ -29,6 +31,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="detail\LinuxLibrary.hpp" />
+    <ClInclude Include="detail\Win32Library.hpp" />
     <ClInclude Include="Exception.hpp">
       <SubType>
       </SubType>

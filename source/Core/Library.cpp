@@ -1,11 +1,11 @@
 #include "Library.hpp"
-#include "Exception.hpp"
-#include <sstream>
 
 #if defined(_WIN32)
-#include <Windows.h>
+#include "detail/Win32Library.hpp"
+using LibraryType = De::Win32Library;
 #elif defined(__linux__)
-#include <dlfcn.h>
+#include "detail/LinuxLibrary.hpp"
+using LibraryType = De::LinuxLibrary;
 #endif
 
 using namespace De;
@@ -15,63 +15,18 @@ class Library::Impl
 public:
 	explicit Impl(const char* fileName)
 	{
-#if defined(_WIN32)
-			library = LoadLibrary(fileName);
-#elif defined(__linux__)
-			library = dlopen(fileName, RTLD_NOW);
-#endif
-		if (!library)
-		{
-			std::ostringstream errorMessage;
-			errorMessage << "Couldn't load library named \""
-				<< fileName << "\"";
-			throw Exception(errorMessage.str());
-		}
+		library = std::make_unique<LibraryType>(fileName);
 	}
 	Impl(const Impl& other) = delete;
-	Impl(Impl&& other) noexcept
-		:library{other.library}
-	{
-		other.library = nullptr;
-	}
+	Impl(Impl&& other) = default;
 	Impl& operator=(const Impl& rhs) = delete;
-	Impl& operator=(Impl&& rhs) noexcept
-	{
-		library = rhs.library;
-		rhs.library = nullptr;
-		return *this;
-	}
-	~Impl()
-	{
-		if(library)
-		{
-#if defined(_WIN32)
-			FreeLibrary(static_cast<HMODULE>(library));
-#elif defined(__linux__)
-			dlcose(library);
-#endif
-		}
-	}
-
+	Impl& operator=(Impl&& rhs) = default;
 	void* loadFunction(const char* name)
 	{
-		void* function{nullptr};
-#if defined(_WIN32)
-			function = GetProcAddress(static_cast<HMODULE>(library), name);
-#elif defined(__linux__)
-			function = dlsym(library, name);
-#endif
-		if(!function)
-		{
-			std::ostringstream errorMessage;
-			errorMessage << "Couldn't load function named \""
-				<< name << "\"";
-			throw Exception(errorMessage.str());
-		}
-		return function;
+		return library->loadFunction(name);
 	}
 private:
-	void* library{nullptr};
+	std::unique_ptr<LibraryType> library;
 };
 
 Library::Library(const char* fileName)
