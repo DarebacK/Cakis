@@ -22,9 +22,17 @@
     <None Include="ListOfVulkanFunctions.inl" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="InstanceExtensions.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="VulkanFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="InstanceExtensions.hpp">
+      <SubType>
+      </SubType>
+    </ClInclude>
     <ClInclude Include="Vulkan" />
     <ClInclude Include="VulkanFunctions.hpp" />
   </ItemGroup>

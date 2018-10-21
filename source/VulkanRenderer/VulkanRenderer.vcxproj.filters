@@ -23,12 +23,18 @@
     <ClCompile Include="VulkanFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InstanceExtensions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vulkan">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VulkanFunctions.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InstanceExtensions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
