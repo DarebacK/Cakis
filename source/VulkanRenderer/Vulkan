@@ -1,3 +1,37 @@
 #pragma once
 #define VK_NO_PROTOTYPES
 #include "vulkan.h"
+#include "Error.hpp"
+
+void checkResult(VkResult result)
+{
+	if(result != VK_SUCCESS)
+		{
+			std::string reason;
+			switch(result)
+			{
+			case VK_ERROR_OUT_OF_HOST_MEMORY:
+				reason = "out of host memory";
+				break;
+			case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+				reason = "out of device memory";
+				break;
+			case VK_ERROR_INITIALIZATION_FAILED:
+				reason = "initialization failed";
+				break;
+			case VK_ERROR_LAYER_NOT_PRESENT:
+				reason = "layer not present";
+				break;
+			case VK_ERROR_EXTENSION_NOT_PRESENT:
+				reason = "extension not present";
+				break;
+			case VK_ERROR_INCOMPATIBLE_DRIVER:
+				reason = "incompatible driver";
+				break;
+			default:
+				reason = "unknown reason";
+				break;
+			}
+			throw Error{"Vulkan error: " + reason};
+		}
+}

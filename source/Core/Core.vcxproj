@@ -31,6 +31,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ApplicationInfo.hpp">
+      <SubType>
+      </SubType>
+    </ClInclude>
     <ClInclude Include="detail\LinuxLibrary.hpp" />
     <ClInclude Include="detail\Win32Library.hpp" />
     <ClInclude Include="Exception.hpp">
@@ -42,6 +46,10 @@
       </SubType>
     </ClInclude>
     <ClInclude Include="Platform.hpp">
+      <SubType>
+      </SubType>
+    </ClInclude>
+    <ClInclude Include="Version.hpp">
       <SubType>
       </SubType>
     </ClInclude>

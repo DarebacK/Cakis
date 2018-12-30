@@ -22,14 +22,29 @@
     <None Include="ListOfVulkanFunctions.inl" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="InstanceExtensions.cpp">
+    <ClCompile Include="Error.cpp">
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="VulkanFunctions.cpp" />
+    <ClCompile Include="Instance.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="Loader.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="InstanceExtensions.hpp">
+    <ClInclude Include="Error.hpp">
+      <SubType>
+      </SubType>
+    </ClInclude>
+    <ClInclude Include="Instance.hpp">
+      <SubType>
+      </SubType>
+    </ClInclude>
+    <ClInclude Include="Loader.hpp">
       <SubType>
       </SubType>
     </ClInclude>

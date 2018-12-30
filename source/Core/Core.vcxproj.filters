@@ -44,5 +44,11 @@
     <ClInclude Include="detail\Win32Library.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ApplicationInfo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

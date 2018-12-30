@@ -20,10 +20,13 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="VulkanFunctions.cpp">
+    <ClCompile Include="Instance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InstanceExtensions.cpp">
+    <ClCompile Include="Error.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -34,7 +37,13 @@
     <ClInclude Include="VulkanFunctions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="InstanceExtensions.hpp">
+    <ClInclude Include="Instance.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Error.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Loader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
