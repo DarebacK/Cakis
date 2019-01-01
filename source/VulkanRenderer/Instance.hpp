@@ -12,12 +12,11 @@ namespace De::Vulkan
 							 const VkAllocationCallbacks* allocator = nullptr);
 					Instance(const Instance& other) = delete;
 					Instance(Instance&& other) noexcept;
-					~Instance();
+				   ~Instance();
 		Instance&	operator=(const Instance& rhs) = delete;
 		Instance&	operator=(Instance&& rhs) noexcept;
 
 	private:
-        friend class PhysicalDevice;
 		class Impl;
 		std::unique_ptr<Impl> pImpl{nullptr};
 	};
@@ -25,25 +24,27 @@ namespace De::Vulkan
     class PhysicalDevice
 	{
 	public:
-        explicit PhysicalDevice(Instance& instance, VkPhysicalDevice handle);
+        explicit PhysicalDevice(VkPhysicalDevice handle);
                  PhysicalDevice(const PhysicalDevice& other) = delete;
                  PhysicalDevice(PhysicalDevice&& other) noexcept;
                 ~PhysicalDevice() = default;
-        PhysicalDevice& operator=(PhysicalDevice& rhs) = delete;
+        PhysicalDevice& operator=(const PhysicalDevice& rhs) = delete;
         PhysicalDevice& operator=(PhysicalDevice&& rhs) noexcept;
-        const std::vector<VkExtensionProperties>& getAvailableExtensions() const {return availableExtensions;}
-        const VkPhysicalDeviceFeatures& getFeatures() const {return features;}
-        const VkPhysicalDeviceProperties& getProperties() const {return properties;}
-
+        const std::vector<VkExtensionProperties>&   getAvailableExtensions() const {return availableExtensions;}
+        const VkPhysicalDeviceFeatures&             getFeatures() const {return features;}
+        const VkPhysicalDeviceProperties&           getProperties() const {return properties;}
+        const std::vector<VkQueueFamilyProperties>& getQueueFamiliesProperties() const {return queueFamiliesProperties;}
 	private:
         VkPhysicalDevice handle{};
-        std::vector<VkExtensionProperties> availableExtensions;
+        std::vector<VkExtensionProperties> availableExtensions{};
         VkPhysicalDeviceFeatures features{};
         VkPhysicalDeviceProperties properties{};
+        std::vector<VkQueueFamilyProperties> queueFamiliesProperties{};
 
         friend void swap(PhysicalDevice& first, PhysicalDevice& second) noexcept;
-        void initAvailableExtensions(Instance& instance);
-        void initFeatures(Instance& instance);
-        void initProperties(Instance& instance);
+        void initAvailableExtensions();
+        void initFeatures();
+        void initProperties();
+        void initQueueFamiliesProperties();
 	};
 }

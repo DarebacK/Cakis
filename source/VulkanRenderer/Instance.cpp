@@ -2,11 +2,17 @@
 #include "VulkanFunctions.hpp"
 #include "Error.hpp"
 #include <vector>
-#include "PhysicalDevice.hpp"
+
+namespace De::Vulkan
+{
+#define INSTANCE_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
+#define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name, extension) PFN_##name name{nullptr};
+#include "ListOfVulkanFunctions.inl"
+}
 
 using namespace De::Vulkan;
 
-// Instance
+// Instance -------------------------------------------------------------------
 class Instance::Impl
 {
 public:
@@ -15,6 +21,7 @@ public:
 	{
 		initVkInstance(info, allocator);
 		loadInstanceLevelFunctions();
+    initPhysicalDevices();
 	}
 	Impl(const Impl& other) = delete;
 	Impl(Impl&& other) noexcept;
@@ -37,10 +44,7 @@ public:
 
 	VkInstance instance{nullptr};
 	VkAllocationCallbacks* allocator{nullptr};
-    std::vector<PhysicalDevice> physicalDevices;
-#define INSTANCE_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
-#define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name, extension) PFN_##name name{nullptr};
-#include "ListOfVulkanFunctions.inl"
+  std::vector<PhysicalDevice> physicalDevices;
 	void initVkInstance(const VkInstanceCreateInfo& info,
 				  const VkAllocationCallbacks* allocator)
 	{
@@ -91,8 +95,7 @@ Instance& Instance::operator=(Instance&& rhs) noexcept
 }
 Instance::~Instance() = default;
 
-
-// PhysicalDevice
+// PhysicalDevice -------------------------------------------------------------
 namespace De::Vulkan
 {
     static void swap(PhysicalDevice& first, PhysicalDevice& second) noexcept
@@ -102,29 +105,37 @@ namespace De::Vulkan
     }
 }
 
-PhysicalDevice::PhysicalDevice(Instance& instance, VkPhysicalDevice handle)
+PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
     : handle{handle}
 {
-    initAvailableExtensions(instance);
-    initFeatures(instance);
-    initProperties(instance);
+    initAvailableExtensions();
+    initFeatures();
+    initProperties();
+    initQueueFamiliesProperties();
 }
-void PhysicalDevice::initAvailableExtensions(Instance& instance)
+void PhysicalDevice::initAvailableExtensions()
 {
     uint32_t extensionsCount{};
-    VkResult result = instance.pImpl->vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, nullptr);
+    VkResult result = vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, nullptr);
     checkResult(result);
     availableExtensions.resize(extensionsCount);
-    result = instance.pImpl->vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, availableExtensions.data());
+    result = vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, availableExtensions.data());
     checkResult(result);
 }
-void PhysicalDevice::initFeatures(Instance& instance)
+void PhysicalDevice::initFeatures()
 {
-    instance.pImpl->vkGetPhysicalDeviceFeatures(handle, &features);
+   vkGetPhysicalDeviceFeatures(handle, &features);
 }
-void PhysicalDevice::initProperties(Instance& instance)
+void PhysicalDevice::initProperties()
 {
-    instance.pImpl->vkGetPhysicalDeviceProperties(handle, &properties);
+   vkGetPhysicalDeviceProperties(handle, &properties);
+}
+void PhysicalDevice::initQueueFamiliesProperties()
+{
+    uint32_t queueFamiliesCount{};
+    vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, nullptr);
+    queueFamiliesProperties.resize(queueFamiliesCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
 }
 PhysicalDevice::PhysicalDevice(PhysicalDevice&& other) noexcept
 {

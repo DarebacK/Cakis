@@ -40,7 +40,7 @@ namespace
 			applicationInfo.version.patch;	// https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VK_MAKE_VERSION.html
 		vkAppInfo.pEngineName = "DarEngine";
 		vkAppInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
-		vkAppInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
+		vkAppInfo.apiVersion = VK_API_VERSION_1_1;
 		return vkAppInfo;
 	}
 	VkInstanceCreateInfo	makeVkInstanceCreateInfo(const VkApplicationInfo& vkApplicationInfo, 
