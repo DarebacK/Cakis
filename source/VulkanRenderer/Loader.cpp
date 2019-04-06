@@ -17,50 +17,47 @@ namespace
 #endif
 }
 
-namespace De::Vulkan
+namespace De::Vk
 {
 // define variables for the vulkan functions we need
 #define EXPORTED_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
 #define GLOBAL_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
-//#define DEVICE_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
-//#define DEVICE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name, extension) PFN_##name name{nullptr};
+#define DEVICE_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
+#define DE_VK_KHR_SWAPCHAIN_FUNCTION(name) PFN_##name name{nullptr};
 #include "ListOfVulkanFunctions.inl"
-}
 
-namespace
+static VkApplicationInfo makeVkApplicationInfo(const De::ApplicationInfo applicationInfo)
 {
-		VkApplicationInfo makeVkApplicationInfo(const De::ApplicationInfo applicationInfo)
-	{
-		VkApplicationInfo vkAppInfo;
-		vkAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		vkAppInfo.pNext = nullptr;
-		vkAppInfo.pApplicationName = applicationInfo.name.data();
-		vkAppInfo.applicationVersion = applicationInfo.version.major << 22 | 
-			applicationInfo.version.minor << 12 | 
-			applicationInfo.version.patch;	// https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VK_MAKE_VERSION.html
-		vkAppInfo.pEngineName = "DarEngine";
-		vkAppInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
-		vkAppInfo.apiVersion = VK_API_VERSION_1_1;
-		return vkAppInfo;
-	}
-	VkInstanceCreateInfo	makeVkInstanceCreateInfo(const VkApplicationInfo& vkApplicationInfo, 
-													 const std::vector<const char*> layersToEnable, 
-													 std::vector<const char*> extensionsToLoad)
-	{
-		VkInstanceCreateInfo vkInstanceCreateInfo;
-		vkInstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		vkInstanceCreateInfo.pNext = nullptr;
-		vkInstanceCreateInfo.flags = 0;
-		vkInstanceCreateInfo.pApplicationInfo = &vkApplicationInfo;
-		vkInstanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(layersToEnable.size());
-		vkInstanceCreateInfo.ppEnabledLayerNames = layersToEnable.data();
-		vkInstanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensionsToLoad.size());
-		vkInstanceCreateInfo.ppEnabledExtensionNames = extensionsToLoad.data();
-		return vkInstanceCreateInfo;
-	}
+	VkApplicationInfo vkAppInfo;
+	vkAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	vkAppInfo.pNext = nullptr;
+	vkAppInfo.pApplicationName = applicationInfo.name.data();
+	vkAppInfo.applicationVersion = applicationInfo.version.major << 22 | 
+		applicationInfo.version.minor << 12 | 
+		applicationInfo.version.patch;	// https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VK_MAKE_VERSION.html
+	vkAppInfo.pEngineName = "DarEngine";
+	vkAppInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
+	vkAppInfo.apiVersion = VK_API_VERSION_1_1;
+	return vkAppInfo;
+}
+static VkInstanceCreateInfo	makeVkInstanceCreateInfo(const VkApplicationInfo& vkApplicationInfo, 
+													const std::vector<const char*> layersToEnable, 
+													std::vector<const char*> extensionsToLoad)
+{
+	VkInstanceCreateInfo vkInstanceCreateInfo;
+	vkInstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	vkInstanceCreateInfo.pNext = nullptr;
+	vkInstanceCreateInfo.flags = 0;
+	vkInstanceCreateInfo.pApplicationInfo = &vkApplicationInfo;
+	vkInstanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(layersToEnable.size());
+	vkInstanceCreateInfo.ppEnabledLayerNames = layersToEnable.data();
+	vkInstanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensionsToLoad.size());
+	vkInstanceCreateInfo.ppEnabledExtensionNames = extensionsToLoad.data();
+	return vkInstanceCreateInfo;
 }
 
-class De::Vulkan::Loader::Impl
+
+class De::Vk::Loader::Impl
 {
 public:
 	Impl()
@@ -136,19 +133,39 @@ private:
 	}
 };
 
-De::Vulkan::Loader::Loader()
+De::Vk::Loader::Loader()
 	:pImpl{std::make_unique<Impl>()}
 {}
-De::Vulkan::Loader::~Loader() = default;
+De::Vk::Loader::~Loader() = default;
 
-De::Vulkan::Instance De::Vulkan::Loader::loadInstance(const std::vector<const char*>& layersToEnable, 
+De::Vk::Instance De::Vk::Loader::loadInstance(const std::vector<const char*>& layersToEnable, 
 	const std::vector<const char*>& extensionsToLoad, 
 	const ApplicationInfo& applicationInfo, 
 	const VkAllocationCallbacks* allocator)
 {
 	return pImpl->loadInstance(layersToEnable, extensionsToLoad, applicationInfo, allocator);
 }
-const std::vector<VkExtensionProperties>& De::Vulkan::Loader::getAvailableExtensions() const
+const std::vector<VkExtensionProperties>& De::Vk::Loader::getAvailableExtensions() const
 {
 	return pImpl->getAvailableExtensions();
+}
+
+void loadDeviceCoreFunctions(VkDevice device)
+{
+  if(device)
+  {
+  #define DEVICE_LEVEL_VULKAN_FUNCTION(name) \
+  name = (PFN_##name) vkGetDeviceProcAddr(device, #name); \
+  if(!name) throw Error{std::string("could not load vulkan function ") + std::string(#name)};
+  #include "ListOfVulkanFunctions.inl"
+  }
+}
+
+void loadDeviceSwapchainFunctions(VkDevice device)
+{
+  #define DE_VK_KHR_SWAPCHAIN_FUNCTION(name) \
+  name = (PFN_##name) vkGetDeviceProcAddr(device, #name); \
+  if(!name) throw Error{std::string("could not load vulkan function ") + std::string(#name)};
+  #include "ListOfVulkanFunctions.inl"
+}
 }

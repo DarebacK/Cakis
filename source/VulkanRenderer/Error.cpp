@@ -1,6 +1,6 @@
 #include "Error.hpp"
 
-using namespace De::Vulkan;
+using namespace De::Vk;
 
 Error::Error(std::string message)
 	:Exception{"Vulkan error: " + message}

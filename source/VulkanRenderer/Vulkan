@@ -3,38 +3,29 @@
 #include "vulkan.h"
 #include "Error.hpp"
 
-namespace De::Vulkan
+namespace De::Vk
 {
-	static void checkResult(VkResult result)
-	{
-		if(result != VK_SUCCESS)
-			{
-				std::string reason;
-				switch(result)
-				{
-				case VK_ERROR_OUT_OF_HOST_MEMORY:
-					reason = "out of host memory";
-					break;
-				case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-					reason = "out of device memory";
-					break;
-				case VK_ERROR_INITIALIZATION_FAILED:
-					reason = "initialization failed";
-					break;
-				case VK_ERROR_LAYER_NOT_PRESENT:
-					reason = "layer not present";
-					break;
-				case VK_ERROR_EXTENSION_NOT_PRESENT:
-					reason = "extension not present";
-					break;
-				case VK_ERROR_INCOMPATIBLE_DRIVER:
-					reason = "incompatible driver";
-					break;
-				default:
-					reason = "unknown reason";
-					break;
-				}
-				throw Error{"Vulkan error: " + reason};
-			}
-	}
+#define vkCheckResult(func) \
+  switch(func) \
+  { \
+  case VK_SUCCESS: break; \
+  case VK_ERROR_OUT_OF_HOST_MEMORY: throw Error{"Vulkan error: VK_ERROR_OUT_OF_HOST_MEMORY"}; \
+  case VK_ERROR_OUT_OF_DEVICE_MEMORY: throw Error{"Vulkan error: VK_ERROR_OUT_OF_DEVICE_MEMORY"}; \
+  case VK_ERROR_INITIALIZATION_FAILED: throw Error{"Vulkan error: VK_ERROR_INITIALIZATION_FAILED"}; \
+  case VK_ERROR_LAYER_NOT_PRESENT: throw Error{"Vulkan error: VK_ERROR_LAYER_NOT_PRESENT"}; \
+  case VK_ERROR_EXTENSION_NOT_PRESENT: throw Error{"Vulkan error: VK_ERROR_EXTENSION_NOT_PRESENT"}; \
+  case VK_ERROR_INCOMPATIBLE_DRIVER: throw Error{"Vulkan error: VK_ERROR_INCOMPATIBLE_DRIVER"}; \
+  case VK_ERROR_FEATURE_NOT_PRESENT: throw Error{"Vulkan error: VK_ERROR_FEATURE_NOT_PRESENT"}; \
+  case VK_ERROR_TOO_MANY_OBJECTS: throw Error{"Vulkan error: VK_ERROR_TOO_MANY_OBJECTS"}; \
+  case VK_ERROR_DEVICE_LOST: throw Error{"Vulkan error: VK_ERROR_DEVICE_LOST"}; \
+  default: throw Error{"Vulkan error: unknown reason"}; \
+  }
+
+#define EXPORTED_VULKAN_FUNCTION(name) extern PFN_##name name;
+#define GLOBAL_LEVEL_VULKAN_FUNCTION(name) extern PFN_##name name;
+#define INSTANCE_LEVEL_VULKAN_FUNCTION(name) extern PFN_##name name;
+#define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION( name, extension ) extern PFN_##name name;
+#define DEVICE_LEVEL_VULKAN_FUNCTION(name) extern PFN_##name name;
+#define DEVICE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name, extension) extern PFN_##name name;
+#include "ListOfVulkanFunctions.inl"
 }

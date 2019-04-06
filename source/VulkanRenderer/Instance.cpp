@@ -1,18 +1,14 @@
 #include "Instance.hpp"
-#include "VulkanFunctions.hpp"
 #include "Error.hpp"
 #include <vector>
+#include "PhysicalDevice.hpp"
 
-namespace De::Vulkan
+namespace De::Vk
 {
 #define INSTANCE_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
 #define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name, extension) PFN_##name name{nullptr};
 #include "ListOfVulkanFunctions.inl"
-}
 
-using namespace De::Vulkan;
-
-// Instance -------------------------------------------------------------------
 class Instance::Impl
 {
 public:
@@ -48,8 +44,7 @@ public:
 	void initVkInstance(const VkInstanceCreateInfo& info,
 				  const VkAllocationCallbacks* allocator)
 	{
-		VkResult result = vkCreateInstance(&info, allocator, &instance);
-        checkResult(result);
+		vkCheckResult(vkCreateInstance(&info, allocator, &instance));
 	}
 	void loadInstanceLevelFunctions()
 	{
@@ -66,12 +61,10 @@ public:
     void initPhysicalDevices()
 	{
 	    uint32_t devicesCount{};
-        VkResult result = vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr);
-        checkResult(result);
+        vkCheckResult(vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr));
         std::vector<VkPhysicalDevice> vkPhysicalDevices;
 	    vkPhysicalDevices.resize(devicesCount);
-        result = vkEnumeratePhysicalDevices(instance, &devicesCount, vkPhysicalDevices.data());
-	    checkResult(result);
+        vkCheckResult(vkEnumeratePhysicalDevices(instance, &devicesCount, vkPhysicalDevices.data()));
         physicalDevices.reserve(devicesCount);
         for(auto vkPhysicalDevice : vkPhysicalDevices)
         {
@@ -94,55 +87,8 @@ Instance& Instance::operator=(Instance&& rhs) noexcept
 	return *this;
 }
 Instance::~Instance() = default;
-
-// PhysicalDevice -------------------------------------------------------------
-namespace De::Vulkan
+const std::vector<PhysicalDevice>& Instance::getPhysicalDevices() const
 {
-    static void swap(PhysicalDevice& first, PhysicalDevice& second) noexcept
-    {
-        using std::swap;
-        swap(first.handle, second.handle);
-    }
+  return pImpl->physicalDevices;
 }
-
-PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
-    : handle{handle}
-{
-    initAvailableExtensions();
-    initFeatures();
-    initProperties();
-    initQueueFamiliesProperties();
-}
-void PhysicalDevice::initAvailableExtensions()
-{
-    uint32_t extensionsCount{};
-    VkResult result = vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, nullptr);
-    checkResult(result);
-    availableExtensions.resize(extensionsCount);
-    result = vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, availableExtensions.data());
-    checkResult(result);
-}
-void PhysicalDevice::initFeatures()
-{
-   vkGetPhysicalDeviceFeatures(handle, &features);
-}
-void PhysicalDevice::initProperties()
-{
-   vkGetPhysicalDeviceProperties(handle, &properties);
-}
-void PhysicalDevice::initQueueFamiliesProperties()
-{
-    uint32_t queueFamiliesCount{};
-    vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, nullptr);
-    queueFamiliesProperties.resize(queueFamiliesCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
-}
-PhysicalDevice::PhysicalDevice(PhysicalDevice&& other) noexcept
-{
-    swap(*this, other);    
-}
-PhysicalDevice& PhysicalDevice::operator=(PhysicalDevice&& rhs) noexcept
-{
-    swap(*this, rhs);
-    return *this;
 }

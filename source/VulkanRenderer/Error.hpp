@@ -1,7 +1,7 @@
 #pragma once
 #include "Exception.hpp"
 
-namespace De::Vulkan
+namespace De::Vk
 {
 	class Error : public Exception
 	{
