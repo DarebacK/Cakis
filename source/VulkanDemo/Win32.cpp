@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <exception>
 #include "VulkanRenderer.h"
 
 namespace 
@@ -6,12 +7,13 @@ namespace
 int clientAreaWidth = 1280;
 int clientAreaHeight = 720;
 const DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+HWND windowHandle = nullptr;
 }
 
-static LRESULT CALLBACK WindowProc(_In_ HWND   windowHandle,
-                                   _In_ UINT   message,
-                                   _In_ WPARAM wParam,
-                                   _In_ LPARAM lParam)
+static LRESULT CALLBACK WindowProc(HWND   windowHandle,
+                                   UINT   message,
+                                   WPARAM wParam,
+                                   LPARAM lParam)
 {
   LRESULT result = 0;
   switch(message)
@@ -27,11 +29,11 @@ static LRESULT CALLBACK WindowProc(_In_ HWND   windowHandle,
   return result;
 }
 
-
 int WINAPI WinMain(HINSTANCE instanceHandle,
                    HINSTANCE hPrevInstance, // always zero
                    LPSTR     commandLine,
-                   int       showCode)
+                   int       showCode) 
+try
 {
   WNDCLASS windowClass{};
   windowClass.lpfnWndProc = &WindowProc;
@@ -41,7 +43,7 @@ int WINAPI WinMain(HINSTANCE instanceHandle,
   RECT windowRectangle;
 	windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
 	AdjustWindowRect(&windowRectangle, windowStyle, FALSE);
-  HWND windowHandle = CreateWindowA(windowClass.lpszClassName, 
+  windowHandle = CreateWindowA(windowClass.lpszClassName, 
                                     "VulkanDemo", 
                                     windowStyle,
                                     CW_USEDEFAULT, 
@@ -53,7 +55,11 @@ int WINAPI WinMain(HINSTANCE instanceHandle,
                                     windowClass.hInstance,
                                     nullptr);
 
-  initVulkanRenderer(instanceHandle, windowHandle);
+  if(!initVulkanRenderer(instanceHandle, windowHandle))
+  {
+    MessageBoxA(windowHandle, "Failed to initialize Vulkan renderer.", "Fatal error", MB_OK | MB_ICONERROR);
+    return -1;
+  }
 
   MSG message;
   BOOL result;
@@ -69,4 +75,12 @@ int WINAPI WinMain(HINSTANCE instanceHandle,
       DispatchMessageA(&message);
     }
   }
+}
+catch(const std::exception e)
+{
+  MessageBoxA(windowHandle, e.what(), "Fatal error", MB_OK | MB_ICONERROR);
+}
+catch(...)
+{
+  MessageBoxA(windowHandle, "Unknown error", "Fatal error", MB_OK | MB_ICONERROR);
 }

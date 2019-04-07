@@ -1,6 +1,5 @@
 #include "VulkanRenderer.h"
 #include "ApplicationInfo.hpp"
-#include "Library.hpp"
 #include "Exception.hpp"
 
 #include <memory>
@@ -16,7 +15,6 @@
   #define VK_USE_PLATFORM_WIN32_KHR
   #define VK_NO_PROTOTYPES
   #include "vulkan.h"
-  static const char* const vulkanLibraryPath = "vulkan-1.dll";
   static const std::array<const char*, 2> instanceExtensions = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME};
 #endif
 
@@ -56,12 +54,11 @@ namespace {
   #define EXPORTED_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
   #define GLOBAL_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
   #define INSTANCE_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
-  #define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name, extension) PFN_##name name{nullptr};
+  #define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name) PFN_##name name{nullptr};
   #define DEVICE_LEVEL_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
-  #define DE_VK_KHR_SWAPCHAIN_FUNCTION(name) PFN_##name name{nullptr};
+  #define DEVICE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name) PFN_##name name{nullptr};
   #include "ListOfVulkanFunctions.inl"
 
-  De::Library vulkanLibrary{vulkanLibraryPath}; 
   VkInstance instance = nullptr;
   std::vector<VkExtensionProperties> availableInstanceExtensions;
   const std::array<const char*, 1> deviceExtensions = { "VK_KHR_swapchain" };
@@ -139,13 +136,13 @@ namespace {
   {
     checkResult(vkCreateInstance(&info, allocator, &instance));
 
-    #define INSTANCE_LEVEL_VULKAN_FUNCTION( name )	\
+    #define INSTANCE_LEVEL_VULKAN_FUNCTION(name)	\
 	  name = (PFN_##name)vkGetInstanceProcAddr( instance, #name );	\
 	  if(!name)	\
 	  {	\
 		  throw VulkanError{std::string("could not load vulkan function ") + std::string(#name) };	\
 	  }
-    #define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION( name )	\
+    #define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name)	\
 	  name = (PFN_##name)vkGetInstanceProcAddr( instance, #name ); \
     if(!name)	\
 	  {	\
@@ -183,7 +180,7 @@ namespace {
 	  return vkAppInfo;
   }
   static VkInstanceCreateInfo	makeVkInstanceCreateInfo(const VkApplicationInfo& vkApplicationInfo, 
-													  const std::vector<const char*> layersToEnable)
+													                             const std::vector<const char*> layersToEnable)
   {
 	  VkInstanceCreateInfo vkInstanceCreateInfo;
 	  vkInstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -209,7 +206,7 @@ namespace {
   }
   void loadDeviceSwapchainFunctions(VkDevice device = nullptr)
   {
-    #define DE_VK_KHR_SWAPCHAIN_FUNCTION(name) \
+    #define DEVICE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name) \
     name = (PFN_##name) vkGetDeviceProcAddr(device, #name); \
     if(!name) throw VulkanError{std::string("could not load vulkan function ") + std::string(#name)};
     #include "ListOfVulkanFunctions.inl"
@@ -290,9 +287,11 @@ namespace {
 
 
 #ifdef _WIN32
-  void initVulkanRenderer(HINSTANCE winInstanceHandle, HWND windowHandle)
+  bool initVulkanRenderer(HINSTANCE winInstanceHandle, HWND windowHandle)
   {
-    #define EXPORTED_VULKAN_FUNCTION(name) name = reinterpret_cast<PFN_##name>(vulkanLibrary.loadFunction(#name));
+    HMODULE vulkanLibrary = LoadLibrary("vulkan-1.dll");
+    if(!vulkanLibrary) return false;
+    #define EXPORTED_VULKAN_FUNCTION(name) name = reinterpret_cast<PFN_##name>(GetProcAddress(vulkanLibrary, #name));
     #define GLOBAL_LEVEL_VULKAN_FUNCTION(name) name = reinterpret_cast<PFN_##name>(vkGetInstanceProcAddr(nullptr, #name));
     #include "ListOfVulkanFunctions.inl"
     initInstance(loadInstanceInfo());
@@ -306,5 +305,7 @@ namespace {
 
     enumeratePhysicalDevices();
     initDevice(physicalDevices[0]);
+
+    return true;
   }
 #endif

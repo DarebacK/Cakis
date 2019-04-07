@@ -8,8 +8,8 @@ namespace De
     static constexpr int columnCount = columnCountT;
     static constexpr int rowCount = rowCountT;
 
-    T& operator[](int index){return values[index];};
-    const T& operator[](int index) const{return values[index];};
+    T* operator[](int index) {return values[index];};
+    const T* operator[](int index) const {return values[index];};
 
   private:
     T values[rowCount][columnCount];

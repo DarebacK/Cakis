@@ -6,18 +6,15 @@
 
 namespace De
 {
-  template<typename T>
-  inline T dot(const Vec2<T>& v1, const Vec2<T>& v2)
+  inline float dot(const Vec2f& v1, const Vec2f& v2)
 	{
     return (v1.x * v2.x) + (v1.y * v2.y);
 	}
-  template<typename T>
-  inline T dot(const Vec3<T>& v1, const Vec3<T>& v2)
+  inline float dot(const Vec3f& v1, const Vec3f& v2)
 	{
     return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 	}
-  template<typename T>
-  inline T dot(const Vec4<T>& v1, const Vec4<T>& v2)
+  inline float dot(const Vec4f& v1, const Vec4f& v2)
 	{
     return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z) + (v1.w * v2.w);
 	}
