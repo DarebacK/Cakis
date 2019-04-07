@@ -2,5 +2,5 @@
 
 #ifdef _WIN32
 #include <windows.h>
-void initVulkanRenderer(HWND windowHandle);
+void initVulkanRenderer(HINSTANCE instanceHandle, HWND windowHandle);
 #endif _WIN32

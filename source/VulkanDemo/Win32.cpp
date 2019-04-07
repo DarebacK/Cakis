@@ -53,7 +53,7 @@ int WINAPI WinMain(HINSTANCE instanceHandle,
                                     windowClass.hInstance,
                                     nullptr);
 
-  initVulkanRenderer(windowHandle);
+  initVulkanRenderer(instanceHandle, windowHandle);
 
   MSG message;
   BOOL result;
