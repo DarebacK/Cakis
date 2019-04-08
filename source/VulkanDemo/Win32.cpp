@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <exception>
+#include <stdio.h>
 #include "VulkanRenderer.h"
 
 namespace 
@@ -8,12 +9,11 @@ int clientAreaWidth = 1280;
 int clientAreaHeight = 720;
 const DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
 HWND windowHandle = nullptr;
-}
 
-static LRESULT CALLBACK WindowProc(HWND   windowHandle,
-                                   UINT   message,
-                                   WPARAM wParam,
-                                   LPARAM lParam)
+LRESULT CALLBACK WindowProc(HWND   windowHandle,
+                            UINT   message,
+                            WPARAM wParam,
+                            LPARAM lParam)
 {
   LRESULT result = 0;
   switch(message)
@@ -21,12 +21,16 @@ static LRESULT CALLBACK WindowProc(HWND   windowHandle,
     case WM_SIZE:
       clientAreaWidth = lParam & 0xFFFF;
       clientAreaHeight = lParam >> 16;
-      break;
+    break;
+    case WM_DESTROY:
+      PostQuitMessage(0);
+    break;
     default:
       result = DefWindowProcA(windowHandle, message, wParam, lParam);
-      break;
+    break;
   }
   return result;
+}
 }
 
 int WINAPI WinMain(HINSTANCE instanceHandle,
@@ -61,18 +65,29 @@ try
     return -1;
   }
 
-  MSG message;
-  BOOL result;
-  while((result = GetMessageA(&message, windowHandle, 0, 0)) != 0)
+  LARGE_INTEGER counterFrequency;
+  QueryPerformanceFrequency(&counterFrequency);
+  LARGE_INTEGER lastCounterValue;
+  QueryPerformanceCounter(&lastCounterValue);
+  MSG message{};
+  while (message.message != WM_QUIT)
   {
-    if(result == -1)
-    {
-      return result;
-    }
-    else 
+    if(PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE))
     {
       TranslateMessage(&message);
       DispatchMessageA(&message);
+    }
+    else
+    {
+      LARGE_INTEGER currentCounterValue;
+      QueryPerformanceCounter(&currentCounterValue);
+      float frameTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
+      lastCounterValue = currentCounterValue;
+      //char frameTimeString[32];
+      //_snprintf_s(frameTimeString, 32, "%.2fms\n", 1000 * frameTime);
+      //OutputDebugStringA(frameTimeString);
+
+      // process frame
     }
   }
 }

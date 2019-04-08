@@ -61,72 +61,31 @@ namespace {
 
   VkInstance instance = nullptr;
   std::vector<VkExtensionProperties> availableInstanceExtensions;
-  const std::array<const char*, 1> deviceExtensions = { "VK_KHR_swapchain" };
+  const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
   const std::vector<const char*> layersToEnable = {}; 
   const De::ApplicationInfo applicationInfo = {}; 
   const VkAllocationCallbacks* allocator = nullptr;
   VkSurfaceKHR presentationSurface = nullptr;
   VkDevice device = nullptr;
 
-  class PhysicalDevice
+  static uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
   {
-  public:
-    explicit PhysicalDevice(VkPhysicalDevice handle)
-      : handle{handle}
-    {
-      initAvailableExtensions();
-      initFeatures();
-      initProperties();
-      initQueueFamiliesProperties();
-    }
-    operator VkPhysicalDevice() const {return handle;}
-    const std::vector<VkExtensionProperties>&   getAvailableExtensions() const {return availableExtensions;}
-    const VkPhysicalDeviceFeatures&             getFeatures() const {return features;}
-    const VkPhysicalDeviceProperties&           getProperties() const {return properties;}
-    const std::vector<VkQueueFamilyProperties>& getQueueFamiliesProperties() const {return queueFamiliesProperties;}
-	
-  private:
-    VkPhysicalDevice handle{};
-    std::vector<VkExtensionProperties> availableExtensions{};
-    VkPhysicalDeviceFeatures features{};
-    VkPhysicalDeviceProperties properties{};
-    std::vector<VkQueueFamilyProperties> queueFamiliesProperties{};
+    uint32_t queueFamiliesCount;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamiliesCount, nullptr);
+    std::vector<VkQueueFamilyProperties> queueFamiliesProperties;
+    queueFamiliesProperties.resize(queueFamiliesCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamiliesCount, queueFamiliesProperties.data());
 
-    friend void swap(PhysicalDevice& first, PhysicalDevice& second) noexcept;
-    void initAvailableExtensions()
+    for(uint32_t i = 0; i < queueFamiliesProperties.size(); ++i)
     {
-      uint32_t extensionsCount{};
-      checkResult(vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, nullptr));
-      availableExtensions.resize(extensionsCount);
-      checkResult(vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, availableExtensions.data()));
-    }
-    void initFeatures()
-    {
-      vkGetPhysicalDeviceFeatures(handle, &features);
-    }
-    void initProperties()
-    {
-     vkGetPhysicalDeviceProperties(handle, &properties);
-    }
-    void initQueueFamiliesProperties()
-    {
-      uint32_t queueFamiliesCount{};
-      vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, nullptr);
-      queueFamiliesProperties.resize(queueFamiliesCount);
-      vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
-    }
-  };
-  static std::vector<PhysicalDevice> physicalDevices;
-  static uint32_t selectUniversalQueueFamily(const std::vector<VkQueueFamilyProperties>& familiesProperties)
-  {
-    for(uint32_t i = 0; i < familiesProperties.size(); ++i)
-    {
-      const auto& familyProperties = familiesProperties[i];
+      const VkQueueFamilyProperties& familyProperties = queueFamiliesProperties[i];
       if(familyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT 
         && familyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT 
         && familyProperties.queueFlags & VK_QUEUE_TRANSFER_BIT)
       {
-        return i;
+        VkBool32 presentationSupported = false;
+        checkResult(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, presentationSurface, &presentationSupported));
+        if(presentationSupported) return i;
       }
     }
     throw VulkanError("Failed to find suitable queue family");
@@ -151,18 +110,34 @@ namespace {
     #include "ListOfVulkanFunctions.inl"
   }
 
-  static void enumeratePhysicalDevices()
+  static VkPhysicalDevice findSuitablePhysicalDevice()
   {
     uint32_t devicesCount{};
     checkResult(vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr));
     std::vector<VkPhysicalDevice> vkPhysicalDevices;
 	  vkPhysicalDevices.resize(devicesCount);
     checkResult(vkEnumeratePhysicalDevices(instance, &devicesCount, vkPhysicalDevices.data()));
-    physicalDevices.reserve(devicesCount);
-    for(auto vkPhysicalDevice : vkPhysicalDevices)
-    {
-        physicalDevices.emplace_back(vkPhysicalDevice);
-    }
+    //for(VkPhysicalDevice physicalDevice : vkPhysicalDevices)
+    //{
+    //  uint32_t extensionsCount;
+    //  checkResult(vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, nullptr));
+    //  std::vector<VkExtensionProperties> availableExtensions;
+    //  availableExtensions.resize(extensionsCount);
+    //  checkResult(vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, availableExtensions.data()));
+
+    //  VkPhysicalDeviceFeatures features;
+    //  vkGetPhysicalDeviceFeatures(handle, &features);
+
+    //  VkPhysicalDeviceProperties properties;
+    //  vkGetPhysicalDeviceProperties(handle, &properties);
+
+    //  uint32_t queueFamiliesCount;
+    //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, nullptr);
+    //  std::vector<VkQueueFamilyProperties> queueFamiliesProperties;
+    //  queueFamiliesProperties.resize(queueFamiliesCount);
+    //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
+    //}
+    return vkPhysicalDevices.at(0); // just 
   }
 
   static VkApplicationInfo makeVkApplicationInfo(const De::ApplicationInfo applicationInfo)
@@ -215,7 +190,7 @@ namespace {
   {
     VkDeviceQueueCreateInfo queueInfo{};
     queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueInfo.queueFamilyIndex = selectUniversalQueueFamily(physicalDevices[0].getQueueFamiliesProperties());
+    queueInfo.queueFamilyIndex = selectUniversalQueueFamily(physicalDevice);
     queueInfo.queueCount = 1;
 
     VkPhysicalDeviceFeatures features{};
@@ -303,8 +278,7 @@ namespace {
     checkResult(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, allocator, &presentationSurface));
     if(!presentationSurface) throw VulkanError{"Vulkan error: failed to create presentatioin surface"};
 
-    enumeratePhysicalDevices();
-    initDevice(physicalDevices[0]);
+    initDevice(findSuitablePhysicalDevice());
 
     return true;
   }
