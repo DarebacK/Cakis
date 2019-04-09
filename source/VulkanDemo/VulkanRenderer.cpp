@@ -13,10 +13,11 @@
 #ifdef _WIN32
   #include <windows.h>
   #define VK_USE_PLATFORM_WIN32_KHR
-  #define VK_NO_PROTOTYPES
-  #include "vulkan.h"
-  static const std::array<const char*, 2> instanceExtensions = {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME};
+  static const std::array<const char*, 2> instanceExtensions = {"VK_KHR_surface", "VK_KHR_win32_surface"};
 #endif
+
+#define VK_NO_PROTOTYPES
+#include "vulkan.h"
 
 class VulkanError : public De::Exception
 {
@@ -61,7 +62,6 @@ namespace {
 
   VkInstance instance = nullptr;
   std::vector<VkExtensionProperties> availableInstanceExtensions;
-  const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
   const std::vector<const char*> layersToEnable = {}; 
   const De::ApplicationInfo applicationInfo = {}; 
   const VkAllocationCallbacks* allocator = nullptr;
@@ -201,6 +201,7 @@ namespace {
     info.pQueueCreateInfos = &queueInfo;
     info.enabledLayerCount = 1;
     info.ppEnabledLayerNames = &layer;
+    const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
     info.ppEnabledExtensionNames = deviceExtensions.data();
     info.enabledExtensionCount = (uint32_t)deviceExtensions.size();
     info.pEnabledFeatures = &features;
@@ -258,6 +259,28 @@ namespace {
 		  layersToEnable);
     return vkInstanceCreateInfo;
   }
+
+  void initSwapchain(VkPhysicalDevice physicalDevice)
+  {
+    uint32_t presentModesCount;
+    checkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, presentationSurface, &presentModesCount, nullptr));
+    VkPresentModeKHR presentModes[VK_PRESENT_MODE_RANGE_SIZE_KHR];
+    checkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, presentationSurface, &presentModesCount, presentModes));
+    VkPresentModeKHR presentMode = VK_PRESENT_MODE_MAILBOX_KHR; // preferred
+    for(int i = 0; i < presentModesCount; ++i)
+    {
+      if(presentModes[i] == presentMode) {
+        break;
+      } else if(i == presentModesCount - 1)
+      {
+        presentMode = VK_PRESENT_MODE_FIFO_KHR; // the only supported
+      }
+    }
+
+    VkSurfaceCapabilitiesKHR presentationSurfaceCapabalities;
+    checkResult(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, presentationSurface, &presentationSurfaceCapabalities));
+    uint32_t imageCount = (presentationSurfaceCapabalities.maxImageCount >= 3) && presentMode == VK_PRESENT_MODE_MAILBOX_KHR ? 3 : 2;
+  }
 }
 
 
@@ -278,7 +301,9 @@ namespace {
     checkResult(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, allocator, &presentationSurface));
     if(!presentationSurface) throw VulkanError{"Vulkan error: failed to create presentatioin surface"};
 
-    initDevice(findSuitablePhysicalDevice());
+    VkPhysicalDevice physicalDevice = findSuitablePhysicalDevice();
+    initDevice(physicalDevice);
+    initSwapchain(physicalDevice);
 
     return true;
   }

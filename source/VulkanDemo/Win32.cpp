@@ -7,7 +7,6 @@ namespace
 {
 int clientAreaWidth = 1280;
 int clientAreaHeight = 720;
-const DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
 HWND windowHandle = nullptr;
 
 LRESULT CALLBACK WindowProc(HWND   windowHandle,
@@ -45,19 +44,20 @@ try
   windowClass.lpszClassName = "What's the point of this struct";
   if(!RegisterClassA(&windowClass)) return -1;
   RECT windowRectangle;
-	windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
-	AdjustWindowRect(&windowRectangle, windowStyle, FALSE);
+  windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
+  constexpr DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+  AdjustWindowRect(&windowRectangle, windowStyle, FALSE);
   windowHandle = CreateWindowA(windowClass.lpszClassName, 
-                                    "VulkanDemo", 
-                                    windowStyle,
-                                    CW_USEDEFAULT, 
-                                    CW_USEDEFAULT,
-                                    windowRectangle.right - windowRectangle.left, 
-                                    windowRectangle.bottom - windowRectangle.top,
-                                    nullptr, 
-                                    nullptr,
-                                    windowClass.hInstance,
-                                    nullptr);
+                               "VulkanDemo", 
+                               windowStyle,
+                               CW_USEDEFAULT, 
+                               CW_USEDEFAULT,
+                               windowRectangle.right - windowRectangle.left, 
+                               windowRectangle.bottom - windowRectangle.top,
+                               nullptr, 
+                               nullptr,
+                               windowClass.hInstance,
+                               nullptr);
 
   if(!initVulkanRenderer(instanceHandle, windowHandle))
   {
