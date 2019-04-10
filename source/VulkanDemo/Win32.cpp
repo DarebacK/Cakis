@@ -91,7 +91,7 @@ try
     }
   }
 }
-catch(const std::exception e)
+catch(const std::exception& e)
 {
   MessageBoxA(windowHandle, e.what(), "Fatal error", MB_OK | MB_ICONERROR);
 }

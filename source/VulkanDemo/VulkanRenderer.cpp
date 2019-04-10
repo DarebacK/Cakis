@@ -1,3 +1,4 @@
+#include "DarEngine.h"
 #include "VulkanRenderer.h"
 #include "ApplicationInfo.hpp"
 #include "Exception.hpp"
@@ -35,19 +36,22 @@ public:
 	virtual		~VulkanError() = default;
 };
 
+#define checkResultErrorCase(enumValue) case enumValue: throw VulkanError{__FUNCTION__ ": " #enumValue}; 
 #define checkResult(func) \
 switch(func) \
 { \
   case VK_SUCCESS: break; \
-  case VK_ERROR_OUT_OF_HOST_MEMORY: throw VulkanError{"Vulkan error: VK_ERROR_OUT_OF_HOST_MEMORY"}; \
-  case VK_ERROR_OUT_OF_DEVICE_MEMORY: throw VulkanError{"Vulkan error: VK_ERROR_OUT_OF_DEVICE_MEMORY"}; \
-  case VK_ERROR_INITIALIZATION_FAILED: throw VulkanError{"Vulkan error: VK_ERROR_INITIALIZATION_FAILED"}; \
-  case VK_ERROR_LAYER_NOT_PRESENT: throw VulkanError{"Vulkan error: VK_ERROR_LAYER_NOT_PRESENT"}; \
-  case VK_ERROR_EXTENSION_NOT_PRESENT: throw VulkanError{"Vulkan error: VK_ERROR_EXTENSION_NOT_PRESENT"}; \
-  case VK_ERROR_INCOMPATIBLE_DRIVER: throw VulkanError{"Vulkan error: VK_ERROR_INCOMPATIBLE_DRIVER"}; \
-  case VK_ERROR_FEATURE_NOT_PRESENT: throw VulkanError{"Vulkan error: VK_ERROR_FEATURE_NOT_PRESENT"}; \
-  case VK_ERROR_TOO_MANY_OBJECTS: throw VulkanError{"Vulkan error: VK_ERROR_TOO_MANY_OBJECTS"}; \
-  case VK_ERROR_DEVICE_LOST: throw VulkanError{"Vulkan error: VK_ERROR_DEVICE_LOST"}; \
+  checkResultErrorCase(VK_ERROR_OUT_OF_HOST_MEMORY) \
+  checkResultErrorCase(VK_ERROR_OUT_OF_DEVICE_MEMORY) \
+  checkResultErrorCase(VK_ERROR_INITIALIZATION_FAILED) \
+  checkResultErrorCase(VK_ERROR_LAYER_NOT_PRESENT) \
+  checkResultErrorCase(VK_ERROR_EXTENSION_NOT_PRESENT) \
+  checkResultErrorCase(VK_ERROR_INCOMPATIBLE_DRIVER) \
+  checkResultErrorCase(VK_ERROR_FEATURE_NOT_PRESENT) \
+  checkResultErrorCase(VK_ERROR_TOO_MANY_OBJECTS) \
+  checkResultErrorCase(VK_ERROR_DEVICE_LOST) \
+  checkResultErrorCase(VK_ERROR_SURFACE_LOST_KHR) \
+  checkResultErrorCase(VK_ERROR_NATIVE_WINDOW_IN_USE_KHR) \
   default: throw VulkanError{"Vulkan error: unknown reason"}; \
 }
 
@@ -65,10 +69,11 @@ namespace {
   const std::vector<const char*> layersToEnable = {}; 
   const De::ApplicationInfo applicationInfo = {}; 
   const VkAllocationCallbacks* allocator = nullptr;
-  VkSurfaceKHR presentationSurface = nullptr;
   VkDevice device = nullptr;
+  VkSurfaceKHR presentationSurface = nullptr;
+  VkSwapchainKHR swapchain = nullptr;
 
-  static uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
+  uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
   {
     uint32_t queueFamiliesCount;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamiliesCount, nullptr);
@@ -91,7 +96,7 @@ namespace {
     throw VulkanError("Failed to find suitable queue family");
   }
 
-  static void initInstance(const VkInstanceCreateInfo& info)
+  void initInstance(const VkInstanceCreateInfo& info)
   {
     checkResult(vkCreateInstance(&info, allocator, &instance));
 
@@ -110,7 +115,7 @@ namespace {
     #include "ListOfVulkanFunctions.inl"
   }
 
-  static VkPhysicalDevice findSuitablePhysicalDevice()
+  VkPhysicalDevice findSuitablePhysicalDevice()
   {
     uint32_t devicesCount{};
     checkResult(vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr));
@@ -140,7 +145,7 @@ namespace {
     return vkPhysicalDevices.at(0); // just 
   }
 
-  static VkApplicationInfo makeVkApplicationInfo(const De::ApplicationInfo applicationInfo)
+  VkApplicationInfo makeVkApplicationInfo(const De::ApplicationInfo applicationInfo)
   {
 	  VkApplicationInfo vkAppInfo;
 	  vkAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -154,8 +159,8 @@ namespace {
 	  vkAppInfo.apiVersion = VK_API_VERSION_1_1;
 	  return vkAppInfo;
   }
-  static VkInstanceCreateInfo	makeVkInstanceCreateInfo(const VkApplicationInfo& vkApplicationInfo, 
-													                             const std::vector<const char*> layersToEnable)
+  VkInstanceCreateInfo	makeVkInstanceCreateInfo(const VkApplicationInfo& vkApplicationInfo, 
+													                       const std::vector<const char*> layersToEnable)
   {
 	  VkInstanceCreateInfo vkInstanceCreateInfo;
 	  vkInstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -273,13 +278,27 @@ namespace {
         break;
       } else if(i == presentModesCount - 1)
       {
-        presentMode = VK_PRESENT_MODE_FIFO_KHR; // the only supported
+        presentMode = VK_PRESENT_MODE_FIFO_KHR; // the only one which has to be supported
       }
     }
-
     VkSurfaceCapabilitiesKHR presentationSurfaceCapabalities;
     checkResult(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, presentationSurface, &presentationSurfaceCapabalities));
-    uint32_t imageCount = (presentationSurfaceCapabalities.maxImageCount >= 3) && presentMode == VK_PRESENT_MODE_MAILBOX_KHR ? 3 : 2;
+    VkSwapchainCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = presentationSurface;
+    createInfo.minImageCount = (presentationSurfaceCapabalities.maxImageCount >= 3) && presentMode == VK_PRESENT_MODE_MAILBOX_KHR ? 3 : 2;
+    createInfo.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    darAssert(presentationSurfaceCapabalities.currentExtent.width != 0xFFFFFFFF); // if equals, the surface size (window size) is determined by the size of the image
+    createInfo.imageExtent = presentationSurfaceCapabalities.currentExtent;       // so at this line, we would have to get the image size different way
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    // "VK_SHARING_MODE_EXCLUSIVE specifies that access to any range or image subresource of the object will be exclusive to a single queue family at a time."
+    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // "the image is treated as if it has a constant alpha of 1.0"
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = true;
+    checkResult(vkCreateSwapchainKHR(device, &createInfo, allocator, &swapchain));
   }
 }
 
@@ -299,7 +318,7 @@ namespace {
     surfaceCreateInfo.hinstance = winInstanceHandle;
     surfaceCreateInfo.hwnd = windowHandle;
     checkResult(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, allocator, &presentationSurface));
-    if(!presentationSurface) throw VulkanError{"Vulkan error: failed to create presentatioin surface"};
+    darAssert(presentationSurface != nullptr);
 
     VkPhysicalDevice physicalDevice = findSuitablePhysicalDevice();
     initDevice(physicalDevice);

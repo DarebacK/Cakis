@@ -35,6 +35,7 @@
       <SubType>
       </SubType>
     </ClInclude>
+    <ClInclude Include="DarEngine.h" />
     <ClInclude Include="detail\LinuxLibrary.hpp" />
     <ClInclude Include="detail\Win32Library.hpp" />
     <ClInclude Include="Exception.hpp">
