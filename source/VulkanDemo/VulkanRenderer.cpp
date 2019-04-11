@@ -1,3 +1,4 @@
+#define DAR_MODULE_NAME "VulkanRenderer"
 #include "DarEngine.h"
 #include "VulkanRenderer.h"
 #include "ApplicationInfo.hpp"
@@ -14,7 +15,12 @@
 #ifdef _WIN32
   #include <windows.h>
   #define VK_USE_PLATFORM_WIN32_KHR
-  static const std::array<const char*, 2> instanceExtensions = {"VK_KHR_surface", "VK_KHR_win32_surface"};
+  static const char* instanceExtensions[] = {
+    "VK_KHR_surface", "VK_KHR_win32_surface"
+  #ifdef DAR_DEBUG 
+    ,"VK_EXT_debug_utils"
+  #endif
+    };
 #endif
 
 #define VK_NO_PROTOTYPES
@@ -66,7 +72,6 @@ namespace {
 
   VkInstance instance = nullptr;
   std::vector<VkExtensionProperties> availableInstanceExtensions;
-  const std::vector<const char*> layersToEnable = {}; 
   const De::ApplicationInfo applicationInfo = {}; 
   const VkAllocationCallbacks* allocator = nullptr;
   VkDevice device = nullptr;
@@ -96,9 +101,94 @@ namespace {
     throw VulkanError("Failed to find suitable queue family");
   }
 
-  void initInstance(const VkInstanceCreateInfo& info)
+  void enumarateAvailableInstanceExtensions()
   {
-    checkResult(vkCreateInstance(&info, allocator, &instance));
+    uint32_t instanceExtensionsCount{0};
+		vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionsCount, nullptr);
+		availableInstanceExtensions.resize(instanceExtensionsCount);
+		vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionsCount, availableInstanceExtensions.data());
+  }
+
+  void checkInstanceExtensionsAvailability()
+  {
+	  std::vector<std::string> unavailableExtensions;
+	  for(auto extension : instanceExtensions)
+	  {
+		  bool wasFound{false};
+		  for(auto availableExtension : availableInstanceExtensions)
+		  {
+			  if(std::string(extension) == std::string(availableExtension.extensionName))
+			  {
+				  wasFound = true;
+				  break;
+			  }
+		  }
+		  if(!wasFound)
+		  {
+				
+			  unavailableExtensions.emplace_back(extension);
+		  }
+	  }
+	  if(!unavailableExtensions.empty())
+	  {
+		  std::stringstream errorMessageStream;
+		  errorMessageStream << "extensions not available: ";
+		  for(auto unavailableExtension : unavailableExtensions)
+		  {
+			  errorMessageStream << unavailableExtension << ", ";
+		  }
+		  std::string errorMessage = errorMessageStream.str();
+		  errorMessage = errorMessage.substr(0, errorMessage.size() - 2);
+		  throw VulkanError{errorMessage};
+	  }
+  }
+  
+  VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                               VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                               const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                               void* pUserData) 
+  {
+    switch(messageSeverity) 
+    {
+      case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+        logError("%s", pCallbackData->pMessage);   
+      break;
+      case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+        logWarning("%s", pCallbackData->pMessage);
+      break;
+      default:
+      break;
+    }
+    return false;
+  }
+
+  void initInstance()
+  {
+    enumarateAvailableInstanceExtensions();
+    checkInstanceExtensionsAvailability();
+    
+    VkApplicationInfo vkApplicationInfo;
+	  vkApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	  vkApplicationInfo.pNext = nullptr;
+	  vkApplicationInfo.pApplicationName = applicationInfo.name.data();
+	  vkApplicationInfo.applicationVersion = applicationInfo.version.major << 22 | 
+		  applicationInfo.version.minor << 12 | 
+		  applicationInfo.version.patch;	// https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VK_MAKE_VERSION.html
+	  vkApplicationInfo.pEngineName = "DarEngine";
+	  vkApplicationInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
+	  vkApplicationInfo.apiVersion = VK_API_VERSION_1_1;
+
+    VkInstanceCreateInfo createInfo{};
+	  createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	  createInfo.pApplicationInfo = &vkApplicationInfo;
+    #ifdef DAR_DEBUG
+      const char* layers[] = {"VK_LAYER_LUNARG_standard_validation"};
+      createInfo.enabledLayerCount = arrayLength(layers);
+	    createInfo.ppEnabledLayerNames = layers;
+    #endif
+	  createInfo.enabledExtensionCount = arrayLength(instanceExtensions);
+	  createInfo.ppEnabledExtensionNames = instanceExtensions;
+    checkResult(vkCreateInstance(&createInfo, allocator, &instance));
 
     #define INSTANCE_LEVEL_VULKAN_FUNCTION(name)	\
 	  name = (PFN_##name)vkGetInstanceProcAddr( instance, #name );	\
@@ -113,6 +203,20 @@ namespace {
 		  throw VulkanError{std::string("could not load vulkan function ") + std::string(#name) };	\
 	  }
     #include "ListOfVulkanFunctions.inl"
+
+    #ifdef DAR_DEBUG
+      VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo{};
+      messengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+      messengerCreateInfo.messageSeverity = //VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | 
+                                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
+                                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+      messengerCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | 
+                                        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | 
+                                        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+      messengerCreateInfo.pfnUserCallback = debugCallback;
+      VkDebugUtilsMessengerEXT messenger = nullptr;
+      vkCreateDebugUtilsMessengerEXT(instance, &messengerCreateInfo, allocator, &messenger);
+    #endif
   }
 
   VkPhysicalDevice findSuitablePhysicalDevice()
@@ -143,35 +247,6 @@ namespace {
     //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
     //}
     return vkPhysicalDevices.at(0); // just 
-  }
-
-  VkApplicationInfo makeVkApplicationInfo(const De::ApplicationInfo applicationInfo)
-  {
-	  VkApplicationInfo vkAppInfo;
-	  vkAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	  vkAppInfo.pNext = nullptr;
-	  vkAppInfo.pApplicationName = applicationInfo.name.data();
-	  vkAppInfo.applicationVersion = applicationInfo.version.major << 22 | 
-		  applicationInfo.version.minor << 12 | 
-		  applicationInfo.version.patch;	// https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VK_MAKE_VERSION.html
-	  vkAppInfo.pEngineName = "DarEngine";
-	  vkAppInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
-	  vkAppInfo.apiVersion = VK_API_VERSION_1_1;
-	  return vkAppInfo;
-  }
-  VkInstanceCreateInfo	makeVkInstanceCreateInfo(const VkApplicationInfo& vkApplicationInfo, 
-													                       const std::vector<const char*> layersToEnable)
-  {
-	  VkInstanceCreateInfo vkInstanceCreateInfo;
-	  vkInstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	  vkInstanceCreateInfo.pNext = nullptr;
-	  vkInstanceCreateInfo.flags = 0;
-	  vkInstanceCreateInfo.pApplicationInfo = &vkApplicationInfo;
-	  vkInstanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(layersToEnable.size());
-	  vkInstanceCreateInfo.ppEnabledLayerNames = layersToEnable.data();
-	  vkInstanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
-	  vkInstanceCreateInfo.ppEnabledExtensionNames = instanceExtensions.data();
-	  return vkInstanceCreateInfo;
   }
 
   void loadDeviceCoreFunctions(VkDevice device = nullptr)
@@ -213,56 +288,6 @@ namespace {
     checkResult(vkCreateDevice(physicalDevice, &info, allocator, &device));
     loadDeviceCoreFunctions(device);
     loadDeviceSwapchainFunctions(device);
-  }
-
-  void checkInstanceExtensionsAvailability()
-  {
-	  std::vector<std::string> unavailableExtensions;
-	  for(auto extension : instanceExtensions)
-	  {
-		  bool wasFound{false};
-		  for(auto availableExtension : availableInstanceExtensions)
-		  {
-			  if(std::string(extension) == std::string(availableExtension.extensionName))
-			  {
-				  wasFound = true;
-				  break;
-			  }
-		  }
-		  if(!wasFound)
-		  {
-				
-			  unavailableExtensions.emplace_back(extension);
-		  }
-	  }
-	  if(!unavailableExtensions.empty())
-	  {
-		  std::stringstream errorMessageStream;
-		  errorMessageStream << "extensions not available: ";
-		  for(auto unavailableExtension : unavailableExtensions)
-		  {
-			  errorMessageStream << unavailableExtension << ", ";
-		  }
-		  std::string errorMessage = errorMessageStream.str();
-		  errorMessage = errorMessage.substr(0, errorMessage.size() - 2);
-		  throw VulkanError{errorMessage};
-	  }
-  }
-  void enumarateAvailableInstanceExtensions()
-  {
-    uint32_t instanceExtensionsCount{0};
-		vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionsCount, nullptr);
-		availableInstanceExtensions.resize(instanceExtensionsCount);
-		vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionsCount, availableInstanceExtensions.data());
-  }
-  VkInstanceCreateInfo loadInstanceInfo()
-  {
-    enumarateAvailableInstanceExtensions();
-    checkInstanceExtensionsAvailability();
-	  VkApplicationInfo vkApplicationInfo = makeVkApplicationInfo(applicationInfo);
-	  VkInstanceCreateInfo vkInstanceCreateInfo = makeVkInstanceCreateInfo(vkApplicationInfo, 
-		  layersToEnable);
-    return vkInstanceCreateInfo;
   }
 
   void initSwapchain(VkPhysicalDevice physicalDevice)
@@ -311,7 +336,7 @@ namespace {
     #define EXPORTED_VULKAN_FUNCTION(name) name = reinterpret_cast<PFN_##name>(GetProcAddress(vulkanLibrary, #name));
     #define GLOBAL_LEVEL_VULKAN_FUNCTION(name) name = reinterpret_cast<PFN_##name>(vkGetInstanceProcAddr(nullptr, #name));
     #include "ListOfVulkanFunctions.inl"
-    initInstance(loadInstanceInfo());
+    initInstance();
 
     VkWin32SurfaceCreateInfoKHR surfaceCreateInfo{};
     surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;

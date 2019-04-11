@@ -32,12 +32,19 @@ LRESULT CALLBACK WindowProc(HWND   windowHandle,
 }
 }
 
+#ifdef DAR_DEBUG
+int main(int argc, char** argv)
+try
+{
+  HINSTANCE instanceHandle = GetModuleHandle(nullptr);
+#else
 int WINAPI WinMain(HINSTANCE instanceHandle,
                    HINSTANCE hPrevInstance, // always zero
                    LPSTR     commandLine,
-                   int       showCode) 
+                   int       showCode)
 try
 {
+#endif
   WNDCLASS windowClass{};
   windowClass.lpfnWndProc = &WindowProc;
   windowClass.hInstance = instanceHandle;
