@@ -13,14 +13,13 @@
 #include <array>
 
 #ifdef _WIN32
-  #include <windows.h>
   #define VK_USE_PLATFORM_WIN32_KHR
   static const char* instanceExtensions[] = {
     "VK_KHR_surface", "VK_KHR_win32_surface"
   #ifdef DAR_DEBUG 
     ,"VK_EXT_debug_utils"
   #endif
-    };
+  };
 #endif
 
 #define VK_NO_PROTOTYPES
@@ -77,6 +76,8 @@ namespace {
   VkDevice device = nullptr;
   VkSurfaceKHR presentationSurface = nullptr;
   VkSwapchainKHR swapchain = nullptr;
+  VkImage* swapchainImages = nullptr;
+  uint32_t swapchainImageCount = 0;
 
   uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
   {
@@ -272,6 +273,8 @@ namespace {
     queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queueInfo.queueFamilyIndex = selectUniversalQueueFamily(physicalDevice);
     queueInfo.queueCount = 1;
+    float queuePriorities[] = {1.f};
+    queueInfo.pQueuePriorities = queuePriorities;
 
     VkPhysicalDeviceFeatures features{};
     const char* layer = "VK_LAYER_LUNARG_standard_validation";
@@ -308,14 +311,19 @@ namespace {
     }
     VkSurfaceCapabilitiesKHR presentationSurfaceCapabalities;
     checkResult(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, presentationSurface, &presentationSurfaceCapabalities));
+    uint32_t surfaceFormatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, presentationSurface, &surfaceFormatCount, nullptr); // call it just to silence the validation error
+    std::vector<VkSurfaceFormatKHR> surfaceFormats(surfaceFormatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, presentationSurface, &surfaceFormatCount, surfaceFormats.data()); // call it just to silence the validation error
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = presentationSurface;
     createInfo.minImageCount = (presentationSurfaceCapabalities.maxImageCount >= 3) && presentMode == VK_PRESENT_MODE_MAILBOX_KHR ? 3 : 2;
-    createInfo.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    createInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
     createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     darAssert(presentationSurfaceCapabalities.currentExtent.width != 0xFFFFFFFF); // if equals, the surface size (window size) is determined by the size of the image
     createInfo.imageExtent = presentationSurfaceCapabalities.currentExtent;       // so at this line, we would have to get the image size different way
+    createInfo.imageArrayLayers = 1; // "imageArrayLayers is the number of views in a multiview/stereo surface. For non-stereoscopic-3D applications, this value is 1."
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     // "VK_SHARING_MODE_EXCLUSIVE specifies that access to any range or image subresource of the object will be exclusive to a single queue family at a time."
     createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -324,6 +332,9 @@ namespace {
     createInfo.presentMode = presentMode;
     createInfo.clipped = true;
     checkResult(vkCreateSwapchainKHR(device, &createInfo, allocator, &swapchain));
+    checkResult(vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr));
+    swapchainImages = (VkImage*)malloc(swapchainImageCount * sizeof(VkImage));
+    checkResult(vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages));
   }
 }
 
