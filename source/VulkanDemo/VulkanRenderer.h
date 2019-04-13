@@ -4,3 +4,5 @@
 #include <windows.h>
 bool initVulkanRenderer(HINSTANCE instanceHandle, HWND windowHandle);
 #endif _WIN32
+
+void rendererPresent();

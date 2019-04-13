@@ -23,14 +23,6 @@
       <SubType>
       </SubType>
     </ClInclude>
-    <ClInclude Include="Mat.hpp">
-      <SubType>
-      </SubType>
-    </ClInclude>
-    <ClInclude Include="Vec.hpp">
-      <SubType>
-      </SubType>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LinGebra.cpp">

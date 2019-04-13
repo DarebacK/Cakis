@@ -1,11 +1,41 @@
 #pragma once
 
-#include "Vec.hpp"
-#include "Mat.hpp"
 #include <cmath>
 
 namespace De
 {
+  struct Vec2f
+  {
+    float x, y;
+  };
+  struct Vec3f
+  {
+    float x, y, z;
+  };
+  struct Vec4f
+  {
+    float x, y, z, w;
+  };
+
+  template<int columnCountT, int rowCountT, typename T>
+  struct Mat
+  {
+    static constexpr int columnCount = columnCountT;
+    static constexpr int rowCount = rowCountT;
+
+    T* operator[](int index) {return values[index];};
+    const T* operator[](int index) const {return values[index];};
+
+  private:
+    T values[rowCount][columnCount];
+  };
+  template<typename T>
+  using Mat3 = Mat<3, 3, T>;
+  using Mat3f = Mat3<float>;
+  template<typename T>
+  using Mat4 = Mat<4, 4, T>;
+  using Mat4f = Mat4<float>;
+
   inline float dot(const Vec2f& v1, const Vec2f& v2)
 	{
     return (v1.x * v2.x) + (v1.y * v2.y);
@@ -28,15 +58,15 @@ namespace De
 
   inline auto length(const Vec2f& v)
   {
-    return sqrt((v.x * v.x) + (v.y * v.y));
+    return sqrt(dot(v, v));
   }
   inline auto length(const Vec3f& v)
   {
-    return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+    return sqrt(dot(v, v));
   }
   inline auto length(const Vec4f& v)
   {
-    return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z) + (v.w * v.w));
+    return sqrt(dot(v, v));
   }
 
   inline Vec2f normalized(const Vec2f& v)

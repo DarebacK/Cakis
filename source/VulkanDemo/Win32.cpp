@@ -19,7 +19,7 @@ LRESULT CALLBACK WindowProc(HWND   windowHandle,
   {
     case WM_SIZE:
       clientAreaWidth = lParam & 0xFFFF;
-      clientAreaHeight = lParam >> 16;
+      clientAreaHeight = (int)lParam >> 16;
     break;
     case WM_DESTROY:
       PostQuitMessage(0);
@@ -54,18 +54,25 @@ try
   windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
   constexpr DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
   AdjustWindowRect(&windowRectangle, windowStyle, FALSE);
+  int windowWidth = windowRectangle.right - windowRectangle.left;
+  int windowHeight = windowRectangle.bottom - windowRectangle.top;
+  int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+  int screenHeight = GetSystemMetrics(SM_CYSCREEN);
   windowHandle = CreateWindowA(windowClass.lpszClassName, 
                                "VulkanDemo", 
                                windowStyle,
-                               CW_USEDEFAULT, 
-                               CW_USEDEFAULT,
-                               windowRectangle.right - windowRectangle.left, 
-                               windowRectangle.bottom - windowRectangle.top,
+                               (screenWidth - windowWidth) / 2, 
+                               0,
+                               windowWidth, 
+                               windowHeight,
                                nullptr, 
                                nullptr,
                                windowClass.hInstance,
                                nullptr);
-
+  #ifdef DAR_DEBUG
+    HWND consoleWindow = GetConsoleWindow();
+    MoveWindow(consoleWindow, (screenWidth - windowWidth) / 2, clientAreaHeight, windowWidth, screenHeight - clientAreaHeight + 8, false);
+  #endif
   if(!initVulkanRenderer(instanceHandle, windowHandle))
   {
     MessageBoxA(windowHandle, "Failed to initialize Vulkan renderer.", "Fatal error", MB_OK | MB_ICONERROR);
@@ -95,8 +102,10 @@ try
       //OutputDebugStringA(frameTimeString);
 
       // process frame
+      rendererPresent();
     }
   }
+  return 0;
 }
 catch(const std::exception& e)
 {

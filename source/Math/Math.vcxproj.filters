@@ -11,13 +11,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Vec.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="LinGebra.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mat.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

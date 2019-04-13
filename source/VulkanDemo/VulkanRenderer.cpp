@@ -41,24 +41,46 @@ public:
 	virtual		~VulkanError() = default;
 };
 
-#define checkResultErrorCase(enumValue) case enumValue: throw VulkanError{__FUNCTION__ ": " #enumValue}; 
-#define checkResult(func) \
-switch(func) \
-{ \
-  case VK_SUCCESS: break; \
-  checkResultErrorCase(VK_ERROR_OUT_OF_HOST_MEMORY) \
-  checkResultErrorCase(VK_ERROR_OUT_OF_DEVICE_MEMORY) \
-  checkResultErrorCase(VK_ERROR_INITIALIZATION_FAILED) \
-  checkResultErrorCase(VK_ERROR_LAYER_NOT_PRESENT) \
-  checkResultErrorCase(VK_ERROR_EXTENSION_NOT_PRESENT) \
-  checkResultErrorCase(VK_ERROR_INCOMPATIBLE_DRIVER) \
-  checkResultErrorCase(VK_ERROR_FEATURE_NOT_PRESENT) \
-  checkResultErrorCase(VK_ERROR_TOO_MANY_OBJECTS) \
-  checkResultErrorCase(VK_ERROR_DEVICE_LOST) \
-  checkResultErrorCase(VK_ERROR_SURFACE_LOST_KHR) \
-  checkResultErrorCase(VK_ERROR_NATIVE_WINDOW_IN_USE_KHR) \
-  default: throw VulkanError{"Vulkan error: unknown reason"}; \
+#define _resultToStringCase(error) case error: sprintf_s(string, stringLength, #error); break;
+static void resultToString(VkResult error, char* string, int stringLength)
+{
+  switch(error) {
+    _resultToStringCase(VK_ERROR_OUT_OF_HOST_MEMORY)
+    _resultToStringCase(VK_ERROR_OUT_OF_DEVICE_MEMORY) 
+    _resultToStringCase(VK_ERROR_INITIALIZATION_FAILED) 
+    _resultToStringCase(VK_ERROR_LAYER_NOT_PRESENT) 
+    _resultToStringCase(VK_ERROR_EXTENSION_NOT_PRESENT) 
+    _resultToStringCase(VK_ERROR_INCOMPATIBLE_DRIVER) 
+    _resultToStringCase(VK_ERROR_FEATURE_NOT_PRESENT) 
+    _resultToStringCase(VK_ERROR_TOO_MANY_OBJECTS) 
+    _resultToStringCase(VK_ERROR_DEVICE_LOST) 
+    _resultToStringCase(VK_ERROR_SURFACE_LOST_KHR) 
+    _resultToStringCase(VK_ERROR_NATIVE_WINDOW_IN_USE_KHR)
+    default: sprintf_s(string, stringLength, "unkown result");
+  }
 }
+
+static bool _checkResultImpl(VkResult result, const char* parentFunction, int lineNumber, const char* functionCall)
+{
+  switch(result) 
+  { 
+    case VK_SUCCESS:
+    case VK_TIMEOUT:
+    case VK_NOT_READY:
+      return true;
+    case VK_SUBOPTIMAL_KHR:{
+      char resultString[64];
+      resultToString(result, resultString, 64);
+      logWarning("%s:%s returned %s", parentFunction, functionCall, resultString);
+    return true;}
+    default:{ 
+      char resultString[64];
+      resultToString(result, resultString, 64); 
+      logError("%s:%s returned %s", parentFunction, functionCall, resultString); 
+    return false;}
+  } 
+}
+#define checkResult(func) _checkResultImpl(func, __FUNCTION__, __LINE__, #func)
 
 namespace {
   #define EXPORTED_VULKAN_FUNCTION(name) PFN_##name name{nullptr};
@@ -78,6 +100,8 @@ namespace {
   VkSwapchainKHR swapchain = nullptr;
   VkImage* swapchainImages = nullptr;
   uint32_t swapchainImageCount = 0;
+  VkFence presentationImageFence = nullptr;
+  VkImage presentationImage = nullptr;
 
   uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
   {
@@ -224,9 +248,8 @@ namespace {
   {
     uint32_t devicesCount{};
     checkResult(vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr));
-    std::vector<VkPhysicalDevice> vkPhysicalDevices;
-	  vkPhysicalDevices.resize(devicesCount);
-    checkResult(vkEnumeratePhysicalDevices(instance, &devicesCount, vkPhysicalDevices.data()));
+    VkPhysicalDevice physicalDevices[8];
+    checkResult(vkEnumeratePhysicalDevices(instance, &devicesCount, physicalDevices));
     //for(VkPhysicalDevice physicalDevice : vkPhysicalDevices)
     //{
     //  uint32_t extensionsCount;
@@ -247,20 +270,20 @@ namespace {
     //  queueFamiliesProperties.resize(queueFamiliesCount);
     //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
     //}
-    return vkPhysicalDevices.at(0); // just 
+    return physicalDevices[0];
   }
 
-  void loadDeviceCoreFunctions(VkDevice device = nullptr)
+  void loadDeviceCoreFunctions()
   {
     if(device)
     {
-    #define DEVICE_LEVEL_VULKAN_FUNCTION(name) \
-    name = (PFN_##name) vkGetDeviceProcAddr(device, #name); \
-    if(!name) throw VulkanError{std::string("could not load vulkan function ") + std::string(#name)};
-    #include "ListOfVulkanFunctions.inl"
+      #define DEVICE_LEVEL_VULKAN_FUNCTION(name) \
+      name = (PFN_##name) vkGetDeviceProcAddr(device, #name); \
+      if(!name) throw VulkanError{std::string("could not load vulkan function ") + std::string(#name)};
+      #include "ListOfVulkanFunctions.inl"
     }
   }
-  void loadDeviceSwapchainFunctions(VkDevice device = nullptr)
+  void loadDeviceSwapchainFunctions()
   {
     #define DEVICE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name) \
     name = (PFN_##name) vkGetDeviceProcAddr(device, #name); \
@@ -276,31 +299,47 @@ namespace {
     float queuePriorities[] = {1.f};
     queueInfo.pQueuePriorities = queuePriorities;
 
-    VkPhysicalDeviceFeatures features{};
-    const char* layer = "VK_LAYER_LUNARG_standard_validation";
     VkDeviceCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     info.queueCreateInfoCount = 1;
     info.pQueueCreateInfos = &queueInfo;
-    info.enabledLayerCount = 1;
-    info.ppEnabledLayerNames = &layer;
-    const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-    info.ppEnabledExtensionNames = deviceExtensions.data();
-    info.enabledExtensionCount = (uint32_t)deviceExtensions.size();
+#ifdef DAR_DEBUG
+    const char* layers[] = {"VK_LAYER_LUNARG_standard_validation"};
+    info.enabledLayerCount = arrayLength(layers);
+    info.ppEnabledLayerNames = layers;
+#else
+    info.enabledLayerCount = 0;
+    info.ppEnabledLayerNames = nullptr;
+#endif
+    const char* extensions[] = {"VK_KHR_swapchain"};
+    info.ppEnabledExtensionNames = extensions;
+    info.enabledExtensionCount = arrayLength(extensions);
+    VkPhysicalDeviceFeatures features{};
     info.pEnabledFeatures = &features;
     checkResult(vkCreateDevice(physicalDevice, &info, allocator, &device));
-    loadDeviceCoreFunctions(device);
-    loadDeviceSwapchainFunctions(device);
+    loadDeviceCoreFunctions();
+    loadDeviceSwapchainFunctions();
   }
 
-  void initSwapchain(VkPhysicalDevice physicalDevice)
+  VkFence createFence(int flags)
+  {
+    VkFenceCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = flags;
+    VkFence fence = nullptr;
+    checkResult(vkCreateFence(device, &createInfo, allocator, &fence));
+    return fence;
+  }
+
+  bool initSwapchain(VkPhysicalDevice physicalDevice)
   {
     uint32_t presentModesCount;
-    checkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, presentationSurface, &presentModesCount, nullptr));
+    if(!checkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, presentationSurface, &presentModesCount, nullptr))) return false;
     VkPresentModeKHR presentModes[VK_PRESENT_MODE_RANGE_SIZE_KHR];
-    checkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, presentationSurface, &presentModesCount, presentModes));
+    if(!checkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, presentationSurface, &presentModesCount, presentModes))) return false;
     VkPresentModeKHR presentMode = VK_PRESENT_MODE_MAILBOX_KHR; // preferred
-    for(int i = 0; i < presentModesCount; ++i)
+    for(uint32_t i = 0; i < presentModesCount; ++i)
     {
       if(presentModes[i] == presentMode) {
         break;
@@ -310,7 +349,7 @@ namespace {
       }
     }
     VkSurfaceCapabilitiesKHR presentationSurfaceCapabalities;
-    checkResult(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, presentationSurface, &presentationSurfaceCapabalities));
+    if(!checkResult(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, presentationSurface, &presentationSurfaceCapabalities))) return false;
     uint32_t surfaceFormatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, presentationSurface, &surfaceFormatCount, nullptr); // call it just to silence the validation error
     std::vector<VkSurfaceFormatKHR> surfaceFormats(surfaceFormatCount);
@@ -331,13 +370,17 @@ namespace {
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // "the image is treated as if it has a constant alpha of 1.0"
     createInfo.presentMode = presentMode;
     createInfo.clipped = true;
-    checkResult(vkCreateSwapchainKHR(device, &createInfo, allocator, &swapchain));
-    checkResult(vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr));
+    if(!checkResult(vkCreateSwapchainKHR(device, &createInfo, allocator, &swapchain))) return false;
+    if(!checkResult(vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr))) return false;
     swapchainImages = (VkImage*)malloc(swapchainImageCount * sizeof(VkImage));
-    checkResult(vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages));
+    if(!checkResult(vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages))) return false;
+    presentationImageFence = createFence(false);
+    uint32_t nextImageIndex;
+    checkResult(vkAcquireNextImageKHR(device, swapchain, 2000000000, nullptr, presentationImageFence, &nextImageIndex));
+    presentationImage = swapchainImages[nextImageIndex];
+    return true;
   }
 }
-
 
 #ifdef _WIN32
   bool initVulkanRenderer(HINSTANCE winInstanceHandle, HWND windowHandle)
@@ -358,8 +401,12 @@ namespace {
 
     VkPhysicalDevice physicalDevice = findSuitablePhysicalDevice();
     initDevice(physicalDevice);
-    initSwapchain(physicalDevice);
+    if(!initSwapchain(physicalDevice)) return false;
 
     return true;
   }
 #endif
+
+void rendererPresent()
+{
+}
