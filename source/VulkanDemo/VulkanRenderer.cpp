@@ -208,10 +208,10 @@ namespace {
 	  createInfo.pApplicationInfo = &vkApplicationInfo;
     #ifdef DAR_DEBUG
       const char* layers[] = {"VK_LAYER_LUNARG_standard_validation"};
-      createInfo.enabledLayerCount = arrayLength(layers);
+      createInfo.enabledLayerCount = arrayCount(layers);
 	    createInfo.ppEnabledLayerNames = layers;
     #endif
-	  createInfo.enabledExtensionCount = arrayLength(instanceExtensions);
+	  createInfo.enabledExtensionCount = arrayCount(instanceExtensions);
 	  createInfo.ppEnabledExtensionNames = instanceExtensions;
     checkResult(vkCreateInstance(&createInfo, allocator, &instance));
 
@@ -305,7 +305,7 @@ namespace {
     info.pQueueCreateInfos = &queueInfo;
 #ifdef DAR_DEBUG
     const char* layers[] = {"VK_LAYER_LUNARG_standard_validation"};
-    info.enabledLayerCount = arrayLength(layers);
+    info.enabledLayerCount = arrayCount(layers);
     info.ppEnabledLayerNames = layers;
 #else
     info.enabledLayerCount = 0;
@@ -313,7 +313,7 @@ namespace {
 #endif
     const char* extensions[] = {"VK_KHR_swapchain"};
     info.ppEnabledExtensionNames = extensions;
-    info.enabledExtensionCount = arrayLength(extensions);
+    info.enabledExtensionCount = arrayCount(extensions);
     VkPhysicalDeviceFeatures features{};
     info.pEnabledFeatures = &features;
     checkResult(vkCreateDevice(physicalDevice, &info, allocator, &device));

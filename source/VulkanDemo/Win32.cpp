@@ -1,13 +1,13 @@
 #include <windows.h>
 #include <exception>
 #include <stdio.h>
-#include "VulkanRenderer.h"
+#include "D3D11Renderer.h"
 
 namespace 
 {
 int clientAreaWidth = 1280;
 int clientAreaHeight = 720;
-HWND windowHandle = nullptr;
+HWND window = nullptr;
 
 LRESULT CALLBACK WindowProc(HWND   windowHandle,
                             UINT   message,
@@ -58,7 +58,7 @@ try
   int windowHeight = windowRectangle.bottom - windowRectangle.top;
   int screenWidth = GetSystemMetrics(SM_CXSCREEN);
   int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-  windowHandle = CreateWindowA(windowClass.lpszClassName, 
+  window = CreateWindowA(windowClass.lpszClassName, 
                                "VulkanDemo", 
                                windowStyle,
                                (screenWidth - windowWidth) / 2, 
@@ -73,9 +73,9 @@ try
     HWND consoleWindow = GetConsoleWindow();
     MoveWindow(consoleWindow, (screenWidth - windowWidth) / 2, clientAreaHeight, windowWidth, screenHeight - clientAreaHeight + 8, false);
   #endif
-  if(!initVulkanRenderer(instanceHandle, windowHandle))
+  if(!initD3D11Renderer(window))
   {
-    MessageBoxA(windowHandle, "Failed to initialize Vulkan renderer.", "Fatal error", MB_OK | MB_ICONERROR);
+    MessageBoxA(window, "Failed to initialize D3D11 renderer.", "Fatal error", MB_OK | MB_ICONERROR);
     return -1;
   }
 
@@ -102,16 +102,16 @@ try
       //OutputDebugStringA(frameTimeString);
 
       // process frame
-      rendererPresent();
+    
     }
   }
   return 0;
 }
 catch(const std::exception& e)
 {
-  MessageBoxA(windowHandle, e.what(), "Fatal error", MB_OK | MB_ICONERROR);
+  MessageBoxA(window, e.what(), "Fatal error", MB_OK | MB_ICONERROR);
 }
 catch(...)
 {
-  MessageBoxA(windowHandle, "Unknown error", "Fatal error", MB_OK | MB_ICONERROR);
+  MessageBoxA(window, "Unknown error", "Fatal error", MB_OK | MB_ICONERROR);
 }
