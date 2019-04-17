@@ -12,6 +12,8 @@ namespace
   IDXGISwapChain1* swapchain = nullptr;
   ID3D11RenderTargetView* renderTargetView = nullptr;
   ID3D11DepthStencilView* depthStencilView = nullptr;
+  FLOAT clearColor[4] = { 0.f, 0.f, 0.f, 1.0f };
+  bool isFullscreen = false;
 }
 
 bool initD3D11Renderer(HWND window)
@@ -46,7 +48,7 @@ bool initD3D11Renderer(HWND window)
   const UINT multisamplingQuality = multisamplingQualityLevelsCount - 1;
 	swapChainDesc.SampleDesc.Quality = multisamplingQuality;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = 2;	// 2 back buffers + 1 front
+	swapChainDesc.BufferCount = 1;	// 1 back buffer + 1 front
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	IDXGIDevice* dxgiDevice;
 	if(device->QueryInterface(__uuidof(IDXGIDevice), (void**)(&dxgiDevice)) >= 0)
@@ -118,4 +120,17 @@ bool initD3D11Renderer(HWND window)
 	deviceContext->RSSetViewports(1, &viewport);
 
   return true;
+}
+
+void rendererBeginFrame()
+{
+  deviceContext->ClearRenderTargetView(renderTargetView, clearColor);
+	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+}
+
+void rendererEndFrame()
+{
+  UINT presentFlags = 0;
+  if(isFullscreen) presentFlags |= DXGI_PRESENT_RESTART;
+  swapchain->Present(1, presentFlags);
 }

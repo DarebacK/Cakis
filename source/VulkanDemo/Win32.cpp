@@ -8,6 +8,7 @@ namespace
 int clientAreaWidth = 1280;
 int clientAreaHeight = 720;
 HWND window = nullptr;
+const char* gameName = "Demo";
 
 LRESULT CALLBACK WindowProc(HWND   windowHandle,
                             UINT   message,
@@ -59,7 +60,7 @@ try
   int screenWidth = GetSystemMetrics(SM_CXSCREEN);
   int screenHeight = GetSystemMetrics(SM_CYSCREEN);
   window = CreateWindowA(windowClass.lpszClassName, 
-                               "VulkanDemo", 
+                               gameName, 
                                windowStyle,
                                (screenWidth - windowWidth) / 2, 
                                0,
@@ -97,12 +98,13 @@ try
       QueryPerformanceCounter(&currentCounterValue);
       float frameTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
       lastCounterValue = currentCounterValue;
-      //char frameTimeString[32];
-      //_snprintf_s(frameTimeString, 32, "%.2fms\n", 1000 * frameTime);
-      //OutputDebugStringA(frameTimeString);
+      char windowTitle[64];
+      _snprintf_s(windowTitle, 64, "%s %.2fms/%dfps", gameName, frameTime, (int)(1/frameTime));
+      SetWindowTextA(window, windowTitle);
 
       // process frame
-    
+      rendererBeginFrame();
+      rendererEndFrame();
     }
   }
   return 0;
