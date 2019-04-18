@@ -53,32 +53,33 @@ try
   if(!RegisterClassA(&windowClass)) return -1;
   RECT windowRectangle;
   windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
-  constexpr DWORD windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-  AdjustWindowRect(&windowRectangle, windowStyle, FALSE);
-  int windowWidth = windowRectangle.right - windowRectangle.left;
-  int windowHeight = windowRectangle.bottom - windowRectangle.top;
-  int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-  int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+  constexpr DWORD windowStyle = WS_OVERLAPPED | WS_SYSMENU;
+  AdjustWindowRect(&windowRectangle, windowStyle, true);
+  const int windowWidth = windowRectangle.right - windowRectangle.left;
+  const int windowHeight = windowRectangle.bottom - windowRectangle.top;
+  const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+  const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
   window = CreateWindowA(windowClass.lpszClassName, 
-                               gameName, 
-                               windowStyle,
-                               (screenWidth - windowWidth) / 2, 
-                               0,
-                               windowWidth, 
-                               windowHeight,
-                               nullptr, 
-                               nullptr,
-                               windowClass.hInstance,
-                               nullptr);
+                         gameName, 
+                         windowStyle,
+                         (screenWidth - windowWidth) / 2, 
+                         0,
+                         windowWidth, 
+                         windowHeight,
+                         nullptr, 
+                         nullptr,
+                         windowClass.hInstance,
+                         nullptr);
   #ifdef DAR_DEBUG
     HWND consoleWindow = GetConsoleWindow();
-    MoveWindow(consoleWindow, (screenWidth - windowWidth) / 2, clientAreaHeight, windowWidth, screenHeight - clientAreaHeight + 8, false);
+    MoveWindow(consoleWindow, (screenWidth - windowWidth) / 2, clientAreaHeight - 20, windowWidth, screenHeight - clientAreaHeight + 28, false);
   #endif
   if(!initD3D11Renderer(window))
   {
     MessageBoxA(window, "Failed to initialize D3D11 renderer.", "Fatal error", MB_OK | MB_ICONERROR);
     return -1;
   }
+  ShowWindow(window, SW_SHOWNORMAL);
 
   LARGE_INTEGER counterFrequency;
   QueryPerformanceFrequency(&counterFrequency);
@@ -96,7 +97,7 @@ try
     {
       LARGE_INTEGER currentCounterValue;
       QueryPerformanceCounter(&currentCounterValue);
-      float frameTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
+      const float frameTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
       lastCounterValue = currentCounterValue;
       char windowTitle[64];
       _snprintf_s(windowTitle, 64, "%s %.2fms/%dfps", gameName, frameTime, (int)(1/frameTime));
