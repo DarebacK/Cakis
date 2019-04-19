@@ -3,6 +3,7 @@
 #include "DarEngine.h"
 #include <Windows.h>
 #include <d3d11_4.h>
+#include "LinGebra.hpp"
 
 namespace
 {
@@ -12,8 +13,47 @@ namespace
   IDXGISwapChain1* swapchain = nullptr;
   ID3D11RenderTargetView* renderTargetView = nullptr;
   ID3D11DepthStencilView* depthStencilView = nullptr;
-  FLOAT clearColor[4] = { 0.f, 0.f, 0.f, 1.0f };
-  bool isFullscreen = false;
+  float clearColor[4] = { 0.f, 0.f, 0.f, 1.0f };
+
+  //TEMPORARY STUFF
+  ID3D11Buffer* triangleVertexBuffer = nullptr;
+  ID3D11VertexShader* triangleVertexShader = nullptr;
+  ID3D11PixelShader* trianglePixelShader = nullptr;
+  ID3D11InputLayout* triangleInputLayout = nullptr;
+
+  void* loadShaderFile(const char* fileName, SIZE_T* shaderSize)
+  {
+    HANDLE file = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    LARGE_INTEGER fileSize;
+    GetFileSizeEx(file, &fileSize);
+    static byte shaderLoadBuffer[64 * 1024];
+    DWORD bytesRead;
+    ReadFile(file, shaderLoadBuffer, (DWORD)fileSize.QuadPart, &bytesRead, nullptr);
+    *shaderSize = bytesRead;
+    CloseHandle(file);
+    return shaderLoadBuffer;
+  }
+  ID3D11VertexShader* loadVertexShader(const char* shaderName, D3D11_INPUT_ELEMENT_DESC* inputElementDescs, UINT inputElementDescCount, ID3D11InputLayout** inputLayout)
+  {
+    char shaderFileName[128];
+    _snprintf_s(shaderFileName, sizeof(shaderFileName), "%s.vs.cso", shaderName);
+    SIZE_T shaderCodeSize;
+    void* shaderCode = loadShaderFile(shaderFileName, &shaderCodeSize);
+    ID3D11VertexShader* vertexShader;
+    device->CreateVertexShader(shaderCode, shaderCodeSize, nullptr, &vertexShader);
+    device->CreateInputLayout(inputElementDescs, inputElementDescCount, shaderCode, shaderCodeSize, inputLayout);
+    return vertexShader;
+  }
+  ID3D11PixelShader* loadPixelShader(const char* name)
+  {
+    char shaderFileName[128];
+    _snprintf_s(shaderFileName, sizeof(shaderFileName), "%s.ps.cso", name);
+    SIZE_T shaderCodeSize;
+    void* shaderCode = loadShaderFile(shaderFileName, &shaderCodeSize);
+    ID3D11PixelShader* vertexShader;
+    device->CreatePixelShader(shaderCode, shaderCodeSize, nullptr, &vertexShader);
+    return vertexShader;
+  }
 }
 
 bool initD3D11Renderer(HWND window)
@@ -35,8 +75,8 @@ bool initD3D11Renderer(HWND window)
   DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
   RECT clientAreaRect;
   GetClientRect(window, &clientAreaRect);
-  const UINT clientAreaWidth = clientAreaRect.right;
-  const UINT clientAreaHeight = clientAreaRect.bottom;
+  const UINT clientAreaWidth = clientAreaRect.right - clientAreaRect.left;
+  const UINT clientAreaHeight = clientAreaRect.bottom - clientAreaRect.top;
 	swapChainDesc.Width = clientAreaWidth;
 	swapChainDesc.Height = clientAreaHeight;
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -109,6 +149,8 @@ bool initD3D11Renderer(HWND window)
 	  return false;
   }
 
+  deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+
   // VIEWPORT
   D3D11_VIEWPORT viewport;
   viewport.TopLeftX = 0.0f;
@@ -119,6 +161,27 @@ bool initD3D11Renderer(HWND window)
 	viewport.MaxDepth = 1.0f;
 	deviceContext->RSSetViewports(1, &viewport);
 
+  // TRIANGLE
+  Vec3f triangleVertices[] = {
+    { 0.0f,  1.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, 
+    { 1.0f, -1.0f, 0.0f}, { 0.0f, 1.0f, 0.0f}, 
+    {-1.0f, -1.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}
+  };
+  D3D11_BUFFER_DESC triangleVBDesc
+  {
+    sizeof(triangleVertices),
+    D3D11_USAGE_DEFAULT,
+    D3D11_BIND_VERTEX_BUFFER
+  };
+  D3D11_SUBRESOURCE_DATA triangleVBData {triangleVertices, 0, 0};
+  device->CreateBuffer(&triangleVBDesc, &triangleVBData, &triangleVertexBuffer);
+  D3D11_INPUT_ELEMENT_DESC triangleInputElementDescs[] = {
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0}, 
+    {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+  };
+  triangleVertexShader = loadVertexShader("Triangle", triangleInputElementDescs, arrayCount(triangleInputElementDescs), &triangleInputLayout);
+  trianglePixelShader = loadPixelShader("Triangle");
+
   return true;
 }
 
@@ -126,11 +189,20 @@ void rendererBeginFrame()
 {
   deviceContext->ClearRenderTargetView(renderTargetView, clearColor);
 	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+  deviceContext->VSSetShader(triangleVertexShader, nullptr, 0);
+  deviceContext->PSSetShader(trianglePixelShader, nullptr, 0);
+  deviceContext->IASetInputLayout(triangleInputLayout);
+  UINT triangleStride = 2 * sizeof(Vec3f);
+  UINT triangleOffset = 0;
+  deviceContext->IASetVertexBuffers(0, 1, &triangleVertexBuffer, &triangleStride, &triangleOffset);
+  deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  deviceContext->Draw(3, 0);
 }
 
 void rendererEndFrame()
 {
   UINT presentFlags = 0;
-  if(isFullscreen) presentFlags |= DXGI_PRESENT_RESTART;
   swapchain->Present(1, presentFlags);
+  deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 }
