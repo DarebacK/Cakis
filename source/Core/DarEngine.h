@@ -8,13 +8,6 @@ using byte = unsigned char;
   #define DAR_MODULE_NAME ""
 #endif
 
-#ifdef DAR_DEBUG
-  #define darAssert(condition) \
-    if(!(condition)) DebugBreak();
-#else 
-  #define darAssert(condition) condition
-#endif
-
 #define logError(message, ...) \
 { \
   char stringBuffer[256]; \
@@ -33,5 +26,16 @@ using byte = unsigned char;
   _snprintf_s(stringBuffer, sizeof(stringBuffer), "[INFO][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
   OutputDebugStringA(stringBuffer); \
 }
+
+#ifdef DAR_DEBUG
+  #define darAssert(condition) \
+    if(!(condition)) \
+    { \
+      logError("Assertion failed: %s", #condition); \
+      DebugBreak(); \
+    }
+#else 
+  #define darAssert(condition) condition
+#endif
 
 #define arrayCount(arr) (sizeof(arr) / sizeof(arr[0]))

@@ -1,7 +1,10 @@
+#define DAR_MODULE_NAME "Win32"
 #include <windows.h>
 #include <exception>
 #include <stdio.h>
 #include "D3D11Renderer.h"
+#include "DarEngine.h"
+#include "GameState.h"
 
 namespace 
 {
@@ -9,6 +12,7 @@ int clientAreaWidth = 1280;
 int clientAreaHeight = 720;
 HWND window = nullptr;
 const char* gameName = "Demo";
+Input input = {};
 
 LRESULT CALLBACK WindowProc(HWND   windowHandle,
                             UINT   message,
@@ -24,6 +28,17 @@ LRESULT CALLBACK WindowProc(HWND   windowHandle,
     break;
     case WM_DESTROY:
       PostQuitMessage(0);
+    break;
+    case WM_KEYDOWN:
+      switch(wParam)
+      {
+        case VK_ESCAPE :
+          PostQuitMessage(0);
+        break;
+        case VK_F1:
+          input.F1.pressedDown = true;
+        break;
+      }
     break;
     default:
       result = DefWindowProcA(windowHandle, message, wParam, lParam);
@@ -94,8 +109,11 @@ try
       SetWindowTextA(window, windowTitle);
 
       // process frame
-      rendererBeginFrame();
-      rendererEndFrame();
+      GameState gameState{};
+      gameState.input = input;
+      render(gameState);
+
+      input = {};
     }
   }
   return 0;
@@ -103,8 +121,10 @@ try
 catch(const std::exception& e)
 {
   MessageBoxA(window, e.what(), "Fatal error", MB_OK | MB_ICONERROR);
+  return -2;
 }
 catch(...)
 {
   MessageBoxA(window, "Unknown error", "Fatal error", MB_OK | MB_ICONERROR);
+  return -3;
 }

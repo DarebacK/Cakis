@@ -15,11 +15,17 @@ namespace
   ID3D11DepthStencilView* depthStencilView = nullptr;
   float clearColor[4] = { 0.f, 0.f, 0.f, 1.0f };
 
+  #ifdef DAR_DEBUG
+    ID3D11RasterizerState* wireframeRasterizerState = nullptr;
+    bool useWireframe = false;
+  #endif
+
   //TEMPORARY STUFF
   ID3D11Buffer* triangleVertexBuffer = nullptr;
   ID3D11VertexShader* triangleVertexShader = nullptr;
   ID3D11PixelShader* trianglePixelShader = nullptr;
   ID3D11InputLayout* triangleInputLayout = nullptr;
+  ID3D11Buffer* triangleConstantBuffer = nullptr;
 
   void* loadShaderFile(const char* fileName, SIZE_T* shaderSize)
   {
@@ -163,9 +169,9 @@ bool initD3D11Renderer(HWND window)
 
   // TRIANGLE
   Vec3f triangleVertices[] = {
-    { 0.0f,  1.0f, 0.0f}, { 1.0f, 0.0f, 0.0f}, 
-    { 1.0f, -1.0f, 0.0f}, { 0.0f, 1.0f, 0.0f}, 
-    {-1.0f, -1.0f, 0.0f}, { 0.0f, 0.0f, 1.0f}
+    { 0.0f,  0.5f, 0.0f}, { 1.0f, 0.0f, 0.0f}, 
+    { 0.5f, -0.5f, 0.0f}, { 0.0f, 1.0f, 0.0f}, 
+    {-0.5f, -0.5f, 0.0f}, { 0.0f, 0.0f, 1.0f}
   };
   D3D11_BUFFER_DESC triangleVBDesc
   {
@@ -181,16 +187,43 @@ bool initD3D11Renderer(HWND window)
   };
   triangleVertexShader = loadVertexShader("Triangle", triangleInputElementDescs, arrayCount(triangleInputElementDescs), &triangleInputLayout);
   trianglePixelShader = loadPixelShader("Triangle");
+  D3D11_BUFFER_DESC triangleCBDesc
+  {
+    sizeof(Mat4f), 
+    D3D11_USAGE_DEFAULT,
+    D3D11_BIND_CONSTANT_BUFFER
+  };
+  device->CreateBuffer(&triangleCBDesc, nullptr, &triangleConstantBuffer);
+
+  #ifdef DAR_DEBUG
+    // WIREFRAME
+    D3D11_RASTERIZER_DESC wireframeRasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
+    wireframeRasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+    device->CreateRasterizerState(&wireframeRasterizerDesc, &wireframeRasterizerState);
+  #endif
 
   return true;
 }
 
-void rendererBeginFrame()
+void render(const GameState& game)
 {
+  #ifdef DAR_DEBUG
+    if(game.input.F1.pressedDown) 
+    {
+      useWireframe = !useWireframe;
+      if(useWireframe) deviceContext->RSSetState(wireframeRasterizerState);
+      else deviceContext->RSSetState(nullptr);
+    }
+  #endif
+
   deviceContext->ClearRenderTargetView(renderTargetView, clearColor);
 	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+  Mat4f transformation = Mat4f::identity();
+  transformation.translate({0.5f, 0.5f, 0.f});
+  deviceContext->UpdateSubresource(triangleConstantBuffer, 0, nullptr, &transformation, 0, 0);
   deviceContext->VSSetShader(triangleVertexShader, nullptr, 0);
+  deviceContext->VSSetConstantBuffers(0, 1, &triangleConstantBuffer);
   deviceContext->PSSetShader(trianglePixelShader, nullptr, 0);
   deviceContext->IASetInputLayout(triangleInputLayout);
   UINT triangleStride = 2 * sizeof(Vec3f);
@@ -198,10 +231,7 @@ void rendererBeginFrame()
   deviceContext->IASetVertexBuffers(0, 1, &triangleVertexBuffer, &triangleStride, &triangleOffset);
   deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   deviceContext->Draw(3, 0);
-}
 
-void rendererEndFrame()
-{
   UINT presentFlags = 0;
   swapchain->Present(1, presentFlags);
   deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
