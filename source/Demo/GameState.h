@@ -1,5 +1,20 @@
 #pragma once
 
+struct MouseButton
+{
+  bool pressedDown;
+  bool pressedUp;
+};
+
+struct Mouse
+{
+  int x;
+  int y;
+  MouseButton left;
+  MouseButton middle;
+  MouseButton right;
+};
+
 struct KeyboardKey
 {
   bool pressedDown;
@@ -7,12 +22,16 @@ struct KeyboardKey
 
 struct Input
 {
+  Mouse mouse;
   KeyboardKey F1;
 };
 
 struct GameState
 {
   Input input;
+  float dTime;
+  int clientAreaWidth;
+  int clientAreaHeight;
 };
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <algorithm>
 
 struct Vec2f
 {
@@ -63,6 +64,8 @@ inline Vec4f normalized(const Vec4f& v)
   const auto length = ::length(v);
   return {v.x / length, v.y / length, v.z / length, v.w / length};
 }
+
+using std::clamp;
 
 //template<int columnCountT, int rowCountT, typename T>
 //struct Mat

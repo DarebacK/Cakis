@@ -1,5 +1,7 @@
 #define DAR_MODULE_NAME "Win32"
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <windowsx.h>
 #include <exception>
 #include <stdio.h>
 #include "D3D11Renderer.h"
@@ -23,11 +25,33 @@ LRESULT CALLBACK WindowProc(HWND   windowHandle,
   switch(message)
   {
     case WM_SIZE:
-      clientAreaWidth = lParam & 0xFFFF;
-      clientAreaHeight = (int)lParam >> 16;
+      clientAreaWidth = LOWORD(lParam);
+      clientAreaHeight = HIWORD(lParam);
     break;
     case WM_DESTROY:
       PostQuitMessage(0);
+    break;
+    case WM_LBUTTONDOWN:
+      input.mouse.left.pressedDown = true;
+    break;
+    case WM_LBUTTONUP:
+      input.mouse.left.pressedUp = true;
+    break;
+    case WM_MBUTTONDOWN:
+      input.mouse.middle.pressedDown = true;
+    break;
+    case WM_MBUTTONUP:
+      input.mouse.middle.pressedUp = true;
+    break;
+    case WM_RBUTTONDOWN:
+      input.mouse.right.pressedDown = true;
+    break;
+    case WM_RBUTTONUP:
+      input.mouse.right.pressedUp = true;
+    break;
+    case WM_MOUSEMOVE:
+      input.mouse.x = GET_X_LPARAM(lParam);
+      input.mouse.y = GET_Y_LPARAM(lParam);
     break;
     case WM_KEYDOWN:
       switch(wParam)
@@ -100,17 +124,17 @@ try
     }
     else
     {
-      LARGE_INTEGER currentCounterValue;
-      QueryPerformanceCounter(&currentCounterValue);
-      const float frameTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
-      lastCounterValue = currentCounterValue;
-      char windowTitle[64];
-      _snprintf_s(windowTitle, 64, "%s %.2fms/%dfps", gameName, frameTime, (int)(1/frameTime));
-      SetWindowTextA(window, windowTitle);
-
       // process frame
       GameState gameState{};
       gameState.input = input;
+      gameState.clientAreaWidth = clientAreaWidth;
+      gameState.clientAreaHeight = clientAreaHeight;
+
+      LARGE_INTEGER currentCounterValue;
+      QueryPerformanceCounter(&currentCounterValue);
+      gameState.dTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
+      lastCounterValue = currentCounterValue;
+
       render(gameState);
 
       input = {};

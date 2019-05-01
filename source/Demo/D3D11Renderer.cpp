@@ -1,23 +1,33 @@
 #define DAR_MODULE_NAME "Renderer"
 #include "D3D11Renderer.h"
 #include "DarEngine.h"
-#include <Windows.h>
+#include "DarMath.h"
+
 #include <d3d11_4.h>
-#include "LinGebra.hpp"
+#include <dwrite_2.h>
+#include <d2d1_2.h>
+#include <atlbase.h>
 
 namespace
 {
   ID3D11Device* device = nullptr;
-  ID3D11DeviceContext* deviceContext = nullptr;
+  ID3D11DeviceContext* context = nullptr;
   D3D_FEATURE_LEVEL featureLevel = (D3D_FEATURE_LEVEL)0;
   IDXGISwapChain1* swapchain = nullptr;
   ID3D11RenderTargetView* renderTargetView = nullptr;
   ID3D11DepthStencilView* depthStencilView = nullptr;
-  float clearColor[4] = { 0.f, 0.f, 0.f, 1.0f };
+  float clearColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
+  IDWriteFactory2* dwriteFactory;
+  CComPtr<ID2D1Device1> d2Device = nullptr;
+  CComPtr<ID2D1DeviceContext1> d2Context = nullptr;
 
   #ifdef DAR_DEBUG
     ID3D11RasterizerState* wireframeRasterizerState = nullptr;
     bool useWireframe = false;
+    wchar_t debugTextString[4096];
+    int debugTextStringLength = 0;
+    CComPtr<ID2D1SolidColorBrush> debugTextBrush = nullptr;
+    CComPtr<IDWriteTextFormat> debugTextFormat = nullptr;
   #endif
 
   //TEMPORARY STUFF
@@ -65,14 +75,14 @@ namespace
 bool initD3D11Renderer(HWND window)
 {
   // DEVICE
-	UINT createDeviceFlags = 0;
+	UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
   #ifdef DAR_DEBUG
 	  createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
   #endif
 	D3D_FEATURE_LEVEL featureLevels[] = {D3D_FEATURE_LEVEL_11_1};
 	if (D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, 
                         featureLevels, arrayCount(featureLevels), D3D11_SDK_VERSION, 
-                        &device, &featureLevel, &deviceContext) < 0)
+                        &device, &featureLevel, &context) < 0)
 	{
     return false;
 	}
@@ -85,46 +95,81 @@ bool initD3D11Renderer(HWND window)
   const UINT clientAreaHeight = clientAreaRect.bottom - clientAreaRect.top;
 	swapChainDesc.Width = clientAreaWidth;
 	swapChainDesc.Height = clientAreaHeight;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
   const UINT multisamplingCount = 8;
 	swapChainDesc.SampleDesc.Count = multisamplingCount;
   UINT multisamplingQualityLevelsCount;
-  device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, multisamplingCount, &multisamplingQualityLevelsCount);
+  device->CheckMultisampleQualityLevels(swapChainDesc.Format, multisamplingCount, &multisamplingQualityLevelsCount);
   darAssert(multisamplingQualityLevelsCount != 0);
   const UINT multisamplingQuality = multisamplingQualityLevelsCount - 1;
 	swapChainDesc.SampleDesc.Quality = multisamplingQuality;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 1;	// 1 back buffer + 1 front
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-	IDXGIDevice* dxgiDevice;
+	CComPtr<IDXGIDevice> dxgiDevice;
 	if(device->QueryInterface(__uuidof(IDXGIDevice), (void**)(&dxgiDevice)) >= 0)
   {
-    IDXGIAdapter* dxgiAdapter;
+    CComPtr<IDXGIAdapter> dxgiAdapter;
 	  if(dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)(&dxgiAdapter)) >= 0) 
     {
-      IDXGIFactory2* dxgiFactory;
+      CComPtr<IDXGIFactory2> dxgiFactory;
 	    if (dxgiAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)(&dxgiFactory)) >= 0)
       {
         dxgiFactory->CreateSwapChainForHwnd(dxgiDevice, window, &swapChainDesc, NULL, NULL, &swapchain);
-
-        dxgiFactory->Release();
+        if(!swapchain)
+        {
+          logError("Failed to create swapchain");
+          return false;
+        }
       }
-      dxgiAdapter->Release();
+      else
+      {
+        logError("Failed to get IDXGIFactory");
+        return false;
+      }
     }
-    dxgiDevice->Release();
-  } 
-  if(!swapchain)
+    else 
+    {
+      logError("Failed to get IDXGIAdapter");
+      return false;
+    }
+
+    // DirectWrite and Direct2D
+    if(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory2), (IUnknown**)&dwriteFactory) >= 0)
+    {
+      D2D1_FACTORY_OPTIONS options;
+      #ifdef DAR_DEBUG
+        options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
+      #else
+        options.debugLevel = D2D1_DEBUG_LEVEL_NONE;
+      #endif
+      CComPtr<ID2D1Factory2> d2dFactory;
+      if(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory2),  &options, (void**)&d2dFactory) >= 0)
+      {
+        if(FAILED(d2dFactory->CreateDevice(dxgiDevice, &d2Device)))
+        {
+          logError("Failed to create ID2D1Device");
+          return false;
+        }
+        if(FAILED(d2Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &d2Context)))
+        {
+          logError("Failed to create ID2D1DeviceContext");
+          return false;
+        }
+      }
+    }
+  }
+  else
   {
-    logError("Failed to initialize swapchain");
+    logError("Failed to get IDXGIDevice.");
     return false;
   }
 
   // RENDER TARGET VIEW
-  ID3D11Texture2D* backBuffer;
+  CComPtr<ID3D11Texture2D> backBuffer;
 	if (swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)(&backBuffer)) >= 0)
 	{
     device->CreateRenderTargetView(backBuffer, nullptr, &renderTargetView);
-		backBuffer->Release();
 	}
   if(!renderTargetView)
   {
@@ -155,7 +200,7 @@ bool initD3D11Renderer(HWND window)
 	  return false;
   }
 
-  deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+  context->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 
   // VIEWPORT
   D3D11_VIEWPORT viewport;
@@ -165,7 +210,7 @@ bool initD3D11Renderer(HWND window)
 	viewport.Height = (float)clientAreaHeight;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
-	deviceContext->RSSetViewports(1, &viewport);
+	context->RSSetViewports(1, &viewport);
 
   // TRIANGLE
   Vec3f triangleVertices[] = {
@@ -195,44 +240,101 @@ bool initD3D11Renderer(HWND window)
   };
   device->CreateBuffer(&triangleCBDesc, nullptr, &triangleConstantBuffer);
 
+  D2D1_BITMAP_PROPERTIES1 d2BitmapProperties{};
+  d2BitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+  d2BitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+  d2BitmapProperties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
+  CComPtr<IDXGISurface> dxgiBackBuffer;
+  if(FAILED(swapchain->GetBuffer(0, __uuidof(IDXGISurface), (void**)&dxgiBackBuffer)))
+  {
+    logError("Failed to get swapchains IDXGISurface back buffer");
+    return false;
+  }
+  CComPtr<ID2D1Bitmap1> d2Bitmap;
+  if(FAILED(d2Context->CreateBitmapFromDxgiSurface(dxgiBackBuffer, &d2BitmapProperties, &d2Bitmap)))
+  {
+    logError("Failed to create ID2D1Bitmap render target");
+    return false;
+  }
+  d2Context->SetTarget(d2Bitmap);
+
   #ifdef DAR_DEBUG
     // WIREFRAME
     D3D11_RASTERIZER_DESC wireframeRasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
     wireframeRasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
     device->CreateRasterizerState(&wireframeRasterizerDesc, &wireframeRasterizerState);
+
+    // DEBUG TEXT
+    d2Context->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Yellow), &debugTextBrush);
+    dwriteFactory->CreateTextFormat(L"Arial", nullptr, DWRITE_FONT_WEIGHT_LIGHT, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 12, L"en-US", &debugTextFormat);
+    debugTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+    debugTextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
   #endif
 
   return true;
 }
 
+void _debugStringImpl(const wchar_t* newStr, int newStrLength)
+{
+  int newDebugTextStringLength = debugTextStringLength + newStrLength;
+  newDebugTextStringLength = clamp(newDebugTextStringLength, 0, (int)arrayCount(debugTextString));
+  wchar_t* debugTextStringOffset = debugTextString + debugTextStringLength;
+  int remainingDebugTextStringSpace =  arrayCount(debugTextString) - debugTextStringLength;
+  if(remainingDebugTextStringSpace > 0)
+  {
+    _snwprintf_s(debugTextStringOffset, arrayCount(debugTextString) - debugTextStringLength, _TRUNCATE, L"%s\n", newStr);
+    debugTextStringLength = newDebugTextStringLength + 1;
+  }
+}
+#define debugString(...) \
+{ \
+  wchar_t newStr[256]; \
+  int newStrLength = _snwprintf_s(newStr, _TRUNCATE, __VA_ARGS__); \
+  if(newStrLength > 0) _debugStringImpl(newStr, newStrLength); \
+}
+
 void render(const GameState& game)
 {
+  d2Context->BeginDraw();
+
   #ifdef DAR_DEBUG
+    // WIREFRAME
     if(game.input.F1.pressedDown) 
     {
       useWireframe = !useWireframe;
-      if(useWireframe) deviceContext->RSSetState(wireframeRasterizerState);
-      else deviceContext->RSSetState(nullptr);
+      if(useWireframe) context->RSSetState(wireframeRasterizerState);
+      else context->RSSetState(nullptr);
     }
+    // DEBUG TEXT
+    debugTextStringLength = 0;
+    debugString(L"%.3fms / %dfps", game.dTime, (int)(1/game.dTime));
   #endif
 
-  deviceContext->ClearRenderTargetView(renderTargetView, clearColor);
-	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+  context->ClearRenderTargetView(renderTargetView, clearColor);
+  context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
   Mat4f transformation = Mat4f::identity();
   transformation.translate({0.5f, 0.5f, 0.f});
-  deviceContext->UpdateSubresource(triangleConstantBuffer, 0, nullptr, &transformation, 0, 0);
-  deviceContext->VSSetShader(triangleVertexShader, nullptr, 0);
-  deviceContext->VSSetConstantBuffers(0, 1, &triangleConstantBuffer);
-  deviceContext->PSSetShader(trianglePixelShader, nullptr, 0);
-  deviceContext->IASetInputLayout(triangleInputLayout);
+  context->UpdateSubresource(triangleConstantBuffer, 0, nullptr, &transformation, 0, 0);
+  context->VSSetShader(triangleVertexShader, nullptr, 0);
+  context->VSSetConstantBuffers(0, 1, &triangleConstantBuffer);
+  context->PSSetShader(trianglePixelShader, nullptr, 0);
+  context->IASetInputLayout(triangleInputLayout);
   UINT triangleStride = 2 * sizeof(Vec3f);
   UINT triangleOffset = 0;
-  deviceContext->IASetVertexBuffers(0, 1, &triangleVertexBuffer, &triangleStride, &triangleOffset);
-  deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  deviceContext->Draw(3, 0);
+  context->IASetVertexBuffers(0, 1, &triangleVertexBuffer, &triangleStride, &triangleOffset);
+  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  context->Draw(3, 0);
 
+  #ifdef DAR_DEBUG
+    // DEBUG TEXT
+    CComPtr<IDWriteTextLayout> debugTextLayout;
+    dwriteFactory->CreateTextLayout(debugTextString, debugTextStringLength, debugTextFormat, (float)game.clientAreaWidth, (float)game.clientAreaHeight, &debugTextLayout);
+    d2Context->DrawTextLayout({5.f, 5.f}, debugTextLayout, debugTextBrush);
+  #endif
+
+  d2Context->EndDraw();
   UINT presentFlags = 0;
   swapchain->Present(1, presentFlags);
-  deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+  context->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 }

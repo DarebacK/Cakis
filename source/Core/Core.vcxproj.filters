@@ -53,5 +53,8 @@
     <ClInclude Include="DarEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DarMath.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
