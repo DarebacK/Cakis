@@ -1,7 +1,7 @@
 #define DAR_MODULE_NAME "Renderer"
-#include "D3D11Renderer.h"
-#include "DarEngine.h"
-#include "DarMath.h"
+#include "D3D11Renderer.hpp"
+#include "DarEngine.hpp"
+#include "DarMath.hpp"
 
 #include <d3d11_4.h>
 #include <dwrite_2.h>
@@ -28,6 +28,25 @@ namespace
     int debugTextStringLength = 0;
     CComPtr<ID2D1SolidColorBrush> debugTextBrush = nullptr;
     CComPtr<IDWriteTextFormat> debugTextFormat = nullptr;
+
+    void _debugStringImpl(const wchar_t* newStr, int newStrLength)
+    {
+      int newDebugTextStringLength = debugTextStringLength + newStrLength;
+      newDebugTextStringLength = clamp(newDebugTextStringLength, 0, (int)arrayCount(debugTextString));
+      wchar_t* debugTextStringOffset = debugTextString + debugTextStringLength;
+      int remainingDebugTextStringSpace =  arrayCount(debugTextString) - debugTextStringLength;
+      if(remainingDebugTextStringSpace > 0)
+      {
+        _snwprintf_s(debugTextStringOffset, arrayCount(debugTextString) - debugTextStringLength, _TRUNCATE, L"%s\n", newStr);
+        debugTextStringLength = newDebugTextStringLength + 1;
+      }
+    }
+    #define debugString(...) \
+    { \
+      wchar_t newStr[256]; \
+      int newStrLength = _snwprintf_s(newStr, _TRUNCATE, __VA_ARGS__); \
+      if(newStrLength > 0) _debugStringImpl(newStr, newStrLength); \
+    }
   #endif
 
   //TEMPORARY STUFF
@@ -86,7 +105,6 @@ bool initD3D11Renderer(HWND window)
 	{
     return false;
 	}
-
   // SWAPCHAIN
   DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
   RECT clientAreaRect;
@@ -274,25 +292,6 @@ bool initD3D11Renderer(HWND window)
   return true;
 }
 
-void _debugStringImpl(const wchar_t* newStr, int newStrLength)
-{
-  int newDebugTextStringLength = debugTextStringLength + newStrLength;
-  newDebugTextStringLength = clamp(newDebugTextStringLength, 0, (int)arrayCount(debugTextString));
-  wchar_t* debugTextStringOffset = debugTextString + debugTextStringLength;
-  int remainingDebugTextStringSpace =  arrayCount(debugTextString) - debugTextStringLength;
-  if(remainingDebugTextStringSpace > 0)
-  {
-    _snwprintf_s(debugTextStringOffset, arrayCount(debugTextString) - debugTextStringLength, _TRUNCATE, L"%s\n", newStr);
-    debugTextStringLength = newDebugTextStringLength + 1;
-  }
-}
-#define debugString(...) \
-{ \
-  wchar_t newStr[256]; \
-  int newStrLength = _snwprintf_s(newStr, _TRUNCATE, __VA_ARGS__); \
-  if(newStrLength > 0) _debugStringImpl(newStr, newStrLength); \
-}
-
 void render(const GameState& game)
 {
   d2Context->BeginDraw();
@@ -313,15 +312,14 @@ void render(const GameState& game)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f transformation = Mat4f::identity();
-  transformation.translate({0.5f, 0.5f, 0.f});
+  Mat4f transformation = Mat4f::translation(0.5f, 0.5f, 0.f);
   context->UpdateSubresource(triangleConstantBuffer, 0, nullptr, &transformation, 0, 0);
   context->VSSetShader(triangleVertexShader, nullptr, 0);
   context->VSSetConstantBuffers(0, 1, &triangleConstantBuffer);
   context->PSSetShader(trianglePixelShader, nullptr, 0);
   context->IASetInputLayout(triangleInputLayout);
-  UINT triangleStride = 2 * sizeof(Vec3f);
-  UINT triangleOffset = 0;
+  const UINT triangleStride = 2 * sizeof(Vec3f);
+  const UINT triangleOffset = 0;
   context->IASetVertexBuffers(0, 1, &triangleVertexBuffer, &triangleStride, &triangleOffset);
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   context->Draw(3, 0);

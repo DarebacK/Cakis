@@ -50,10 +50,10 @@
     <ClInclude Include="Version.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DarEngine.h">
+    <ClInclude Include="DarEngine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DarMath.h">
+    <ClInclude Include="DarMath.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

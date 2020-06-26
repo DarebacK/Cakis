@@ -4,8 +4,8 @@
 #include <windowsx.h>
 #include <exception>
 #include <stdio.h>
-#include "D3D11Renderer.h"
-#include "DarEngine.h"
+#include "D3D11Renderer.hpp"
+#include "DarEngine.hpp"
 #include "GameState.h"
 
 namespace 
@@ -16,10 +16,12 @@ HWND window = nullptr;
 const char* gameName = "Demo";
 Input input = {};
 
-LRESULT CALLBACK WindowProc(HWND   windowHandle,
-                            UINT   message,
-                            WPARAM wParam,
-                            LPARAM lParam)
+LRESULT CALLBACK WindowProc(
+  HWND   windowHandle,
+  UINT   message,
+  WPARAM wParam,
+  LPARAM lParam
+)
 {
   LRESULT result = 0;
   switch(message)
@@ -72,10 +74,12 @@ LRESULT CALLBACK WindowProc(HWND   windowHandle,
 }
 }
 
-int WINAPI WinMain(HINSTANCE instanceHandle,
-                   HINSTANCE hPrevInstance, // always zero
-                   LPSTR     commandLine,
-                   int       showCode)
+int WINAPI WinMain(
+  HINSTANCE instanceHandle,
+  HINSTANCE hPrevInstance, // always zero
+  LPSTR commandLine,
+  int showCode
+)
 try
 {
   WNDCLASS windowClass{};
@@ -83,6 +87,7 @@ try
   windowClass.hInstance = instanceHandle;
   windowClass.lpszClassName = "What's the point of this struct";
   if(!RegisterClassA(&windowClass)) return -1;
+
   RECT windowRectangle;
   windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
   constexpr DWORD windowStyle = WS_OVERLAPPEDWINDOW ^ WS_SIZEBOX;
@@ -103,6 +108,7 @@ try
                          nullptr,
                          windowClass.hInstance,
                          nullptr);
+
   if(!initD3D11Renderer(window))
   {
     MessageBoxA(window, "Failed to initialize D3D11 renderer.", "Fatal error", MB_OK | MB_ICONERROR);
