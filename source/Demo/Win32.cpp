@@ -29,6 +29,7 @@ LRESULT CALLBACK WindowProc(
     case WM_SIZE:
       clientAreaWidth = LOWORD(lParam);
       clientAreaHeight = HIWORD(lParam);
+      Renderer::onWindowResize(clientAreaWidth, clientAreaHeight);
     break;
     case WM_DESTROY:
       PostQuitMessage(0);
@@ -109,7 +110,7 @@ try
                          windowClass.hInstance,
                          nullptr);
 
-  if(!initD3D11Renderer(window))
+  if(!Renderer::init(window))
   {
     MessageBoxA(window, "Failed to initialize D3D11 renderer.", "Fatal error", MB_OK | MB_ICONERROR);
     return -1;
@@ -141,7 +142,7 @@ try
       gameState.dTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
       lastCounterValue = currentCounterValue;
 
-      render(gameState);
+      Renderer::render(gameState);
 
       input = {};
     }

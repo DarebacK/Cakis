@@ -3,5 +3,8 @@
 #include <windows.h>
 #include "GameState.h"
 
-bool initD3D11Renderer(HWND window);
+namespace Renderer {
+bool init(HWND window);
+void onWindowResize(int clientAreaWidth, int clientAreaHeight);
 void render(const GameState& gameState);
+}
