@@ -30,10 +30,10 @@
     <ClInclude Include="VulkanRenderer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameState.h">
+    <ClInclude Include="D3D11Renderer.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D11Renderer.hpp">
+    <ClInclude Include="GameState.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

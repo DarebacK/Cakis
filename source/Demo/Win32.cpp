@@ -4,9 +4,10 @@
 #include <windowsx.h>
 #include <exception>
 #include <stdio.h>
+
 #include "D3D11Renderer.hpp"
 #include "DarEngine.hpp"
-#include "GameState.h"
+#include "GameState.hpp"
 
 namespace 
 {

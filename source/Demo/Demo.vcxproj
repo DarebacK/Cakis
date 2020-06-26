@@ -154,7 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D11Renderer.hpp" />
-    <ClInclude Include="GameState.h" />
+    <ClInclude Include="GameState.hpp" />
     <ClInclude Include="VulkanRenderer.h" />
   </ItemGroup>
   <ItemGroup>
