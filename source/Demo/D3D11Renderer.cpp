@@ -114,8 +114,7 @@ static void updateViewport()
 static CComPtr<ID3D11RenderTargetView> createRenderTargetView()
 {
   CComPtr<ID3D11Texture2D> backBuffer;
-	if (FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-	{
+	if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
     logError("Failed to get back buffer for render target view.");
     return nullptr;
 	}
@@ -140,15 +139,13 @@ static CComPtr<ID3D11DepthStencilView> createDepthStencilView()
 	depthStencilDesc.SampleDesc.Count = swapChainDesc.SampleDesc.Count;
 	depthStencilDesc.SampleDesc.Quality = swapChainDesc.SampleDesc.Quality;
   CComPtr<ID3D11Texture2D> depthStencilBuffer = nullptr;
-	if (FAILED(device->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencilBuffer))) 
-  {
+	if(FAILED(device->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencilBuffer))) {
     logError("Failed to create depth stencil buffer");
     return nullptr;
   }
 
   CComPtr<ID3D11DepthStencilView> result = nullptr;
-	if (FAILED(device->CreateDepthStencilView(depthStencilBuffer, nullptr, &result)))
-	{
+	if(FAILED(device->CreateDepthStencilView(depthStencilBuffer, nullptr, &result))) {
     logError("Failed to create depth stencil view");
 	  return nullptr;
   }
@@ -168,8 +165,11 @@ static bool bindD2dTargetToD3dTarget()
   d2BitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
   d2BitmapProperties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
   CComPtr<ID2D1Bitmap1> d2Bitmap;
-  if(FAILED(d2Context->CreateBitmapFromDxgiSurface(dxgiBackBuffer, &d2BitmapProperties, &d2Bitmap)))
-  {
+  if(FAILED(d2Context->CreateBitmapFromDxgiSurface(
+    dxgiBackBuffer, 
+    &d2BitmapProperties, 
+    &d2Bitmap
+  ))) {
     logError("Failed to create ID2D1Bitmap render target");
     return false;
   }
@@ -185,10 +185,18 @@ bool init(HWND window)
 	  createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
   #endif
 	D3D_FEATURE_LEVEL featureLevels[] = {D3D_FEATURE_LEVEL_11_1};
-	if (D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, 
-                        featureLevels, arrayCount(featureLevels), D3D11_SDK_VERSION, 
-                        &device, &featureLevel, &context) < 0)
-	{
+	if(FAILED(D3D11CreateDevice(
+    NULL, 
+    D3D_DRIVER_TYPE_HARDWARE,
+    NULL, 
+    createDeviceFlags, 
+    featureLevels, 
+    arrayCount(featureLevels), 
+    D3D11_SDK_VERSION, 
+    &device, 
+    &featureLevel, 
+    &context
+  ))) {
     logError("Failed to create D3D11 device");
     return false;
 	}
@@ -209,37 +217,30 @@ bool init(HWND window)
 	swapChainDesc.BufferCount = 1;	// 1 back buffer + 1 front
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	CComPtr<IDXGIDevice> dxgiDevice;
-	if(device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)) >= 0)
-  {
+	if(SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)))) {
     CComPtr<IDXGIAdapter> dxgiAdapter;
-	  if(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter)) >= 0) 
-    {
+	  if(SUCCEEDED(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter)))) {
       CComPtr<IDXGIFactory2> dxgiFactory;
-	    if (dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)) >= 0)
-      {
+	    if (SUCCEEDED(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)))) {
         dxgiFactory->CreateSwapChainForHwnd(dxgiDevice, window, &swapChainDesc, NULL, NULL, &swapChain);
-        if(!swapChain)
-        {
+        if(!swapChain) {
           logError("Failed to create swapChain");
           return false;
         }
         swapChain->GetDesc1(&swapChainDesc);
       }
-      else
-      {
+      else {
         logError("Failed to get IDXGIFactory");
         return false;
       }
     }
-    else 
-    {
+    else {
       logError("Failed to get IDXGIAdapter");
       return false;
     }
 
     // DirectWrite and Direct2D
-    if(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory2), (IUnknown**)&dwriteFactory) >= 0)
-    {
+    if(SUCCEEDED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory2), (IUnknown**)&dwriteFactory))) {
       D2D1_FACTORY_OPTIONS options;
       #ifdef DAR_DEBUG
         options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
@@ -247,23 +248,18 @@ bool init(HWND window)
         options.debugLevel = D2D1_DEBUG_LEVEL_NONE;
       #endif
       CComPtr<ID2D1Factory2> d2dFactory;
-      if(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory2), &options, (void**)&d2dFactory) >= 0)
-      {
-        if(FAILED(d2dFactory->CreateDevice(dxgiDevice, &d2Device)))
-        {
+      if(SUCCEEDED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory2), &options, (void**)&d2dFactory))) {
+        if(FAILED(d2dFactory->CreateDevice(dxgiDevice, &d2Device))) {
           logError("Failed to create ID2D1Device");
           return false;
         }
-        if(FAILED(d2Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &d2Context)))
-        {
+        if(FAILED(d2Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &d2Context))) {
           logError("Failed to create ID2D1DeviceContext");
           return false;
         }
       }
     }
-  }
-  else
-  {
+  } else {
     logError("Failed to get IDXGIDevice.");
     return false;
   }
@@ -376,8 +372,7 @@ void render(const GameState& game)
   d2Context->BeginDraw();
 
   #ifdef DAR_DEBUG
-    if(game.input.F1.pressedDown) 
-    {
+    if(game.input.F1.pressedDown) {
       switchWireframeState();
     }
     debugString(L"%.3fms / %dfps", game.dTime, (int)(1/game.dTime));
