@@ -13,6 +13,8 @@ namespace Renderer
 CComPtr<ID3D11Device> device = nullptr;
 CComPtr<ID3D11DeviceContext> context = nullptr;
 D3D_FEATURE_LEVEL featureLevel = (D3D_FEATURE_LEVEL)0;
+CComPtr<IDXGIAdapter3> dxgiAdapter;
+DXGI_ADAPTER_DESC2 dxgiAdapterDesc{};
 CComPtr<IDXGISwapChain1> swapChain = nullptr;
 DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
 CComPtr<ID3D11RenderTargetView> renderTargetView = nullptr;
@@ -218,24 +220,26 @@ bool init(HWND window)
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	CComPtr<IDXGIDevice> dxgiDevice;
 	if(SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)))) {
-    CComPtr<IDXGIAdapter> dxgiAdapter;
 	  if(SUCCEEDED(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter)))) {
       CComPtr<IDXGIFactory2> dxgiFactory;
-	    if (SUCCEEDED(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)))) {
+	    if(SUCCEEDED(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)))) {
         dxgiFactory->CreateSwapChainForHwnd(dxgiDevice, window, &swapChainDesc, NULL, NULL, &swapChain);
         if(!swapChain) {
-          logError("Failed to create swapChain");
+          logError("Failed to create swapChain.");
           return false;
         }
         swapChain->GetDesc1(&swapChainDesc);
-      }
-      else {
+      } else {
         logError("Failed to get IDXGIFactory");
         return false;
       }
+
+      if(FAILED(dxgiAdapter->GetDesc2(&dxgiAdapterDesc))) {
+        logError("Failed to get adapter description.");
+      }
     }
     else {
-      logError("Failed to get IDXGIAdapter");
+      logError("Failed to get IDXGIAdapter.");
       return false;
     }
 
@@ -375,8 +379,23 @@ void render(const GameState& game)
     if(game.input.F1.pressedDown) {
       switchWireframeState();
     }
-    debugString(L"%.3fms / %dfps", game.dTime, (int)(1/game.dTime));
+
+    DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfo{};
+    UINT64 videoMemoryUsageMB = 0;
+    if(SUCCEEDED(dxgiAdapter->QueryVideoMemoryInfo(
+      0, 
+      DXGI_MEMORY_SEGMENT_GROUP_LOCAL, 
+      &videoMemoryInfo
+    ))) {
+      videoMemoryUsageMB = videoMemoryInfo.CurrentUsage / (1ull << 20ull); 
+    } else {
+      logError("Failed to query video memory info.");
+    }
+    UINT64 videoMemoryTotalMB = dxgiAdapterDesc.DedicatedVideoMemory / (1ull << 20ull);
+    debugString(L"VRAM %lluMB / %lluMB", videoMemoryUsageMB, videoMemoryTotalMB); 
   #endif
+
+  debugString(L"%.3fms / %dfps", game.dTime, (int)(1/game.dTime));
 
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
