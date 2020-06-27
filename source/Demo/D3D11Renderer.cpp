@@ -17,38 +17,17 @@ CComPtr<IDXGISwapChain1> swapChain = nullptr;
 DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
 CComPtr<ID3D11RenderTargetView> renderTargetView = nullptr;
 CComPtr<ID3D11DepthStencilView> depthStencilView = nullptr;
-CComPtr<ID3D11Texture2D> depthStencilBuffer = nullptr;
 float clearColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
 CComPtr<IDWriteFactory2> dwriteFactory;
 CComPtr<ID2D1Device1> d2Device = nullptr;
 CComPtr<ID2D1DeviceContext1> d2Context = nullptr;
 
 #ifdef DAR_DEBUG
+  CComPtr<ID3D11Debug> debug = nullptr;
   CComPtr<ID3D11RasterizerState> wireframeRasterizerState = nullptr;
   bool useWireframe = false;
-  wchar_t debugTextString[4096];
-  int debugTextStringLength = 0;
   CComPtr<ID2D1SolidColorBrush> debugTextBrush = nullptr;
   CComPtr<IDWriteTextFormat> debugTextFormat = nullptr;
-
-  void _debugStringImpl(const wchar_t* newStr, int newStrLength)
-  {
-    int newDebugTextStringLength = debugTextStringLength + newStrLength;
-    newDebugTextStringLength = clamp(newDebugTextStringLength, 0, (int)arrayCount(debugTextString));
-    wchar_t* debugTextStringOffset = debugTextString + debugTextStringLength;
-    int remainingDebugTextStringSpace =  arrayCount(debugTextString) - debugTextStringLength;
-    if(remainingDebugTextStringSpace > 0)
-    {
-      _snwprintf_s(debugTextStringOffset, arrayCount(debugTextString) - debugTextStringLength, _TRUNCATE, L"%s\n", newStr);
-      debugTextStringLength = newDebugTextStringLength + 1;
-    }
-  }
-  #define debugString(...) \
-  { \
-    wchar_t newStr[256]; \
-    int newStrLength = _snwprintf_s(newStr, _TRUNCATE, __VA_ARGS__); \
-    if(newStrLength > 0) _debugStringImpl(newStr, newStrLength); \
-  }
 #endif
 
 //TEMPORARY STUFF
@@ -132,6 +111,72 @@ static void updateViewport()
   setViewport((FLOAT)swapChainDesc.Width, (FLOAT)swapChainDesc.Height);
 }
 
+static CComPtr<ID3D11RenderTargetView> createRenderTargetView()
+{
+  CComPtr<ID3D11Texture2D> backBuffer;
+	if (FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
+	{
+    logError("Failed to get back buffer for render target view.");
+    return nullptr;
+	}
+  CComPtr<ID3D11RenderTargetView> result = nullptr;
+  if(FAILED(device->CreateRenderTargetView(backBuffer, nullptr, &result))) {
+    logError("Failed to create render target view");
+    return nullptr;
+  }
+  return result;
+}
+
+static CComPtr<ID3D11DepthStencilView> createDepthStencilView()
+{
+  D3D11_TEXTURE2D_DESC depthStencilDesc{};
+	depthStencilDesc.Width = swapChainDesc.Width;
+	depthStencilDesc.Height = swapChainDesc.Height;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.ArraySize = 1;
+	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthStencilDesc.SampleDesc.Count = swapChainDesc.SampleDesc.Count;
+	depthStencilDesc.SampleDesc.Quality = swapChainDesc.SampleDesc.Quality;
+  CComPtr<ID3D11Texture2D> depthStencilBuffer = nullptr;
+	if (FAILED(device->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencilBuffer))) 
+  {
+    logError("Failed to create depth stencil buffer");
+    return nullptr;
+  }
+
+  CComPtr<ID3D11DepthStencilView> result = nullptr;
+	if (FAILED(device->CreateDepthStencilView(depthStencilBuffer, nullptr, &result)))
+	{
+    logError("Failed to create depth stencil view");
+	  return nullptr;
+  }
+  return result;
+}
+
+static bool bindD2dTargetToD3dTarget()
+{
+  CComPtr<IDXGISurface> dxgiBackBuffer;
+  if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&dxgiBackBuffer))))
+  {
+    logError("Failed to get swapchains IDXGISurface back buffer");
+    return false;
+  }
+  D2D1_BITMAP_PROPERTIES1 d2BitmapProperties{};
+  d2BitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+  d2BitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
+  d2BitmapProperties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
+  CComPtr<ID2D1Bitmap1> d2Bitmap;
+  if(FAILED(d2Context->CreateBitmapFromDxgiSurface(dxgiBackBuffer, &d2BitmapProperties, &d2Bitmap)))
+  {
+    logError("Failed to create ID2D1Bitmap render target");
+    return false;
+  }
+  d2Context->SetTarget(d2Bitmap);
+  return true;
+}
+
 bool init(HWND window)
 {
   // DEVICE
@@ -147,6 +192,10 @@ bool init(HWND window)
     logError("Failed to create D3D11 device");
     return false;
 	}
+
+  #ifdef DAR_DEBUG
+    device->QueryInterface(IID_PPV_ARGS(&debug));
+  #endif
 
   // SWAPCHAIN
 	swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -219,40 +268,16 @@ bool init(HWND window)
     return false;
   }
 
-  // RENDER TARGET VIEW
-  CComPtr<ID3D11Texture2D> backBuffer;
-	if (swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)) >= 0)
-	{
-    device->CreateRenderTargetView(backBuffer, nullptr, &renderTargetView);
-	}
-  if(!renderTargetView)
-  {
-    logError("Failed to create render target view");
+  renderTargetView = createRenderTargetView();
+  if(!renderTargetView) {
+    logError("Failed to initialize render target view.");
     return false;
   }
-    
-  // DEPTH STENCIL VIEW
-  D3D11_TEXTURE2D_DESC depthStencilDesc{};
-	depthStencilDesc.Width = swapChainDesc.Width;
-	depthStencilDesc.Height = swapChainDesc.Height;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.ArraySize = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthStencilDesc.SampleDesc.Count = swapChainDesc.SampleDesc.Count;
-	depthStencilDesc.SampleDesc.Quality = multisamplingQuality;
-	if (device->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencilBuffer) < 0) 
-  {
-    logError("Failed to create depth stencil buffer");
+  depthStencilView = createDepthStencilView();
+  if(!depthStencilView) {
+    logError("Failed to initialize depth stencil view.");
     return false;
   }
-	if (device->CreateDepthStencilView(depthStencilBuffer, nullptr, &depthStencilView) < 0)
-	{
-    logError("Failed to create depth stencil view");
-	  return false;
-  }
-
   context->OMSetRenderTargets(1, &renderTargetView.p, depthStencilView);
 
   updateViewport();
@@ -285,23 +310,7 @@ bool init(HWND window)
   };
   device->CreateBuffer(&triangleCBDesc, nullptr, &triangleConstantBuffer);
 
-  CComPtr<IDXGISurface> dxgiBackBuffer;
-  if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&dxgiBackBuffer))))
-  {
-    logError("Failed to get swapchains IDXGISurface back buffer");
-    return false;
-  }
-  D2D1_BITMAP_PROPERTIES1 d2BitmapProperties{};
-  d2BitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-  d2BitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
-  d2BitmapProperties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
-  CComPtr<ID2D1Bitmap1> d2Bitmap;
-  if(FAILED(d2Context->CreateBitmapFromDxgiSurface(dxgiBackBuffer, &d2BitmapProperties, &d2Bitmap)))
-  {
-    logError("Failed to create ID2D1Bitmap render target");
-    return false;
-  }
-  d2Context->SetTarget(d2Bitmap);
+  bindD2dTargetToD3dTarget();
 
   #ifdef DAR_DEBUG
     // WIREFRAME
@@ -322,17 +331,44 @@ bool init(HWND window)
 void onWindowResize(int clientAreaWidth, int clientAreaHeight)
 {
   if(swapChain) {
-    //renderTargetView.Release();
-    //depthStencilView.Release();
-    //depthStencilBuffer.Release();
+    d2Context->SetTarget(nullptr);  // clears the binding to swapChain's back buffer
+    depthStencilView.Release();
+    renderTargetView.Release();
     if(FAILED(swapChain->ResizeBuffers(0, 0, 0, swapChainDesc.Format, swapChainDesc.Flags))) {
       logError("Failed to resize swapChain buffers");
+#ifdef DAR_DEBUG
+      debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL | D3D11_RLDO_SUMMARY);
+#endif DAR_DEBUG
     }
     if(FAILED(swapChain->GetDesc1(&swapChainDesc))) {
       logError("Failed to get swapChain desc after window resize");
     }
+
+    renderTargetView = createRenderTargetView();
+    if(!renderTargetView) {
+      logError("Failed to create render target view after window resize.");
+    }
+    depthStencilView = createDepthStencilView();
+    if(!depthStencilView) {
+      logError("Failed to create depth stencil view after window resize.");
+    }
+    context->OMSetRenderTargets(1, &renderTargetView.p, depthStencilView);
+
+    if(!bindD2dTargetToD3dTarget()) {
+      logError("Failed to bind Direct2D render target to Direct3D render target.");
+    }
+
     updateViewport();
   }
+}
+
+static void switchWireframeState()
+{
+#ifdef DAR_DEBUG
+  useWireframe = !useWireframe;
+  if(useWireframe) context->RSSetState(wireframeRasterizerState);
+  else context->RSSetState(nullptr);
+#endif
 }
 
 void render(const GameState& game)
@@ -340,15 +376,10 @@ void render(const GameState& game)
   d2Context->BeginDraw();
 
   #ifdef DAR_DEBUG
-    // WIREFRAME
     if(game.input.F1.pressedDown) 
     {
-      useWireframe = !useWireframe;
-      if(useWireframe) context->RSSetState(wireframeRasterizerState);
-      else context->RSSetState(nullptr);
+      switchWireframeState();
     }
-    // DEBUG TEXT
-    debugTextStringLength = 0;
     debugString(L"%.3fms / %dfps", game.dTime, (int)(1/game.dTime));
   #endif
 
@@ -370,13 +401,19 @@ void render(const GameState& game)
   #ifdef DAR_DEBUG
     // DEBUG TEXT
     CComPtr<IDWriteTextLayout> debugTextLayout;
-    dwriteFactory->CreateTextLayout(debugTextString, debugTextStringLength, debugTextFormat, (float)game.clientAreaWidth, (float)game.clientAreaHeight, &debugTextLayout);
+    dwriteFactory->CreateTextLayout(
+      _debugTextString, 
+      _debugTextStringLength, 
+      debugTextFormat, 
+      (float)game.clientAreaWidth, 
+      (float)game.clientAreaHeight, 
+      &debugTextLayout
+    );
     d2Context->DrawTextLayout({5.f, 5.f}, debugTextLayout, debugTextBrush);
   #endif
 
   d2Context->EndDraw();
   UINT presentFlags = 0;
   swapChain->Present(1, presentFlags);
-  context->OMSetRenderTargets(1, &renderTargetView.p, depthStencilView);
 }
 } // namespace Renderer

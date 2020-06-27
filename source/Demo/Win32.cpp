@@ -90,8 +90,7 @@ try
   windowClass.lpszClassName = "What's the point of this struct";
   if(!RegisterClassA(&windowClass)) return -1;
 
-  RECT windowRectangle;
-  windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
+  RECT windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
   constexpr DWORD windowStyle = WS_OVERLAPPEDWINDOW ^ WS_SIZEBOX;
   constexpr DWORD windowStyleEx = WS_EX_OVERLAPPEDWINDOW ^ WS_SIZEBOX;
   AdjustWindowRectEx(&windowRectangle, windowStyle, false, windowStyleEx);
@@ -142,6 +141,10 @@ try
       QueryPerformanceCounter(&currentCounterValue);
       gameState.dTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
       lastCounterValue = currentCounterValue;
+
+      #ifdef DAR_DEBUG
+        _debugTextStringLength = 0;
+      #endif 
 
       Renderer::render(gameState);
 

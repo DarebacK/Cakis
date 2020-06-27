@@ -16,50 +16,50 @@ struct Vec4f
   float x, y, z, w;
 };
 
-float dot(const Vec2f& v1, const Vec2f& v2)
+inline float dot(const Vec2f& v1, const Vec2f& v2)
 {
   return (v1.x * v2.x) + (v1.y * v2.y);
 }
-float dot(const Vec3f& v1, const Vec3f& v2)
+inline float dot(const Vec3f& v1, const Vec3f& v2)
 {
   return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 }
-float dot(const Vec4f& v1, const Vec4f& v2)
+inline float dot(const Vec4f& v1, const Vec4f& v2)
 {
   return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z) + (v1.w * v2.w);
 }
 
-Vec3f cross(const Vec3f& v1, const Vec3f& v2)
+inline Vec3f cross(const Vec3f& v1, const Vec3f& v2)
 {
   return {(v1.y * v2.z) - (v1.z * v2.y), (v1.z * v2.x) - (v1.x * v2.z), (v1.x * v2.y) - (v1.y * v2.x)};
 }
 
 using std::sqrt;
 
-auto length(const Vec2f& v)
+inline auto length(const Vec2f& v)
 {
   return sqrt(dot(v, v));
 }
-auto length(const Vec3f& v)
+inline auto length(const Vec3f& v)
 {
   return sqrt(dot(v, v));
 }
-auto length(const Vec4f& v)
+inline auto length(const Vec4f& v)
 {
   return sqrt(dot(v, v));
 }
 
-Vec2f normalized(const Vec2f& v)
+inline Vec2f normalized(const Vec2f& v)
 {
   const auto length = ::length(v);
   return {v.x / length, v.y / length};
 }
-Vec3f normalized(const Vec3f& v)
+inline Vec3f normalized(const Vec3f& v)
 {
   const auto length = ::length(v);
   return {v.x / length, v.y / length, v.z / length};
 }
-Vec4f normalized(const Vec4f& v)
+inline Vec4f normalized(const Vec4f& v)
 {
   const auto length = ::length(v);
   return {v.x / length, v.y / length, v.z / length, v.w / length};
@@ -108,7 +108,7 @@ struct Mat4f
   float values[4][4];
 };
 
-Vec4f operator*(const Mat4f& left, const Vec4f& right)
+inline Vec4f operator*(const Mat4f& left, const Vec4f& right)
 {
   return Vec4f
   {

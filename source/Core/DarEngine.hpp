@@ -1,6 +1,8 @@
 #pragma once
-#include "Exception.hpp"
 #include <stdio.h>
+
+#include "Exception.hpp"
+#include "DarMath.hpp"
 
 using byte = unsigned char;
 
@@ -27,6 +29,8 @@ using byte = unsigned char;
   OutputDebugStringA(stringBuffer); \
 }
 
+#define arrayCount(arr) (sizeof(arr) / sizeof(arr[0]))
+
 #ifdef DAR_DEBUG
   #define darAssert(condition) \
     if(!(condition)) \
@@ -34,8 +38,18 @@ using byte = unsigned char;
       logError("Assertion failed: %s", #condition); \
       DebugBreak(); \
     }
+
+  extern wchar_t _debugTextString[4096];
+  extern int _debugTextStringLength;
+
+  void _debugStringImpl(const wchar_t* newStr, int newStrLength);
+  #define debugString(...) \
+  { \
+    wchar_t newStr[256]; \
+    int newStrLength = _snwprintf_s(newStr, _TRUNCATE, __VA_ARGS__); \
+    if(newStrLength > 0) _debugStringImpl(newStr, newStrLength); \
+  }
 #else 
   #define darAssert(condition) condition
+  #define debugString(...)
 #endif
-
-#define arrayCount(arr) (sizeof(arr) / sizeof(arr[0]))

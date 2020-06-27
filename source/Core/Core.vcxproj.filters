@@ -27,6 +27,9 @@
     <ClCompile Include="detail\Win32Library.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DarEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Library.hpp">
@@ -54,7 +57,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DarMath.hpp">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
