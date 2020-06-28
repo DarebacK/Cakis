@@ -94,6 +94,7 @@ try
   WNDCLASS windowClass{};
   windowClass.lpfnWndProc = &WindowProc;
   windowClass.hInstance = instanceHandle;
+  windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
   windowClass.lpszClassName = "Game window class";
   if(!RegisterClassA(&windowClass)) {
     MessageBoxA(nullptr, "Failed to register window class.", "Fatal error", MB_OK | MB_ICONERROR);
