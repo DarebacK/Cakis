@@ -23,7 +23,9 @@ struct KeyboardKey
 struct Input
 {
   Mouse mouse;
+  KeyboardKey enter;
   KeyboardKey F1;
+  KeyboardKey rightAlt;
 };
 
 struct GameState

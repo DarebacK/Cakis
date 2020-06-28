@@ -1,3 +1,6 @@
+// TODO: switch to flip model
+// TODO: handle resolution change to different aspect ratio
+
 #define DAR_MODULE_NAME "Renderer"
 #include "D3D11Renderer.hpp"
 #include "DarEngine.hpp"
@@ -218,6 +221,7 @@ bool init(HWND window)
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 1;	// 1 back buffer + 1 front
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+  swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	CComPtr<IDXGIDevice> dxgiDevice;
 	if(SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)))) {
 	  if(SUCCEEDED(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter)))) {
@@ -229,6 +233,7 @@ bool init(HWND window)
           return false;
         }
         swapChain->GetDesc1(&swapChainDesc);
+        dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
       } else {
         logError("Failed to get IDXGIFactory");
         return false;
@@ -355,7 +360,7 @@ void onWindowResize(int clientAreaWidth, int clientAreaHeight)
     context->OMSetRenderTargets(1, &renderTargetView.p, depthStencilView);
 
     if(!bindD2dTargetToD3dTarget()) {
-      logError("Failed to bind Direct2D render target to Direct3D render target.");
+      logError("Failed to bind Direct2D render target to Direct3D render target after window resize.");
     }
 
     updateViewport();
@@ -392,10 +397,10 @@ void render(const GameState& game)
       logError("Failed to query video memory info.");
     }
     UINT64 videoMemoryTotalMB = dxgiAdapterDesc.DedicatedVideoMemory / (1ull << 20ull);
-    debugString(L"VRAM %lluMB / %lluMB", videoMemoryUsageMB, videoMemoryTotalMB); 
+    debugString(L"VRAM %llu MB / %llu MB", videoMemoryUsageMB, videoMemoryTotalMB); 
   #endif
 
-  debugString(L"%.3fms / %dfps", game.dTime, (int)(1/game.dTime));
+  debugString(L"%.3f ms / %d fps", game.dTime, (int)(1/game.dTime));
 
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);

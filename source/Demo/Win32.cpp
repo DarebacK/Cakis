@@ -11,9 +11,10 @@
 
 namespace 
 {
-int clientAreaWidth = 1280;
-int clientAreaHeight = 720;
+int clientAreaWidth = 0;
+int clientAreaHeight = 0;
 HWND window = nullptr;
+WINDOWPLACEMENT windowPosition = {sizeof(windowPosition)};
 const char* gameName = "Demo";
 Input input = {};
 
@@ -66,10 +67,16 @@ LRESULT CALLBACK WindowProc(
         case VK_F1:
           input.F1.pressedDown = true;
         break;
+        case VK_MENU:
+          input.rightAlt.pressedDown = true;
+        break;
+        case VK_RETURN:
+          input.enter.pressedDown = true;
+        break;
       }
     break;
     default:
-      result = DefWindowProcA(windowHandle, message, wParam, lParam);
+      result = DefWindowProc(windowHandle, message, wParam, lParam);
     break;
   }
   return result;
@@ -87,34 +94,45 @@ try
   WNDCLASS windowClass{};
   windowClass.lpfnWndProc = &WindowProc;
   windowClass.hInstance = instanceHandle;
-  windowClass.lpszClassName = "What's the point of this struct";
-  if(!RegisterClassA(&windowClass)) return -1;
+  windowClass.lpszClassName = "Game window class";
+  if(!RegisterClassA(&windowClass)) {
+    MessageBoxA(nullptr, "Failed to register window class.", "Fatal error", MB_OK | MB_ICONERROR);
+    return -1;
+  }
 
-  RECT windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
-  constexpr DWORD windowStyle = WS_OVERLAPPEDWINDOW ^ WS_SIZEBOX;
-  constexpr DWORD windowStyleEx = WS_EX_OVERLAPPEDWINDOW ^ WS_SIZEBOX;
+  const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+  const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+  RECT windowRectangle = { 0, 0, screenWidth, screenHeight };
+  constexpr DWORD windowStyle = WS_POPUP;
+  constexpr DWORD windowStyleEx = 0;
   AdjustWindowRectEx(&windowRectangle, windowStyle, false, windowStyleEx);
   const int windowWidth = windowRectangle.right - windowRectangle.left;
   const int windowHeight = windowRectangle.bottom - windowRectangle.top;
-  const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-  const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-  window = CreateWindowExA(WS_EX_OVERLAPPEDWINDOW, windowClass.lpszClassName, 
-                         gameName, 
-                         windowStyle,
-                         (screenWidth - windowWidth) / 2, 
-                         0,
-                         windowWidth, 
-                         windowHeight,
-                         nullptr, 
-                         nullptr,
-                         windowClass.hInstance,
-                         nullptr);
+  window = CreateWindowExA(
+    windowStyleEx, 
+    windowClass.lpszClassName, 
+    gameName, 
+    windowStyle,
+    CW_USEDEFAULT, 
+    CW_USEDEFAULT,
+    windowWidth, 
+    windowHeight,
+    nullptr, 
+    nullptr,
+    windowClass.hInstance,
+    nullptr
+  );
+  if(!window) {
+    MessageBoxA(nullptr, "Failed to create game window", "Fatal error", MB_OK | MB_ICONERROR);
+    return -1;
+  }
 
   if(!Renderer::init(window))
   {
     MessageBoxA(window, "Failed to initialize D3D11 renderer.", "Fatal error", MB_OK | MB_ICONERROR);
     return -1;
   }
+
   ShowWindow(window, SW_SHOWNORMAL);
 
   LARGE_INTEGER counterFrequency;
@@ -161,5 +179,5 @@ catch(const std::exception& e)
 catch(...)
 {
   MessageBoxA(window, "Unknown error", "Fatal error", MB_OK | MB_ICONERROR);
-  return -3;
+  return -2;
 }
