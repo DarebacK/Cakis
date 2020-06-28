@@ -11,8 +11,8 @@
 
 namespace 
 {
-int clientAreaWidth = 0;
-int clientAreaHeight = 0;
+int clientAreaWidth = GetSystemMetrics(SM_CXSCREEN);
+int clientAreaHeight = GetSystemMetrics(SM_CYSCREEN);
 HWND window = nullptr;
 WINDOWPLACEMENT windowPosition = {sizeof(windowPosition)};
 const char* gameName = "Demo";
@@ -29,9 +29,15 @@ LRESULT CALLBACK WindowProc(
   switch(message)
   {
     case WM_SIZE:
-      clientAreaWidth = LOWORD(lParam);
-      clientAreaHeight = HIWORD(lParam);
-      Renderer::onWindowResize(clientAreaWidth, clientAreaHeight);
+    {
+      int newClientAreaWidth = LOWORD(lParam);
+      int newClientAreaHeight = HIWORD(lParam);
+      if(newClientAreaWidth != clientAreaWidth || newClientAreaHeight != clientAreaHeight) {
+        clientAreaWidth = newClientAreaWidth;
+        clientAreaHeight = newClientAreaHeight;
+        Renderer::onWindowResize(clientAreaWidth, clientAreaHeight);
+      }
+    }
     break;
     case WM_DESTROY:
       PostQuitMessage(0);
@@ -101,9 +107,7 @@ try
     return -1;
   }
 
-  const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-  const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-  RECT windowRectangle = { 0, 0, screenWidth, screenHeight };
+  RECT windowRectangle = { 0, 0, clientAreaWidth, clientAreaHeight };
   constexpr DWORD windowStyle = WS_POPUP;
   constexpr DWORD windowStyleEx = 0;
   AdjustWindowRectEx(&windowRectangle, windowStyle, false, windowStyleEx);
