@@ -46,10 +46,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>..\..\libraries\include;..\..\libraries\include\FMOD\core;..\..\libraries\include\FMOD\studio;..\..\libraries\Vulkan\include;..\Core;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>..\..\libraries\FMOD_2_00_10;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>..\..\libraries\include;..\..\libraries\include\FMOD\core;..\..\libraries\include\FMOD\studio;..\..\libraries\Vulkan\include;..\Core;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>..\..\libraries\FMOD_2_00_10;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -66,6 +68,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>d3d11.lib;D2d1.lib;Dwrite.lib;fmod_vc.lib;fmodstudio_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmod.dll" "$(TargetDir)"
+copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudio.dll" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -79,6 +85,10 @@
     <Link>
       <AdditionalDependencies>d3d11.lib;D2d1.lib;Dwrite.lib;fmodL_vc.lib;fmodstudioL_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodL.dll" "$(TargetDir)"
+copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudioL.dll" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Audio.cpp" />

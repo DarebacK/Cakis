@@ -15,7 +15,6 @@ namespace Audio
   FMOD::Studio::System* studioSystem = nullptr;
   FMOD::System* coreSystem = nullptr;
   constexpr int sampleRate = 48000;
-  int driversCount = 0;
 
 #define initializeErrorCheck(call) \
   { \
@@ -39,19 +38,16 @@ namespace Audio
     initializeErrorCheck(studioSystem->getCoreSystem(&coreSystem));
     initializeErrorCheck(coreSystem->setSoftwareFormat(sampleRate, FMOD_SPEAKERMODE_DEFAULT, 0));
 
-    // from doc: To ensure correct behavior FMOD assumes when using the WASAPI output mode 
-    // (default for Windows Vista and newer) that you call System::getNumDrivers, 
-    // System::getDriverInfo and System::init from your UI thread. This ensures that any platform 
-    // specific dialogs that need to be presented can do so. This recommendation comes from the 
-    // IAudioClient interface docs on MSDN which state: In Windows 8, the first use of IAudioClient 
-    // to access the audio device should be on the STA thread. Calls from an MTA thread may result 
-    // in undefined behavior.
-    initializeErrorCheck(coreSystem->getNumDrivers(&driversCount));
-    initializeErrorCheck(coreSystem->getDriverInfo());
-
     // 1024 value taken from example, I don't know what value should be put here
     // also initializes coreSystem
-    initializeErrorCheck(studioSystem->initialize(1024, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, nullptr));
+    initializeErrorCheck(studioSystem->initialize(
+      1024/*maxChannels*/, 
+      FMOD_STUDIO_INIT_NORMAL, 
+      FMOD_INIT_NORMAL, 
+      nullptr/*extraDriverData*/
+    ));
+
+    return true;
   }
 
   void update(const GameState& gameState)

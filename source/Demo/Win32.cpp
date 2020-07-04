@@ -8,6 +8,7 @@
 #include "D3D11Renderer.hpp"
 #include "DarEngine.hpp"
 #include "GameState.hpp"
+#include "Audio.hpp"
 
 namespace 
 {
@@ -89,6 +90,11 @@ LRESULT CALLBACK WindowProc(
 }
 }
 
+static void showErrorMessageBox(const char* text, const char* caption) 
+{
+  MessageBoxA(window, text, caption, MB_OK | MB_ICONERROR);
+}
+
 int WINAPI WinMain(
   HINSTANCE instanceHandle,
   HINSTANCE hPrevInstance, // always zero
@@ -103,7 +109,7 @@ try
   windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
   windowClass.lpszClassName = "Game window class";
   if(!RegisterClassA(&windowClass)) {
-    MessageBoxA(nullptr, "Failed to register window class.", "Fatal error", MB_OK | MB_ICONERROR);
+    showErrorMessageBox("Failed to register window class.", "Fatal error");
     return -1;
   }
 
@@ -128,13 +134,17 @@ try
     nullptr
   );
   if(!window) {
-    MessageBoxA(nullptr, "Failed to create game window", "Fatal error", MB_OK | MB_ICONERROR);
+    showErrorMessageBox("Failed to create game window", "Fatal error");
     return -1;
   }
 
-  if(!Renderer::init(window))
-  {
-    MessageBoxA(window, "Failed to initialize D3D11 renderer.", "Fatal error", MB_OK | MB_ICONERROR);
+  if(!Renderer::init(window)) {
+    showErrorMessageBox("Failed to initialize D3D11 renderer.", "Fatal error");
+    return -1;
+  }
+
+  if(!Audio::initialize()) {
+    showErrorMessageBox("Failed to initialize Audio.", "Fatal error");
     return -1;
   }
 
@@ -171,6 +181,8 @@ try
 
       Renderer::render(gameState);
 
+      Audio::update(gameState);
+
       input = {};
     }
   }
@@ -178,11 +190,11 @@ try
 }
 catch(const std::exception& e)
 {
-  MessageBoxA(window, e.what(), "Fatal error", MB_OK | MB_ICONERROR);
+  showErrorMessageBox(e.what(), "Fatal error");
   return -2;
 }
 catch(...)
 {
-  MessageBoxA(window, "Unknown error", "Fatal error", MB_OK | MB_ICONERROR);
+  showErrorMessageBox("Unknown error", "Fatal error");
   return -2;
 }
