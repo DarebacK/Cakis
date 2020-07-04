@@ -7,7 +7,7 @@
 using byte = unsigned char;
 
 #ifndef DAR_MODULE_NAME
-  #define DAR_MODULE_NAME ""
+  #define DAR_MODULE_NAME "Unknown module"
 #endif
 
 #define logError(message, ...) \
@@ -32,24 +32,26 @@ using byte = unsigned char;
 #define arrayCount(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #ifdef DAR_DEBUG
-  #define darAssert(condition) \
-    if(!(condition)) \
-    { \
+  #define assert(condition) \
+    if(!(condition)) { \
       logError("Assertion failed: %s", #condition); \
       DebugBreak(); \
     }
 
-  extern wchar_t _debugTextString[4096];
-  extern int _debugTextStringLength;
+  extern wchar_t _debugText[4096];
+  extern int _debugTextLength;
+
+  #define debugResetText() _debugTextLength = 0;
 
   void _debugStringImpl(const wchar_t* newStr, int newStrLength);
-  #define debugString(...) \
+  #define debugText(...) \
   { \
     wchar_t newStr[256]; \
     int newStrLength = _snwprintf_s(newStr, _TRUNCATE, __VA_ARGS__); \
     if(newStrLength > 0) _debugStringImpl(newStr, newStrLength); \
   }
 #else 
-  #define darAssert(condition) condition
-  #define debugString(...)
+  #define assert(condition) condition
+  #define debugText(...)
+  #define debugResetText()
 #endif

@@ -215,7 +215,7 @@ bool init(HWND window)
 	swapChainDesc.SampleDesc.Count = 8;
   UINT multisamplingQualityLevelsCount;
   device->CheckMultisampleQualityLevels(swapChainDesc.Format, swapChainDesc.SampleDesc.Count, &multisamplingQualityLevelsCount);
-  darAssert(multisamplingQualityLevelsCount != 0);
+  assert(multisamplingQualityLevelsCount != 0);
   const UINT multisamplingQuality = multisamplingQualityLevelsCount - 1;
 	swapChainDesc.SampleDesc.Quality = multisamplingQuality;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -397,10 +397,8 @@ void render(const GameState& game)
       logError("Failed to query video memory info.");
     }
     UINT64 videoMemoryTotalMB = dxgiAdapterDesc.DedicatedVideoMemory / (1ull << 20ull);
-    debugString(L"VRAM %llu MB / %llu MB", videoMemoryUsageMB, videoMemoryTotalMB); 
+    debugText(L"VRAM %llu MB / %llu MB", videoMemoryUsageMB, videoMemoryTotalMB); 
   #endif
-
-  debugString(L"%.3f ms / %d fps", game.dTime, (int)(1/game.dTime));
 
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -421,8 +419,8 @@ void render(const GameState& game)
     // DEBUG TEXT
     CComPtr<IDWriteTextLayout> debugTextLayout;
     dwriteFactory->CreateTextLayout(
-      _debugTextString, 
-      _debugTextStringLength, 
+      _debugText, 
+      _debugTextLength, 
       debugTextFormat, 
       (float)game.clientAreaWidth, 
       (float)game.clientAreaHeight, 

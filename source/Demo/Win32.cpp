@@ -1,9 +1,12 @@
 #define DAR_MODULE_NAME "Win32"
+
+#include <exception>
+#include <stdio.h>
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <windowsx.h>
-#include <exception>
-#include <stdio.h>
+#include <Psapi.h>
 
 #include "D3D11Renderer.hpp"
 #include "DarEngine.hpp"
@@ -18,6 +21,7 @@ HWND window = nullptr;
 WINDOWPLACEMENT windowPosition = {sizeof(windowPosition)};
 const char* gameName = "Demo";
 Input input = {};
+int processorCount = 0;
 
 LRESULT CALLBACK WindowProc(
   HWND   windowHandle,
@@ -27,10 +31,8 @@ LRESULT CALLBACK WindowProc(
 )
 {
   LRESULT result = 0;
-  switch(message)
-  {
-    case WM_SIZE:
-    {
+  switch(message) {
+    case WM_SIZE: {
       int newClientAreaWidth = LOWORD(lParam);
       int newClientAreaHeight = HIWORD(lParam);
       if(newClientAreaWidth != clientAreaWidth || newClientAreaHeight != clientAreaHeight) {
@@ -66,8 +68,7 @@ LRESULT CALLBACK WindowProc(
       input.mouse.y = GET_Y_LPARAM(lParam);
     break;
     case WM_KEYDOWN:
-      switch(wParam)
-      {
+      switch(wParam) {
         case VK_ESCAPE :
           PostQuitMessage(0);
         break;
@@ -90,6 +91,54 @@ LRESULT CALLBACK WindowProc(
 }
 }
 
+static void debugShowResourcesUsage()
+{
+#ifdef DAR_DEBUG
+  // from https://stackoverflow.com/a/64166/9178254
+
+  HANDLE currentProcess = GetCurrentProcess();
+
+  // CPU
+  static ULARGE_INTEGER lastCPU = {}, lastSysCPU = {}, lastUserCPU = {};
+  static double percent = 0.;
+  static DWORD lastCheckTimeMs = 0;
+  DWORD currentTimeMs = GetTickCount();
+  if((currentTimeMs - lastCheckTimeMs) > 500) {
+    FILETIME ftime, fsys, fuser;
+    ULARGE_INTEGER now, sys, user;
+    GetSystemTimeAsFileTime(&ftime);
+    memcpy(&now, &ftime, sizeof(FILETIME));
+    GetProcessTimes(currentProcess, &ftime, &ftime, &fsys, &fuser);
+    memcpy(&sys, &fsys, sizeof(FILETIME));
+    memcpy(&user, &fuser, sizeof(FILETIME));
+    percent = (sys.QuadPart - lastSysCPU.QuadPart) +
+        (user.QuadPart - lastUserCPU.QuadPart);
+    percent /= (now.QuadPart - lastCPU.QuadPart);
+    percent /= processorCount;
+    percent *= 100;
+    lastCPU = now;
+    lastUserCPU = user;
+    lastSysCPU = sys;
+    lastCheckTimeMs = currentTimeMs;
+  }
+  debugText(L"CPU %.f%%", percent);
+
+  // Memory
+  MEMORYSTATUSEX memoryStatus;
+  memoryStatus.dwLength = sizeof(MEMORYSTATUSEX);
+  GlobalMemoryStatusEx(&memoryStatus);
+  DWORDLONG totalVirtualMemoryMB = memoryStatus.ullTotalPageFile / (1ull << 20ull);
+  DWORDLONG totalPhysicalMemoryMB = memoryStatus.ullTotalPhys / (1ull << 20ull);
+  PROCESS_MEMORY_COUNTERS_EX processMemoryCounters;
+  GetProcessMemoryInfo(currentProcess, (PROCESS_MEMORY_COUNTERS*)&processMemoryCounters, sizeof(processMemoryCounters));
+  SIZE_T virtualMemoryUsedByGameMB = processMemoryCounters.PrivateUsage / (1ull << 20ull);
+  SIZE_T physicalMemoryUsedByGameMB = processMemoryCounters.WorkingSetSize / (1ull << 20ull);
+  debugText(L"Virtual memory %llu MB / %llu MB", virtualMemoryUsedByGameMB, totalVirtualMemoryMB);
+  debugText(L"Physical memory %llu MB / %llu MB", physicalMemoryUsedByGameMB, totalPhysicalMemoryMB);
+
+#endif
+}
+
 static void showErrorMessageBox(const char* text, const char* caption) 
 {
   MessageBoxA(window, text, caption, MB_OK | MB_ICONERROR);
@@ -103,6 +152,10 @@ int WINAPI WinMain(
 )
 try
 {
+  SYSTEM_INFO sysInfo;
+  GetSystemInfo(&sysInfo);
+  processorCount = sysInfo.dwNumberOfProcessors;
+
   WNDCLASS windowClass{};
   windowClass.lpfnWndProc = &WindowProc;
   windowClass.hInstance = instanceHandle;
@@ -155,16 +208,13 @@ try
   LARGE_INTEGER lastCounterValue;
   QueryPerformanceCounter(&lastCounterValue);
   MSG message{};
-  while (message.message != WM_QUIT)
-  {
-    if(PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE))
-    {
+  while (message.message != WM_QUIT) {
+    if(PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&message);
       DispatchMessageA(&message);
-    }
-    else
-    {
+    } else {
       // process frame
+
       GameState gameState{};
       gameState.input = input;
       gameState.clientAreaWidth = clientAreaWidth;
@@ -175,9 +225,9 @@ try
       gameState.dTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
       lastCounterValue = currentCounterValue;
 
-      #ifdef DAR_DEBUG
-        _debugTextStringLength = 0;
-      #endif 
+      debugResetText();
+      debugText(L"%.3f ms / %d fps", gameState.dTime, (int)(1/gameState.dTime));
+      debugShowResourcesUsage();
 
       Renderer::render(gameState);
 
@@ -187,14 +237,10 @@ try
     }
   }
   return 0;
-}
-catch(const std::exception& e)
-{
+} catch(const std::exception& e) {
   showErrorMessageBox(e.what(), "Fatal error");
   return -2;
-}
-catch(...)
-{
+} catch(...) {
   showErrorMessageBox("Unknown error", "Fatal error");
   return -2;
 }

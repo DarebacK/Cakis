@@ -360,7 +360,7 @@ namespace {
     createInfo.minImageCount = (presentationSurfaceCapabalities.maxImageCount >= 3) && presentMode == VK_PRESENT_MODE_MAILBOX_KHR ? 3 : 2;
     createInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
     createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    darAssert(presentationSurfaceCapabalities.currentExtent.width != 0xFFFFFFFF); // if equals, the surface size (window size) is determined by the size of the image
+    assert(presentationSurfaceCapabalities.currentExtent.width != 0xFFFFFFFF); // if equals, the surface size (window size) is determined by the size of the image
     createInfo.imageExtent = presentationSurfaceCapabalities.currentExtent;       // so at this line, we would have to get the image size different way
     createInfo.imageArrayLayers = 1; // "imageArrayLayers is the number of views in a multiview/stereo surface. For non-stereoscopic-3D applications, this value is 1."
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -397,7 +397,7 @@ namespace {
     surfaceCreateInfo.hinstance = winInstanceHandle;
     surfaceCreateInfo.hwnd = windowHandle;
     checkResult(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, allocator, &presentationSurface));
-    darAssert(presentationSurface != nullptr);
+    assert(presentationSurface != nullptr);
 
     VkPhysicalDevice physicalDevice = findSuitablePhysicalDevice();
     initDevice(physicalDevice);
