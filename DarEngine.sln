@@ -1,11 +1,11 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "source\Core\Core.vcxproj", "{41B15EA3-768D-4FD2-8EA8-8E74C7FB501E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Demo", "source\Demo\Demo.vcxproj", "{655FEDA2-9BDA-4E95-857B-9EC61BDE9BC4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cakis", "source\Cakis\Cakis.vcxproj", "{655FEDA2-9BDA-4E95-857B-9EC61BDE9BC4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
