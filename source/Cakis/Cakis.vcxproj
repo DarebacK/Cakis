@@ -15,19 +15,19 @@
     <ProjectGuid>{655FEDA2-9BDA-4E95-857B-9EC61BDE9BC4}</ProjectGuid>
     <RootNamespace>Cakis</RootNamespace>
     <ProjectName>Cakis</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
@@ -70,7 +70,9 @@
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmod.dll" "$(TargetDir)"
-copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudio.dll" "$(TargetDir)"</Command>
+copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudio.dll" "$(TargetDir)"
+fmodstudio -build "$(SolutionDir)assets\audio\Cakis\Cakis.fspro"
+xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /y /e /i</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -87,7 +89,9 @@ copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudio.dll" "$(TargetDir)"</Co
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodL.dll" "$(TargetDir)"
-copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudioL.dll" "$(TargetDir)"</Command>
+copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudioL.dll" "$(TargetDir)";
+call fmodstudio -build "$(SolutionDir)assets\audio\Cakis\Cakis.fspro"
+xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /y /e /i</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -111,7 +115,11 @@ copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudioL.dll" "$(TargetDir)"</C
     <ClInclude Include="VulkanRenderer.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\assets\audio\Cakis\Cakis.fspro" />
     <None Include="ListOfVulkanFunctions.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <UpToDateCheckInput Include="..\..\assets\audio\Cakis\**" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Triangle.ps.hlsl">

@@ -15,6 +15,9 @@ namespace Audio
 FMOD::Studio::System* studioSystem = nullptr;
 FMOD::System* coreSystem = nullptr;
 constexpr int sampleRate = 48000;
+FMOD::Studio::EventInstance* musicInstance = nullptr;
+FMOD::Studio::Bus* masterBus = nullptr;
+float masterVolume = 0.33f;
 
 #define initializeErrorCheck(call) \
 { \
@@ -24,6 +27,12 @@ constexpr int sampleRate = 48000;
     return false; \
   } \
 }
+
+#define errorCheck(call) \
+result = call; \
+if(result != FMOD_OK) { \
+  logError(#call " failed: %d - %s", result, FMOD_ErrorString(result)); \
+} else
 
 bool initialize()
 {
@@ -47,21 +56,34 @@ bool initialize()
     nullptr/*extraDriverData*/
   ));
 
+  FMOD::Studio::Bank* masterBank = nullptr;
+  initializeErrorCheck(studioSystem->loadBankFile("audio/Master.bank", FMOD_STUDIO_LOAD_BANK_NORMAL, &masterBank)); 
+  FMOD::Studio::Bank* stringsBank = nullptr;
+  initializeErrorCheck(studioSystem->loadBankFile("audio/Master.strings.bank", FMOD_STUDIO_LOAD_BANK_NORMAL, &stringsBank));
+  FMOD::Studio::Bank* musicBank = nullptr;
+  initializeErrorCheck(studioSystem->loadBankFile("audio/music.bank", FMOD_STUDIO_LOAD_BANK_NORMAL, &musicBank));
+
+  FMOD::Studio::EventDescription* musicDescription = nullptr;
+  initializeErrorCheck(studioSystem->getEvent("event:/music/music", &musicDescription));
+  initializeErrorCheck(musicDescription->createInstance(&musicInstance));
+
+  initializeErrorCheck(studioSystem->getBus("bus:/", &masterBus));
+  masterBus->setVolume(masterVolume);
+
   return true;
 }
 
 void update(const GameState& gameState)
 {
-  
-}
+  FMOD_RESULT result;
 
-void unitialize()
-{
-  coreSystem->release();
+  FMOD_STUDIO_PLAYBACK_STATE musicPlaybackState;
+  errorCheck(musicInstance->getPlaybackState(&musicPlaybackState)) {
+    if(musicPlaybackState != FMOD_STUDIO_PLAYBACK_PLAYING) {
+      errorCheck(musicInstance->start());
+    }
+  }
 
-  studioSystem->release();
-  studioSystem = nullptr;
-
-  CoUninitialize();
+  errorCheck(studioSystem->update());
 }
 } // namespace Audio

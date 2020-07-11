@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.00.00">
+	<object class="AudioFile" id="{781be912-307d-4867-9f02-b44410ae46af}">
+		<property name="assetPath">
+			<value>Tetris.ogg</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>83.417687074829928</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5c73715f-42e1-489b-a83e-6096f8086730}</destination>
+		</relationship>
+	</object>
+</objects>

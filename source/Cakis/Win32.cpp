@@ -18,6 +18,7 @@ namespace
 int clientAreaWidth = GetSystemMetrics(SM_CXSCREEN);
 int clientAreaHeight = GetSystemMetrics(SM_CYSCREEN);
 HWND window = nullptr;
+HANDLE process = nullptr;
 WINDOWPLACEMENT windowPosition = {sizeof(windowPosition)};
 const char* gameName = "Demo";
 Input input = {};
@@ -96,21 +97,16 @@ static void debugShowResourcesUsage()
 #ifdef DAR_DEBUG
   // from https://stackoverflow.com/a/64166/9178254
 
-  HANDLE currentProcess = GetCurrentProcess();
-
   // CPU
   static ULARGE_INTEGER lastCPU = {}, lastSysCPU = {}, lastUserCPU = {};
   static double percent = 0.;
   static DWORD lastCheckTimeMs = 0;
   DWORD currentTimeMs = GetTickCount();
-  if((currentTimeMs - lastCheckTimeMs) > 500) {
-    FILETIME ftime, fsys, fuser;
+  if((currentTimeMs - lastCheckTimeMs) > 1000) {
     ULARGE_INTEGER now, sys, user;
-    GetSystemTimeAsFileTime(&ftime);
-    memcpy(&now, &ftime, sizeof(FILETIME));
-    GetProcessTimes(currentProcess, &ftime, &ftime, &fsys, &fuser);
-    memcpy(&sys, &fsys, sizeof(FILETIME));
-    memcpy(&user, &fuser, sizeof(FILETIME));
+    GetSystemTimeAsFileTime((LPFILETIME)&now);
+    FILETIME fileTime;
+    GetProcessTimes(process, &fileTime, &fileTime, (LPFILETIME)&sys, (LPFILETIME)&user);
     percent = (sys.QuadPart - lastSysCPU.QuadPart) +
         (user.QuadPart - lastUserCPU.QuadPart);
     percent /= (now.QuadPart - lastCPU.QuadPart);
@@ -130,7 +126,7 @@ static void debugShowResourcesUsage()
   DWORDLONG totalVirtualMemoryMB = memoryStatus.ullTotalPageFile / (1ull << 20ull);
   DWORDLONG totalPhysicalMemoryMB = memoryStatus.ullTotalPhys / (1ull << 20ull);
   PROCESS_MEMORY_COUNTERS_EX processMemoryCounters;
-  GetProcessMemoryInfo(currentProcess, (PROCESS_MEMORY_COUNTERS*)&processMemoryCounters, sizeof(processMemoryCounters));
+  GetProcessMemoryInfo(process, (PROCESS_MEMORY_COUNTERS*)&processMemoryCounters, sizeof(processMemoryCounters));
   SIZE_T virtualMemoryUsedByGameMB = processMemoryCounters.PrivateUsage / (1ull << 20ull);
   SIZE_T physicalMemoryUsedByGameMB = processMemoryCounters.WorkingSetSize / (1ull << 20ull);
   debugText(L"Virtual memory %llu MB / %llu MB", virtualMemoryUsedByGameMB, totalVirtualMemoryMB);
@@ -152,6 +148,8 @@ int WINAPI WinMain(
 )
 try
 {
+  process = GetCurrentProcess();
+
   SYSTEM_INFO sysInfo;
   GetSystemInfo(&sysInfo);
   processorCount = sysInfo.dwNumberOfProcessors;

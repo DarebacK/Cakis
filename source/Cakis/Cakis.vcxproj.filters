@@ -28,6 +28,7 @@
     <None Include="ListOfVulkanFunctions.inl">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="..\..\assets\audio\Cakis\Cakis.fspro" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VulkanRenderer.h">
