@@ -5,7 +5,7 @@
 #include "GameState.hpp"
 
 namespace Renderer {
-bool init(HWND window);
+bool initialize(HWND window);
 void onWindowResize(int clientAreaWidth, int clientAreaHeight);
 void render(const GameState& gameState);
 }

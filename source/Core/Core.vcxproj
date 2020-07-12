@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DarEngine.cpp" />
+    <ClCompile Include="DarMath.cpp" />
     <ClCompile Include="detail\LinuxLibrary.cpp" />
     <ClCompile Include="detail\Win32Library.cpp" />
     <ClCompile Include="Exception.cpp">

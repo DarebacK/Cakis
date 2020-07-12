@@ -10,12 +10,12 @@ struct Output
 };
 
 Output main(
-  float2 position : POSITION, 
+  float3 position : POSITION, 
   float3 color : COLOR
 )
 {
   Output output;
-  output.position = mul(float4(position, 0.0f, 1.0f), transform);
+  output.position = mul(transform, float4(position, 1.0f));
   output.color = float4(color, 1.0f);
   return output;
 }

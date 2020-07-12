@@ -27,6 +27,11 @@ CComPtr<IDWriteFactory2> dwriteFactory;
 CComPtr<ID2D1Device1> d2Device = nullptr;
 CComPtr<ID2D1DeviceContext1> d2Context = nullptr;
 
+constexpr float verticalFieldOfView = 74;
+constexpr float nearPlane = 1.f;
+constexpr float farPlane = 100.f;
+Mat4f projectionMatrix = Mat4f::identity();
+
 #ifdef DAR_DEBUG
   CComPtr<ID3D11Debug> debug = nullptr;
   CComPtr<ID3D11RasterizerState> wireframeRasterizerState = nullptr;
@@ -114,6 +119,14 @@ static void setViewport(FLOAT width, FLOAT height)
 static void updateViewport()
 {
   setViewport((FLOAT)swapChainDesc.Width, (FLOAT)swapChainDesc.Height);
+
+  float aspectRatio = (float)swapChainDesc.Width / swapChainDesc.Height;
+  projectionMatrix = Mat4f::perspectiveProjection(
+    degreesToRadians(verticalFieldOfView), 
+    aspectRatio, 
+    nearPlane, 
+    farPlane
+  );
 }
 
 static CComPtr<ID3D11RenderTargetView> createRenderTargetView()
@@ -182,7 +195,7 @@ static bool bindD2dTargetToD3dTarget()
   return true;
 }
 
-bool init(HWND window)
+bool initialize(HWND window)
 {
   // DEVICE
 	UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
@@ -341,9 +354,9 @@ void onWindowResize(int clientAreaWidth, int clientAreaHeight)
     renderTargetView.Release();
     if(FAILED(swapChain->ResizeBuffers(0, 0, 0, swapChainDesc.Format, swapChainDesc.Flags))) {
       logError("Failed to resize swapChain buffers");
-#ifdef DAR_DEBUG
-      debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL | D3D11_RLDO_SUMMARY);
-#endif DAR_DEBUG
+      #ifdef DAR_DEBUG
+        debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL | D3D11_RLDO_SUMMARY);
+      #endif DAR_DEBUG
     }
     if(FAILED(swapChain->GetDesc1(&swapChainDesc))) {
       logError("Failed to get swapChain desc after window resize");
@@ -403,7 +416,7 @@ void render(const GameState& game)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f transformation = Mat4f::translation(0.5f, 0.5f, 0.f);
+  Mat4f transformation = Mat4f::translation(0.f, 0.f, 5.f) * projectionMatrix;
   context->UpdateSubresource(triangleConstantBuffer, 0, nullptr, &transformation, 0, 0);
   context->VSSetShader(triangleVertexShader, nullptr, 0);
   context->VSSetConstantBuffers(0, 1, &triangleConstantBuffer.p);
