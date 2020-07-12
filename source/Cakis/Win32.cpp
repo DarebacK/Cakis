@@ -194,10 +194,7 @@ try
     return -1;
   }
 
-  if(!Audio::initialize()) {
-    showErrorMessageBox("Failed to initialize Audio.", "Fatal error");
-    return -1;
-  }
+  bool isAudioInitialized = Audio::initialize();
 
   ShowWindow(window, SW_SHOWNORMAL);
 
@@ -229,7 +226,9 @@ try
 
       Renderer::render(gameState);
 
-      Audio::update(gameState);
+      if(isAudioInitialized) {
+        Audio::update(gameState);
+      }
 
       input = {};
     }
