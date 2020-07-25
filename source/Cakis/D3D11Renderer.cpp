@@ -1,7 +1,5 @@
-// TODO: switch to flip model
-// TODO: handle resolution change to different aspect ratio
-
 #define DAR_MODULE_NAME "Renderer"
+
 #include "D3D11Renderer.hpp"
 #include "DarEngine.hpp"
 #include "DarMath.hpp"
@@ -20,6 +18,10 @@ CComPtr<IDXGIAdapter3> dxgiAdapter;
 DXGI_ADAPTER_DESC2 dxgiAdapterDesc{};
 CComPtr<IDXGISwapChain1> swapChain = nullptr;
 DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
+CComPtr<ID3D11Texture2D> backBuffer = nullptr;
+constexpr UINT msaaSampleCount = 8;
+CComPtr<ID3D11Texture2D> renderTarget = nullptr;
+CD3D11_TEXTURE2D_DESC renderTargetDesc = {};
 CComPtr<ID3D11RenderTargetView> renderTargetView = nullptr;
 CComPtr<ID3D11DepthStencilView> depthStencilView = nullptr;
 float clearColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
@@ -108,19 +110,19 @@ static void setViewport(FLOAT width, FLOAT height)
 {
   D3D11_VIEWPORT viewport;
   viewport.TopLeftX = 0.0f;
-	viewport.TopLeftY = 0.0f;
-	viewport.Width = width;
-	viewport.Height = height;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-	context->RSSetViewports(1, &viewport);
+  viewport.TopLeftY = 0.0f;
+  viewport.Width = width;
+  viewport.Height = height;
+  viewport.MinDepth = 0.0f;
+  viewport.MaxDepth = 1.0f;
+  context->RSSetViewports(1, &viewport);
 }
 
 static void updateViewport()
 {
-  setViewport((FLOAT)swapChainDesc.Width, (FLOAT)swapChainDesc.Height);
+  setViewport((FLOAT)renderTargetDesc.Width, (FLOAT)renderTargetDesc.Height);
 
-  float aspectRatio = (float)swapChainDesc.Width / swapChainDesc.Height;
+  float aspectRatio = (float)renderTargetDesc.Width / renderTargetDesc.Height;
   projectionMatrix = Mat4f::perspectiveProjection(
     degreesToRadians(verticalFieldOfView), 
     aspectRatio, 
@@ -129,16 +131,34 @@ static void updateViewport()
   );
 }
 
-static CComPtr<ID3D11RenderTargetView> createRenderTargetView()
+static CComPtr<ID3D11Texture2D> createRenderTarget()
 {
-  CComPtr<ID3D11Texture2D> backBuffer;
-	if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
-    logError("Failed to get back buffer for render target view.");
+  renderTargetDesc = CD3D11_TEXTURE2D_DESC(
+    swapChainDesc.Format,
+    swapChainDesc.Width,
+    swapChainDesc.Height,
+    1,
+    1,
+    D3D11_BIND_RENDER_TARGET,
+    D3D11_USAGE_DEFAULT,
+    0,
+    msaaSampleCount
+  );
+
+  CComPtr<ID3D11Texture2D> result = nullptr;
+  if(FAILED((device->CreateTexture2D(&renderTargetDesc, nullptr, &result)))) {
+    logError("Failed to create render target texture.");
     return nullptr;
-	}
+  }
+  return result;
+}
+
+static CComPtr<ID3D11RenderTargetView> createRenderTargetView(ID3D11Resource* renderTarget, DXGI_FORMAT format)
+{
+  CD3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc(D3D11_RTV_DIMENSION_TEXTURE2DMS, format);
   CComPtr<ID3D11RenderTargetView> result = nullptr;
-  if(FAILED(device->CreateRenderTargetView(backBuffer, nullptr, &result))) {
-    logError("Failed to create render target view");
+  if(FAILED(device->CreateRenderTargetView(renderTarget, &renderTargetViewDesc, &result))) {
+    logError("Failed to create render target view.");
     return nullptr;
   }
   return result;
@@ -147,25 +167,25 @@ static CComPtr<ID3D11RenderTargetView> createRenderTargetView()
 static CComPtr<ID3D11DepthStencilView> createDepthStencilView()
 {
   D3D11_TEXTURE2D_DESC depthStencilDesc{};
-	depthStencilDesc.Width = swapChainDesc.Width;
-	depthStencilDesc.Height = swapChainDesc.Height;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.ArraySize = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthStencilDesc.SampleDesc.Count = swapChainDesc.SampleDesc.Count;
-	depthStencilDesc.SampleDesc.Quality = swapChainDesc.SampleDesc.Quality;
+  depthStencilDesc.Width = renderTargetDesc.Width;
+  depthStencilDesc.Height = renderTargetDesc.Height;
+  depthStencilDesc.MipLevels = 1;
+  depthStencilDesc.ArraySize = 1;
+  depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+  depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+  depthStencilDesc.SampleDesc.Count = renderTargetDesc.SampleDesc.Count;
+  depthStencilDesc.SampleDesc.Quality = renderTargetDesc.SampleDesc.Quality;
   CComPtr<ID3D11Texture2D> depthStencilBuffer = nullptr;
-	if(FAILED(device->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencilBuffer))) {
+  if(FAILED(device->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencilBuffer))) {
     logError("Failed to create depth stencil buffer");
     return nullptr;
   }
 
   CComPtr<ID3D11DepthStencilView> result = nullptr;
-	if(FAILED(device->CreateDepthStencilView(depthStencilBuffer, nullptr, &result))) {
+  if(FAILED(device->CreateDepthStencilView(depthStencilBuffer, nullptr, &result))) {
     logError("Failed to create depth stencil view");
-	  return nullptr;
+    return nullptr;
   }
   return result;
 }
@@ -175,11 +195,11 @@ static bool bindD2dTargetToD3dTarget()
   CComPtr<IDXGISurface> dxgiBackBuffer;
   if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&dxgiBackBuffer))))
   {
-    logError("Failed to get swapchains IDXGISurface back buffer");
+    logError("Failed to get swapchains IDXGISurface back buffer.");
     return false;
   }
   D2D1_BITMAP_PROPERTIES1 d2BitmapProperties{};
-  d2BitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+  d2BitmapProperties.pixelFormat.format = swapChainDesc.Format;
   d2BitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_IGNORE;
   d2BitmapProperties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
   CComPtr<ID2D1Bitmap1> d2Bitmap;
@@ -188,7 +208,7 @@ static bool bindD2dTargetToD3dTarget()
     &d2BitmapProperties, 
     &d2Bitmap
   ))) {
-    logError("Failed to create ID2D1Bitmap render target");
+    logError("Failed to create ID2D1Bitmap render target.");
     return false;
   }
   d2Context->SetTarget(d2Bitmap);
@@ -198,12 +218,12 @@ static bool bindD2dTargetToD3dTarget()
 bool initialize(HWND window)
 {
   // DEVICE
-	UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+  UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
   #ifdef DAR_DEBUG
-	  createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
   #endif
-	D3D_FEATURE_LEVEL featureLevels[] = {D3D_FEATURE_LEVEL_11_1};
-	if(FAILED(D3D11CreateDevice(
+  D3D_FEATURE_LEVEL featureLevels[] = {D3D_FEATURE_LEVEL_11_1};
+  if(FAILED(D3D11CreateDevice(
     NULL, 
     D3D_DRIVER_TYPE_HARDWARE,
     NULL, 
@@ -217,36 +237,43 @@ bool initialize(HWND window)
   ))) {
     logError("Failed to create D3D11 device");
     return false;
-	}
+  }
 
   #ifdef DAR_DEBUG
     device->QueryInterface(IID_PPV_ARGS(&debug));
   #endif
 
   // SWAPCHAIN
-	swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	swapChainDesc.SampleDesc.Count = 8;
-  UINT multisamplingQualityLevelsCount;
-  device->CheckMultisampleQualityLevels(swapChainDesc.Format, swapChainDesc.SampleDesc.Count, &multisamplingQualityLevelsCount);
-  assert(multisamplingQualityLevelsCount != 0);
-  const UINT multisamplingQuality = multisamplingQualityLevelsCount - 1;
-	swapChainDesc.SampleDesc.Quality = multisamplingQuality;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = 1;	// 1 back buffer + 1 front
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-  swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	CComPtr<IDXGIDevice> dxgiDevice;
-	if(SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)))) {
-	  if(SUCCEEDED(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter)))) {
+  CComPtr<IDXGIDevice> dxgiDevice;
+  if(SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)))) {
+    if(SUCCEEDED(dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter)))) {
       CComPtr<IDXGIFactory2> dxgiFactory;
-	    if(SUCCEEDED(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)))) {
+      if(SUCCEEDED(dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)))) {
+        swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        swapChainDesc.SampleDesc.Count = 1;
+        swapChainDesc.SampleDesc.Quality = 0;
+        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapChainDesc.BufferCount = 3;
+        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
         dxgiFactory->CreateSwapChainForHwnd(dxgiDevice, window, &swapChainDesc, NULL, NULL, &swapChain);
         if(!swapChain) {
-          logError("Failed to create swapChain.");
-          return false;
+          // DXGI_SWAP_EFFECT_FLIP_DISCARD may not be supported on this OS. Try legacy DXGI_SWAP_EFFECT_DISCARD.
+          swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+          dxgiFactory->CreateSwapChainForHwnd(dxgiDevice, window, &swapChainDesc, NULL, NULL, &swapChain);
+          if(!swapChain) {
+            logError("Failed to create swapChain.");
+            return false;
+          }
         }
         swapChain->GetDesc1(&swapChainDesc);
-        dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
+        if(FAILED(dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER))) {
+          logError("Failed to make window association to ignore alt enter.");
+        }
+        if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
+          logError("Failed to get swapchain's back buffer.");
+          return false;
+        }
       } else {
         logError("Failed to get IDXGIFactory");
         return false;
@@ -286,7 +313,13 @@ bool initialize(HWND window)
     return false;
   }
 
-  renderTargetView = createRenderTargetView();
+  renderTarget = createRenderTarget();
+  if(!renderTarget) {
+    logError("Failed to create render target.");
+    return false;
+  }
+
+  renderTargetView = createRenderTargetView(renderTarget, renderTargetDesc.Format);
   if(!renderTargetView) {
     logError("Failed to initialize render target view.");
     return false;
@@ -349,9 +382,11 @@ bool initialize(HWND window)
 void onWindowResize(int clientAreaWidth, int clientAreaHeight)
 {
   if(swapChain) {
-    d2Context->SetTarget(nullptr);  // clears the binding to swapChain's back buffer
+    d2Context->SetTarget(nullptr);  // Clears the binding to swapChain's back buffer.
     depthStencilView.Release();
+    backBuffer.Release();
     renderTargetView.Release();
+    renderTarget.Release();
     if(FAILED(swapChain->ResizeBuffers(0, 0, 0, swapChainDesc.Format, swapChainDesc.Flags))) {
       logError("Failed to resize swapChain buffers");
       #ifdef DAR_DEBUG
@@ -361,8 +396,16 @@ void onWindowResize(int clientAreaWidth, int clientAreaHeight)
     if(FAILED(swapChain->GetDesc1(&swapChainDesc))) {
       logError("Failed to get swapChain desc after window resize");
     }
+    if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
+      logError("Failed to get swapchain's back buffer after window resize.");
+    }
 
-    renderTargetView = createRenderTargetView();
+    renderTarget = createRenderTarget();
+    if(!renderTarget) {
+      logError("Failed to create render target after window resize.");
+    }
+
+    renderTargetView = createRenderTargetView(renderTarget, renderTargetDesc.Format);
     if(!renderTargetView) {
       logError("Failed to create render target view after window resize.");
     }
@@ -389,12 +432,12 @@ static void switchWireframeState()
 #endif
 }
 
-void render(const GameState& game)
+void render(const GameState& gameState)
 {
   d2Context->BeginDraw();
 
   #ifdef DAR_DEBUG
-    if(game.input.F1.pressedDown) {
+    if(gameState.input.F1.pressedDown) {
       switchWireframeState();
     }
 
@@ -428,6 +471,8 @@ void render(const GameState& game)
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   context->Draw(3, 0);
 
+  context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
+
   #ifdef DAR_DEBUG
     // DEBUG TEXT
     CComPtr<IDWriteTextLayout> debugTextLayout;
@@ -435,8 +480,8 @@ void render(const GameState& game)
       _debugText, 
       _debugTextLength, 
       debugTextFormat, 
-      (float)game.clientAreaWidth, 
-      (float)game.clientAreaHeight, 
+      (FLOAT)gameState.clientAreaWidth, 
+      (FLOAT)gameState.clientAreaHeight, 
       &debugTextLayout
     );
     d2Context->DrawTextLayout({5.f, 5.f}, debugTextLayout, debugTextBrush);
