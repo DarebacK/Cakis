@@ -10,8 +10,6 @@
 
 #include <DarEngine.hpp>
 
-namespace Audio
-{
 FMOD::Studio::System* studioSystem = nullptr;
 FMOD::System* coreSystem = nullptr;
 constexpr int sampleRate = 48000;
@@ -23,7 +21,8 @@ float masterVolume = 0.33f;
 result = call; \
 if(result != FMOD_OK) { \
   logError(#call " failed: %d - %s", result, FMOD_ErrorString(result)); \
-  return false; \
+  isInitialized = false; \
+  return; \
 }
 
 #define errorCheck(call) \
@@ -32,7 +31,7 @@ if(result != FMOD_OK) { \
   logError(#call " failed: %d - %s", result, FMOD_ErrorString(result)); \
 } else
 
-bool initialize()
+Audio::Audio()
 {
   FMOD_RESULT result;
 
@@ -71,12 +70,21 @@ bool initialize()
   errorCheck(studioSystem->getBus("bus:/", &masterBus)) {
     masterBus->setVolume(masterVolume);
   }
-
-  return true;
 }
 
-void update(const GameState& gameState)
+Audio::~Audio()
 {
+  if(isInitialized) {
+    CoUninitialize();
+  }
+}
+
+void Audio::update(const GameState& gameState)
+{
+  if(!isInitialized) {
+    return;
+  }
+
   FMOD_RESULT result;
 
   if(musicInstance) {
@@ -90,4 +98,3 @@ void update(const GameState& gameState)
 
   errorCheck(studioSystem->update());
 }
-} // namespace Audio

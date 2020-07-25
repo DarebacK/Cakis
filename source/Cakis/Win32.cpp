@@ -194,7 +194,7 @@ try
     return -1;
   }
 
-  bool isAudioInitialized = Audio::initialize();
+  Audio audio;
 
   ShowWindow(window, SW_SHOWNORMAL);
 
@@ -226,9 +226,7 @@ try
 
       Renderer::render(gameState);
 
-      if(isAudioInitialized) {
-        Audio::update(gameState);
-      }
+      audio.update(gameState);
 
       input = {};
     }

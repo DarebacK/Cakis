@@ -2,8 +2,17 @@
 
 #include "GameState.hpp"
 
-namespace Audio
+class Audio
 {
-  bool initialize();
+public:
+  Audio();
+  Audio(const Audio& other) = delete;
+  Audio(Audio&& other) = delete;
+  Audio& operator=(const Audio& rhs) = delete;
+  Audio& operator=(Audio&& rhs) = delete;
+  ~Audio();
+
   void update(const GameState& gameState);
-} // namespace Audio
+private:
+  bool isInitialized = true;
+};
