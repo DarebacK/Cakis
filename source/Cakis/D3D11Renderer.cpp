@@ -29,7 +29,7 @@ CComPtr<IDWriteFactory2> dwriteFactory;
 CComPtr<ID2D1Device1> d2Device = nullptr;
 CComPtr<ID2D1DeviceContext1> d2Context = nullptr;
 
-constexpr float verticalFieldOfView = 74;
+constexpr float verticalFieldOfView = 74.f;
 constexpr float nearPlane = 1.f;
 constexpr float farPlane = 100.f;
 Mat4f projectionMatrix = Mat4f::identity();

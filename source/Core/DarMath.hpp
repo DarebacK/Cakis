@@ -4,8 +4,8 @@
  * @brief Left handed coordinate system, row major matrices, row vectors, pre-multiplication.
  */
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 constexpr float Pi = 3.14159265358979323846f;
 
@@ -22,20 +22,20 @@ struct Vec4f
   float x, y, z, w;
 };
 
-inline float dot(const Vec2f& v1, const Vec2f& v2)
+constexpr inline float dot(const Vec2f& v1, const Vec2f& v2)
 {
   return (v1.x * v2.x) + (v1.y * v2.y);
 }
-inline float dot(const Vec3f& v1, const Vec3f& v2)
+constexpr inline float dot(const Vec3f& v1, const Vec3f& v2)
 {
   return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 }
-inline float dot(const Vec4f& v1, const Vec4f& v2)
+constexpr inline float dot(const Vec4f& v1, const Vec4f& v2)
 {
   return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z) + (v1.w * v2.w);
 }
 
-inline Vec3f cross(const Vec3f& v1, const Vec3f& v2)
+constexpr inline Vec3f cross(const Vec3f& v1, const Vec3f& v2)
 {
   return {(v1.y * v2.z) - (v1.z * v2.y), (v1.z * v2.x) - (v1.x * v2.z), (v1.x * v2.y) - (v1.y * v2.x)};
 }
@@ -73,7 +73,7 @@ inline Vec4f normalized(const Vec4f& v)
 
 using std::clamp;
 
-inline float degreesToRadians(float degrees)
+constexpr inline float degreesToRadians(float degrees)
 {
   return degrees * Pi / 180.f;
 }
