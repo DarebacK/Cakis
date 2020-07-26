@@ -45,7 +45,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Triangle.ps.hlsl" />
-    <FxCompile Include="Triangle.vs.hlsl" />
+    <FxCompile Include="Cube.ps.hlsl" />
+    <FxCompile Include="Cube.vs.hlsl" />
   </ItemGroup>
 </Project>

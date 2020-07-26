@@ -43,12 +43,12 @@ Mat4f projectionMatrix = Mat4f::identity();
 #endif
 
 //TEMPORARY STUFF
-CComPtr<ID3D11Buffer> triangleVertexBuffer = nullptr;
-CComPtr<ID3D11Buffer> triangleIndexBuffer = nullptr;
-CComPtr<ID3D11VertexShader> triangleVertexShader = nullptr;
-CComPtr<ID3D11PixelShader> trianglePixelShader = nullptr;
-CComPtr<ID3D11InputLayout> triangleInputLayout = nullptr;
-CComPtr<ID3D11Buffer> triangleConstantBuffer = nullptr;
+CComPtr<ID3D11Buffer> cubeVertexBuffer = nullptr;
+CComPtr<ID3D11Buffer> cubeIndexBuffer = nullptr;
+CComPtr<ID3D11VertexShader> cubeVertexShader = nullptr;
+CComPtr<ID3D11PixelShader> cubePixelShader = nullptr;
+CComPtr<ID3D11InputLayout> cubeInputLayout = nullptr;
+CComPtr<ID3D11Buffer> cubeConstantBuffer = nullptr;
 
 static void* loadShaderFile(const char* fileName, SIZE_T* shaderSize)
 {
@@ -334,48 +334,60 @@ bool initialize(HWND window)
 
   updateViewport();
 
-  // TRIANGLE
-  Vec3f triangleVertices[] = {
-    { 0.0f,  0.5f, 0.0f}, { 1.0f, 0.0f, 0.0f}, 
-    { 0.5f, -0.5f, 0.0f}, { 0.0f, 1.0f, 0.0f}, 
-    {-0.5f, -0.5f, 0.0f}, { 0.0f, 0.0f, 1.0f}
+  // Cube
+  Vec3f cubeVertices[] = {
+    { -0.5f, -0.5f, -0.5f }, { 0.25f, 0.0f,  0.125f }, 
+    {  0.5f, -0.5f, -0.5f }, { 0.50f, 0.0f,  0.25f }, 
+    {  0.5f, -0.5f,  0.5f }, { 0.75f, 0.0f,  0.375f },
+    { -0.5f, -0.5f,  0.5f }, { 1.0f,  0.0f,  0.5f },
+    { -0.5f,  0.5f, -0.5f }, { 0.0f,  0.25f, 0.625f },
+    {  0.5f,  0.5f, -0.5f }, { 0.0f,  0.50f, 0.75f },
+    {  0.5f,  0.5f,  0.5f }, { 0.0f,  0.75f, 0.875f },
+    { -0.5f,  0.5f,  0.5f }, { 0.0f,  1.0f,  1.0f }
   };
-  D3D11_BUFFER_DESC triangleVBDesc
+  D3D11_BUFFER_DESC cubeVBDesc
   {
-    sizeof(triangleVertices),
+    sizeof(cubeVertices),
     D3D11_USAGE_IMMUTABLE,
     D3D11_BIND_VERTEX_BUFFER
   };
-  D3D11_SUBRESOURCE_DATA triangleVBData {triangleVertices, 0, 0};
-  if(FAILED(device->CreateBuffer(&triangleVBDesc, &triangleVBData, &triangleVertexBuffer))) {
-    logError("Failed to create triangle vertex buffer.");
+  D3D11_SUBRESOURCE_DATA cubeVBData {cubeVertices, 0, 0};
+  if(FAILED(device->CreateBuffer(&cubeVBDesc, &cubeVBData, &cubeVertexBuffer))) {
+    logError("Failed to create cube vertex buffer.");
     return false;
   }
-  short triangleIndices[] = { 0, 1, 2 };
-  D3D11_BUFFER_DESC triangleIBDesc
+  short cubeIndices[] = { 
+    0,4,5, 0,5,1, // front
+    1,5,6, 1,6,2, // right
+    2,6,7, 2,7,3, // back
+    3,7,4, 3,4,0,  // left
+    4,7,6, 4,6,5, // top
+    3,0,1, 3,1,2  // bottom
+  };
+  D3D11_BUFFER_DESC cubeIBDesc
   {
-    sizeof(triangleIndices),
+    sizeof(cubeIndices),
     D3D11_USAGE_IMMUTABLE,
     D3D11_BIND_INDEX_BUFFER
   };
-  D3D11_SUBRESOURCE_DATA triangleIBData{triangleIndices, 0, 0};
-  if(FAILED(device->CreateBuffer(&triangleIBDesc, &triangleIBData, &triangleIndexBuffer))) {
-    logError("Failed to create triangle index buffer.");
+  D3D11_SUBRESOURCE_DATA cubeIBData{cubeIndices, 0, 0};
+  if(FAILED(device->CreateBuffer(&cubeIBDesc, &cubeIBData, &cubeIndexBuffer))) {
+    logError("Failed to create cube index buffer.");
     return false;
   }
-  D3D11_INPUT_ELEMENT_DESC triangleInputElementDescs[] = {
+  D3D11_INPUT_ELEMENT_DESC cubeInputElementDescs[] = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0}, 
     {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
   };
-  triangleVertexShader = loadVertexShader("Triangle", triangleInputElementDescs, arrayCount(triangleInputElementDescs), &triangleInputLayout);
-  trianglePixelShader = loadPixelShader("Triangle");
-  D3D11_BUFFER_DESC triangleCBDesc
+  cubeVertexShader = loadVertexShader("cube", cubeInputElementDescs, arrayCount(cubeInputElementDescs), &cubeInputLayout);
+  cubePixelShader = loadPixelShader("cube");
+  D3D11_BUFFER_DESC cubeCBDesc
   {
     sizeof(Mat4f), 
     D3D11_USAGE_DEFAULT,
     D3D11_BIND_CONSTANT_BUFFER
   };
-  device->CreateBuffer(&triangleCBDesc, nullptr, &triangleConstantBuffer);
+  device->CreateBuffer(&cubeCBDesc, nullptr, &cubeConstantBuffer);
 
   bindD2dTargetToD3dTarget();
 
@@ -475,18 +487,18 @@ void render(const GameState& gameState)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f transformation = Mat4f::translation(0.f, 0.f, 5.f) * projectionMatrix;
-  context->UpdateSubresource(triangleConstantBuffer, 0, nullptr, &transformation, 0, 0);
-  context->VSSetShader(triangleVertexShader, nullptr, 0);
-  context->VSSetConstantBuffers(0, 1, &triangleConstantBuffer.p);
-  context->PSSetShader(trianglePixelShader, nullptr, 0);
-  context->IASetInputLayout(triangleInputLayout);
-  constexpr UINT triangleStride = 2 * sizeof(Vec3f);
-  constexpr UINT triangleOffset = 0;
-  context->IASetVertexBuffers(0, 1, &triangleVertexBuffer.p, &triangleStride, &triangleOffset);
-  context->IASetIndexBuffer(triangleIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+  Mat4f transformation = Mat4f::translation(2.f, -2.f, 5.f) * projectionMatrix;
+  context->UpdateSubresource(cubeConstantBuffer, 0, nullptr, &transformation, 0, 0);
+  context->VSSetShader(cubeVertexShader, nullptr, 0);
+  context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);
+  context->PSSetShader(cubePixelShader, nullptr, 0);
+  context->IASetInputLayout(cubeInputLayout);
+  constexpr UINT cubeStride = 2 * sizeof(Vec3f);
+  constexpr UINT cubeOffset = 0;
+  context->IASetVertexBuffers(0, 1, &cubeVertexBuffer.p, &cubeStride, &cubeOffset);
+  context->IASetIndexBuffer(cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  context->DrawIndexed(3, 0, 0);
+  context->DrawIndexed(36, 0, 0);
 
   context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
 

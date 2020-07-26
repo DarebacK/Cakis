@@ -122,13 +122,13 @@ xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /
     <UpToDateCheckInput Include="..\..\assets\audio\Cakis\**" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Triangle.ps.hlsl">
+    <FxCompile Include="Cube.ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Triangle.vs.hlsl">
+    <FxCompile Include="Cube.vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
