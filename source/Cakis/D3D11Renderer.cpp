@@ -44,6 +44,7 @@ Mat4f projectionMatrix = Mat4f::identity();
 
 //TEMPORARY STUFF
 CComPtr<ID3D11Buffer> triangleVertexBuffer = nullptr;
+CComPtr<ID3D11Buffer> triangleIndexBuffer = nullptr;
 CComPtr<ID3D11VertexShader> triangleVertexShader = nullptr;
 CComPtr<ID3D11PixelShader> trianglePixelShader = nullptr;
 CComPtr<ID3D11InputLayout> triangleInputLayout = nullptr;
@@ -342,11 +343,26 @@ bool initialize(HWND window)
   D3D11_BUFFER_DESC triangleVBDesc
   {
     sizeof(triangleVertices),
-    D3D11_USAGE_DEFAULT,
+    D3D11_USAGE_IMMUTABLE,
     D3D11_BIND_VERTEX_BUFFER
   };
   D3D11_SUBRESOURCE_DATA triangleVBData {triangleVertices, 0, 0};
-  device->CreateBuffer(&triangleVBDesc, &triangleVBData, &triangleVertexBuffer);
+  if(FAILED(device->CreateBuffer(&triangleVBDesc, &triangleVBData, &triangleVertexBuffer))) {
+    logError("Failed to create triangle vertex buffer.");
+    return false;
+  }
+  short triangleIndices[] = { 0, 1, 2 };
+  D3D11_BUFFER_DESC triangleIBDesc
+  {
+    sizeof(triangleIndices),
+    D3D11_USAGE_IMMUTABLE,
+    D3D11_BIND_INDEX_BUFFER
+  };
+  D3D11_SUBRESOURCE_DATA triangleIBData{triangleIndices, 0, 0};
+  if(FAILED(device->CreateBuffer(&triangleIBDesc, &triangleIBData, &triangleIndexBuffer))) {
+    logError("Failed to create triangle index buffer.");
+    return false;
+  }
   D3D11_INPUT_ELEMENT_DESC triangleInputElementDescs[] = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0}, 
     {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
@@ -468,8 +484,9 @@ void render(const GameState& gameState)
   constexpr UINT triangleStride = 2 * sizeof(Vec3f);
   constexpr UINT triangleOffset = 0;
   context->IASetVertexBuffers(0, 1, &triangleVertexBuffer.p, &triangleStride, &triangleOffset);
+  context->IASetIndexBuffer(triangleIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  context->Draw(3, 0);
+  context->DrawIndexed(3, 0, 0);
 
   context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
 
