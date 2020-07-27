@@ -1,41 +1,44 @@
 #pragma once
 #include <stdio.h>
 
-#include "Exception.hpp"
-#include "DarMath.hpp"
-
 using byte = unsigned char;
 
 #ifndef DAR_MODULE_NAME
   #define DAR_MODULE_NAME "Unknown module"
 #endif
 
-#define logError(message, ...) \
-{ \
-  char stringBuffer[256]; \
-  _snprintf_s(stringBuffer, sizeof(stringBuffer), "[ERROR][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
-  OutputDebugStringA(stringBuffer); \
-}
-#define logWarning(message, ...) \
-{ \
-  char stringBuffer[256]; \
-  _snprintf_s(stringBuffer, sizeof(stringBuffer), "[WARN][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
-  OutputDebugStringA(stringBuffer); \
-}
-#define logInfo(message, ...) \
-{ \
-  char stringBuffer[256]; \
-  _snprintf_s(stringBuffer, sizeof(stringBuffer), "[INFO][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
-  OutputDebugStringA(stringBuffer); \
-}
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+  #define logError(message, ...) \
+  { \
+    char stringBuffer[256]; \
+    _snprintf_s(stringBuffer, sizeof(stringBuffer), "[ERROR][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
+    OutputDebugStringA(stringBuffer); \
+  }
+  #define logWarning(message, ...) \
+  { \
+    char stringBuffer[256]; \
+    _snprintf_s(stringBuffer, sizeof(stringBuffer), "[WARN][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
+    OutputDebugStringA(stringBuffer); \
+  }
+  #define logInfo(message, ...) \
+  { \
+    char stringBuffer[256]; \
+    _snprintf_s(stringBuffer, sizeof(stringBuffer), "[INFO][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
+    OutputDebugStringA(stringBuffer); \
+  }
+#endif
 
 #define arrayCount(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #ifdef DAR_DEBUG
+  #undef assert
   #define assert(condition) \
     if(!(condition)) { \
       logError("Assertion failed: %s", #condition); \
-      DebugBreak(); \
+      *(int*)0 = 0; \
     }
 
   extern wchar_t _debugText[4096];
@@ -51,7 +54,8 @@ using byte = unsigned char;
     if(newStrLength > 0) _debugStringImpl(newStr, newStrLength); \
   }
 #else 
-  #define assert(condition) condition
+  #undef assert
+  #define assert(condition) ((void)0)
   #define debugText(...)
   #define debugResetText()
 #endif

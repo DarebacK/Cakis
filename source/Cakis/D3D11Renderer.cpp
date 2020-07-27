@@ -124,7 +124,7 @@ static void updateViewport()
   setViewport((FLOAT)renderTargetDesc.Width, (FLOAT)renderTargetDesc.Height);
 
   float aspectRatio = (float)renderTargetDesc.Width / renderTargetDesc.Height;
-  projectionMatrix = Mat4f::perspectiveProjection(
+  projectionMatrix = Mat4f::perspectiveProjectionD3d(
     degreesToRadians(verticalFieldOfView), 
     aspectRatio, 
     nearPlane, 
@@ -487,7 +487,8 @@ void render(const GameState& gameState)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f transformation = Mat4f::translation(2.f, -2.f, 5.f) * projectionMatrix;
+  Mat4f viewMatrix = Mat4f::lookAt({ 0.f, 0.f, -1.f }, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f });
+  Mat4f transformation = Mat4f::translation(2.f, -2.f, 5.f) * viewMatrix * projectionMatrix;
   context->UpdateSubresource(cubeConstantBuffer, 0, nullptr, &transformation, 0, 0);
   context->VSSetShader(cubeVertexShader, nullptr, 0);
   context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);

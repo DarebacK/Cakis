@@ -1,6 +1,6 @@
 #include "DarMath.hpp"
 
-Vec4f operator*(const Vec4f& left, const Mat4f& right)
+Vec4f operator*(const Vec4f& left, const Mat4f& right) noexcept
 {
   return
   {
@@ -11,7 +11,7 @@ Vec4f operator*(const Vec4f& left, const Mat4f& right)
   };
 }
 
-Mat4f operator*(const Mat4f& left, const Mat4f& right)
+Mat4f operator*(const Mat4f& left, const Mat4f& right) noexcept
 {
   return
   {

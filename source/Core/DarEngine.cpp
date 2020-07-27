@@ -1,5 +1,7 @@
 #include "DarEngine.hpp"
 
+#include "DarMath.hpp"
+
 #ifdef DAR_DEBUG
 wchar_t _debugText[4096];
 int _debugTextLength = 0;
