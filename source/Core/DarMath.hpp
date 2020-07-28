@@ -20,6 +20,18 @@ constexpr inline Vec2f operator-(const Vec2f& left, const Vec2f& right) noexcept
 {
   return Vec2f{ left.x - right.x, left.y - right.y };
 }
+constexpr inline Vec2f operator+(const Vec2f& left, const Vec2f& right) noexcept
+{
+  return Vec2f{ left.x + right.x, left.y + right.y };
+}
+constexpr inline Vec2f operator*(float left, const Vec2f& right) noexcept
+{
+  return Vec2f{ left * right.x, left * right.y };
+}
+constexpr inline Vec2f operator*(const Vec2f& left, float right) noexcept
+{
+  return right * left;
+}
 constexpr inline bool operator==(const Vec2f& left, const Vec2f& right) noexcept 
 {
   return left.x == right.x && left.y == right.y;
@@ -34,11 +46,36 @@ constexpr inline Vec3f operator-(const Vec3f& left, const Vec3f& right) noexcept
 {
   return Vec3f{ left.x - right.x, left.y - right.y, left.z - right.z };
 }
+constexpr inline Vec3f operator+(const Vec3f& left, const Vec3f& right) noexcept
+{
+  return Vec3f{ left.x + right.x, left.y + right.y, left.z + right.z };
+}
+constexpr inline Vec3f operator*(float left, const Vec3f& right) noexcept
+{
+  return Vec3f{ left * right.x, left * right.y, left * right.z };
+}
+constexpr inline Vec3f operator*(const Vec3f& left, float right) noexcept
+{
+  return right * left;
+}
 constexpr inline bool operator==(const Vec3f& left, const Vec3f& right) noexcept
 {
   return left.x == right.x && left.y == right.y && left.z == right.z;
 }
 constexpr inline bool operator!=(const Vec3f& left, const Vec3f& right) noexcept { return !(left == right); }
+constexpr inline Vec3f lerp(const Vec3f& v1, const Vec3f& v2, float t, float oneMinusT) noexcept
+{
+  return
+  {
+    oneMinusT*v1.x + t*v2.x,
+    oneMinusT*v1.y + t*v2.y,
+    oneMinusT*v1.z + t*v2.z,
+  };
+}
+constexpr inline Vec3f lerp(const Vec3f& v1, const Vec3f& v2, float t) noexcept
+{
+  return lerp(v1, v2, t, 1.f - t);
+}
 struct Vec4f
 {
   float x, y, z, w;
@@ -47,6 +84,18 @@ constexpr inline Vec4f operator-(const Vec4f& v) noexcept { return { -v.x, -v.y,
 constexpr inline Vec4f operator-(const Vec4f& left, const Vec4f& right) noexcept
 {
   return Vec4f{ left.x - right.x, left.y - right.y, left.z - right.z, left.w - right.w };
+}
+constexpr inline Vec4f operator+(const Vec4f& left, const Vec4f& right) noexcept
+{
+  return Vec4f{ left.x + right.x, left.y + right.y, left.z + right.z, left.w + right.w };
+}
+constexpr inline Vec4f operator*(float left, const Vec4f& right) noexcept
+{
+  return Vec4f{ left * right.x, left * right.y, left * right.z, left * right.w };
+}
+constexpr inline Vec4f operator*(const Vec4f& left, float right) noexcept
+{
+  return right * left;
 }
 constexpr inline bool operator==(const Vec4f& left, const Vec4f& right) noexcept
 {
@@ -218,3 +267,109 @@ struct Mat4f
 
 Mat4f operator*(const Mat4f& left, const Mat4f& right) noexcept;
 Vec4f operator*(const Vec4f& left, const Mat4f& right) noexcept;
+
+struct Quaternionf
+{
+  Vec3f v;
+  float s;
+
+  // For conversion from a matrix, check Game Engine Architecture page 399
+
+  operator Mat4f() const noexcept
+  {
+    float xx = v.x * v.x;
+    float xy = v.x * v.y;
+    float xz = v.x * v.z;
+    float xs = v.x * s;
+    float yy = v.y * v.y;
+    float yz = v.y * v.z;
+    float ys = v.y * s;
+    float zz = v.z * v.z;
+    float zs = v.z * s;
+    return
+    {{
+      {1 - 2*yy - 2*zz, 2*xy + 2*zs    , 2*xz - 2*ys    , 0.f},
+      {2*xy - 2*zs    , 1 - 2*xx - 2*zz, 2*yz + 2*xs    , 0.f},
+      {2*xz + 2*ys    , 2*yz - 2*xs    , 1 - 2*xx - 2*yy, 0.f},
+      {0.f            , 0.f            , 0.f            , 1.f}
+    }};
+  }
+};
+/**
+ * @brief Grassman product. 
+ * There are multiple kinds of quaternion multiplication, but this one is used for 3D rotation.
+ * @return Quaternion representing rotation right followed by rotation left
+ */
+inline Quaternionf operator*(const Quaternionf& left, const Quaternionf& right) noexcept
+{
+  return
+  {
+    left.s*right.v + right.s*left.v + cross(left.v, right.v),
+    left.s*right.s - dot(left.v, right.v)
+  };
+}
+inline Quaternionf operator*(float left, const Quaternionf& right) noexcept
+{
+  return{left*right.v, left*right.s};
+}
+inline Quaternionf operator+(const Quaternionf& left, const Quaternionf& right) noexcept
+{
+  return{left.v + right.v, left.s + right.s};
+}
+inline float length(const Quaternionf& q) noexcept
+{
+  return sqrt(q.v.x*q.v.x + q.v.y*q.v.y + q.v.z*q.v.z + q.s*q.s);
+}
+/**
+ * @note To speed this up for renormalization, check http://allenchou.net/2014/02/game-math-fast-re-normalization-of-unit-vectors/ 
+*/
+inline Quaternionf normalized(const Quaternionf& q, float length) noexcept
+{
+  float lengthInversion = 1.f / length;
+  return
+  {
+    {q.v.x * lengthInversion, q.v.y * lengthInversion, q.v.z * lengthInversion},
+    q.s * lengthInversion
+  };
+}
+inline Quaternionf normalized(const Quaternionf& q) noexcept
+{
+  return normalized(q, length(q));
+}
+/**
+ * @note Equals to inverse if q is normalized
+ */
+inline Quaternionf conjugate(const Quaternionf& q) noexcept
+{
+  return { -q.v, q.s };
+}
+inline Vec3f rotated(const Vec3f& v, const Quaternionf& q, const Quaternionf& qConjugate) noexcept
+{
+  return (q * Quaternionf{ v, 0.f } * qConjugate).v;
+}
+inline Vec3f rotated(const Vec3f& v, const Quaternionf& q) noexcept
+{
+  return rotated(v, q, conjugate(q));
+}
+constexpr inline float dot(const Quaternionf& q1, const Quaternionf& q2) noexcept
+{
+  return (q1.v.x * q2.v.x) + (q1.v.y * q2.v.y) + (q1.v.z * q2.v.z) + (q1.s * q2.s);
+}
+/**
+ * @brief Rotational linear interpolation. Not accurate as slerp, but faster.
+ */
+inline Quaternionf rlerp(const Quaternionf& q1, const Quaternionf& q2, float t) noexcept
+{
+  float oneMinusT = 1.f - t;
+  return normalized({lerp(q1.v, q2.v, t, oneMinusT), oneMinusT*q1.s + t*q2.s});
+}
+/**
+ * @brief Spherical linear interpolation. More accurate than rlerp, but slower.
+ */
+inline Quaternionf slerp(const Quaternionf& q1, const Quaternionf& q2, float t) noexcept
+{
+  float theta = acos(dot(q1, q2));
+  float wq1 = sin(1.f - t)*theta / sin(theta);
+  float wq2 = sin(t)*theta / sin(theta);
+  return wq1*q1 + wq2*q2;
+}
