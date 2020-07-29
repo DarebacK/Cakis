@@ -136,20 +136,29 @@ inline auto length(const Vec4f& v) noexcept
   return sqrt(dot(v, v));
 }
 
+inline Vec2f normalized(const Vec2f& v, float length) noexcept
+{
+  return {v.x / length, v.y / length};
+}
 inline Vec2f normalized(const Vec2f& v) noexcept
 {
-  const auto length = ::length(v);
-  return {v.x / length, v.y / length};
+  return normalized(v, length(v));
+}
+inline Vec3f normalized(const Vec3f& v, float length) noexcept
+{
+  return { v.x / length, v.y / length, v.z / length };
 }
 inline Vec3f normalized(const Vec3f& v) noexcept
 {
-  const auto length = ::length(v);
-  return {v.x / length, v.y / length, v.z / length};
+  return normalized(v, length(v));
+}
+inline Vec4f normalized(const Vec4f& v, float length) noexcept
+{
+  return { v.x / length, v.y / length, v.z / length, v.w / length };
 }
 inline Vec4f normalized(const Vec4f& v) noexcept
 {
-  const auto length = ::length(v);
-  return {v.x / length, v.y / length, v.z / length, v.w / length};
+  return normalized(v, length(v));
 }
 
 inline bool isNormalized(const Vec2f& v) noexcept { return abs(length(v) - 1.f) <= FLT_EPSILON; }
@@ -165,7 +174,7 @@ constexpr inline float degreesToRadians(float degrees) noexcept
 
 struct Mat4f
 {
-  static Mat4f identity() noexcept
+  constexpr static Mat4f identity() noexcept
   {
     return 
     {{
@@ -175,7 +184,7 @@ struct Mat4f
       {0.0f, 0.0f, 0.0f, 1.0f}
     }};
   }
-  static Mat4f translation(float x, float y, float z) noexcept
+  constexpr static Mat4f translation(float x, float y, float z) noexcept
   {
     return 
     {{
@@ -185,7 +194,7 @@ struct Mat4f
       {   x,    y,    z, 1.0f}
     }};
   }
-  static Mat4f translation(const Vec3f& by) noexcept
+  constexpr static Mat4f translation(const Vec3f& by) noexcept
   {
     return translation(by.x, by.y, by.z);
   }
@@ -268,14 +277,16 @@ struct Mat4f
 Mat4f operator*(const Mat4f& left, const Mat4f& right) noexcept;
 Vec4f operator*(const Vec4f& left, const Mat4f& right) noexcept;
 
-struct Quaternionf
+struct Quatf
 {
   Vec3f v;
   float s;
 
+  constexpr static Quatf identity() noexcept { return {{0.f, 0.f, 0.f}, 1.f}; }
+
   // For conversion from a matrix, check Game Engine Architecture page 399
 
-  operator Mat4f() const noexcept
+  constexpr operator Mat4f() const noexcept
   {
     float xx = v.x * v.x;
     float xy = v.x * v.y;
@@ -300,7 +311,7 @@ struct Quaternionf
  * There are multiple kinds of quaternion multiplication, but this one is used for 3D rotation.
  * @return Quaternion representing rotation right followed by rotation left
  */
-inline Quaternionf operator*(const Quaternionf& left, const Quaternionf& right) noexcept
+inline Quatf operator*(const Quatf& left, const Quatf& right) noexcept
 {
   return
   {
@@ -308,57 +319,56 @@ inline Quaternionf operator*(const Quaternionf& left, const Quaternionf& right) 
     left.s*right.s - dot(left.v, right.v)
   };
 }
-inline Quaternionf operator*(float left, const Quaternionf& right) noexcept
+inline Quatf operator*(float left, const Quatf& right) noexcept
 {
   return{left*right.v, left*right.s};
 }
-inline Quaternionf operator+(const Quaternionf& left, const Quaternionf& right) noexcept
+inline Quatf operator+(const Quatf& left, const Quatf& right) noexcept
 {
   return{left.v + right.v, left.s + right.s};
 }
-inline float length(const Quaternionf& q) noexcept
+inline float length(const Quatf& q) noexcept
 {
   return sqrt(q.v.x*q.v.x + q.v.y*q.v.y + q.v.z*q.v.z + q.s*q.s);
 }
 /**
  * @note To speed this up for renormalization, check http://allenchou.net/2014/02/game-math-fast-re-normalization-of-unit-vectors/ 
 */
-inline Quaternionf normalized(const Quaternionf& q, float length) noexcept
+inline Quatf normalized(const Quatf& q, float length) noexcept
 {
-  float lengthInversion = 1.f / length;
   return
   {
-    {q.v.x * lengthInversion, q.v.y * lengthInversion, q.v.z * lengthInversion},
-    q.s * lengthInversion
+    {q.v.x / length, q.v.y / length, q.v.z / length},
+    q.s / length
   };
 }
-inline Quaternionf normalized(const Quaternionf& q) noexcept
+inline Quatf normalized(const Quatf& q) noexcept
 {
   return normalized(q, length(q));
 }
 /**
  * @note Equals to inverse if q is normalized
  */
-inline Quaternionf conjugate(const Quaternionf& q) noexcept
+inline Quatf conjugate(const Quatf& q) noexcept
 {
   return { -q.v, q.s };
 }
-inline Vec3f rotated(const Vec3f& v, const Quaternionf& q, const Quaternionf& qConjugate) noexcept
+inline Vec3f rotated(const Vec3f& v, const Quatf& q, const Quatf& qConjugate) noexcept
 {
-  return (q * Quaternionf{ v, 0.f } * qConjugate).v;
+  return (q * Quatf{ v, 0.f } * qConjugate).v;
 }
-inline Vec3f rotated(const Vec3f& v, const Quaternionf& q) noexcept
+inline Vec3f rotated(const Vec3f& v, const Quatf& q) noexcept
 {
   return rotated(v, q, conjugate(q));
 }
-constexpr inline float dot(const Quaternionf& q1, const Quaternionf& q2) noexcept
+constexpr inline float dot(const Quatf& q1, const Quatf& q2) noexcept
 {
   return (q1.v.x * q2.v.x) + (q1.v.y * q2.v.y) + (q1.v.z * q2.v.z) + (q1.s * q2.s);
 }
 /**
  * @brief Rotational linear interpolation. Not accurate as slerp, but faster.
  */
-inline Quaternionf rlerp(const Quaternionf& q1, const Quaternionf& q2, float t) noexcept
+inline Quatf rlerp(const Quatf& q1, const Quatf& q2, float t) noexcept
 {
   float oneMinusT = 1.f - t;
   return normalized({lerp(q1.v, q2.v, t, oneMinusT), oneMinusT*q1.s + t*q2.s});
@@ -366,7 +376,7 @@ inline Quaternionf rlerp(const Quaternionf& q1, const Quaternionf& q2, float t) 
 /**
  * @brief Spherical linear interpolation. More accurate than rlerp, but slower.
  */
-inline Quaternionf slerp(const Quaternionf& q1, const Quaternionf& q2, float t) noexcept
+inline Quatf slerp(const Quatf& q1, const Quatf& q2, float t) noexcept
 {
   float theta = acos(dot(q1, q2));
   float wq1 = sin(1.f - t)*theta / sin(theta);
