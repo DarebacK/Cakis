@@ -1,3 +1,5 @@
+#pragma pack_matrix(row_major)
+
 cbuffer Transformation
 {
   float4x4 transform;
@@ -15,7 +17,7 @@ Output main(
 )
 {
   Output output;
-  output.position = mul(transform, float4(position, 1.0f));
+  output.position = mul(float4(position, 1.0f), transform);
   output.color = float4(color, 1.0f);
   return output;
 }

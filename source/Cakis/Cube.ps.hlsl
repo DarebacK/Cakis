@@ -1,3 +1,5 @@
+#pragma pack_matrix(row_major)
+
 float4 main(
   float4 position : SV_POSITION, 
   float4 color : COLOR
