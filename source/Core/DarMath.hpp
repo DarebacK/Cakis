@@ -198,6 +198,16 @@ struct Mat4f
   {
     return translation(by.x, by.y, by.z);
   }
+  static Mat4f rotationX(float radians) noexcept
+  {
+    return 
+    {{
+      {1.f,                0.f,               0.f, 0.f},
+      {0.f,  std::cos(radians), std::sin(radians), 0.f},
+      {0.f, -std::sin(radians), std::cos(radians), 0.f},
+      {0.f,                0.f,               0.f, 1.f}
+    }};
+  }
   static Mat4f perspectiveProjectionD3d(
     float verticalFieldOfViewRadians, 
     float aspectRatio, 

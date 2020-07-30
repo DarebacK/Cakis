@@ -25,10 +25,23 @@ CD3D11_TEXTURE2D_DESC renderTargetDesc = {};
 CComPtr<ID3D11RenderTargetView> renderTargetView = nullptr;
 CComPtr<ID3D11DepthStencilView> depthStencilView = nullptr;
 float clearColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
+CComPtr<ID3D11RasterizerState> rasterizerState = nullptr;
+D3D11_RASTERIZER_DESC rasterizerDesc =
+{
+  D3D11_FILL_SOLID,
+  D3D11_CULL_BACK,
+  FALSE, // FrontCounterClockwise
+  D3D11_DEFAULT_DEPTH_BIAS,
+  D3D11_DEFAULT_DEPTH_BIAS_CLAMP,
+  D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+  TRUE, // DepthClipEnable
+  FALSE, // ScissorEnable
+  TRUE, // MultisampleEnable
+  TRUE // AntialiasedLineEnable
+};
 CComPtr<IDWriteFactory2> dwriteFactory;
 CComPtr<ID2D1Device1> d2Device = nullptr;
 CComPtr<ID2D1DeviceContext1> d2Context = nullptr;
-
 constexpr float verticalFieldOfView = 74.f;
 constexpr float nearPlane = 1.f;
 constexpr float farPlane = 100.f;
@@ -36,13 +49,20 @@ Mat4f projectionMatrix = Mat4f::identity();
 
 #ifdef DAR_DEBUG
   CComPtr<ID3D11Debug> debug = nullptr;
-  CComPtr<ID3D11RasterizerState> wireframeRasterizerState = nullptr;
-  bool useWireframe = false;
   CComPtr<ID2D1SolidColorBrush> debugTextBrush = nullptr;
   CComPtr<IDWriteTextFormat> debugTextFormat = nullptr;
 #endif
 
-//TEMPORARY STUFF
+// Grid
+constexpr int gridSize = 8;  // e.g. 10 means 11x11 lines, odd only
+constexpr int gridVertexCount = 2 * 2 * (gridSize + 1);
+CComPtr<ID3D11Buffer> gridVertexBuffer = nullptr;
+CComPtr<ID3D11VertexShader> gridVertexShader = nullptr;
+CComPtr<ID3D11PixelShader> gridPixelShader = nullptr;
+CComPtr<ID3D11InputLayout> gridInputLayout = nullptr;
+CComPtr<ID3D11Buffer> gridConstantBuffer = nullptr;
+
+// Cube
 CComPtr<ID3D11Buffer> cubeVertexBuffer = nullptr;
 CComPtr<ID3D11Buffer> cubeIndexBuffer = nullptr;
 CComPtr<ID3D11VertexShader> cubeVertexShader = nullptr;
@@ -389,14 +409,56 @@ bool initialize(HWND window)
   };
   device->CreateBuffer(&cubeCBDesc, nullptr, &cubeConstantBuffer);
 
+  // Grid
+  Vec2f gridVertices[gridVertexCount];
+  int gridVertexIndex = 0;
+  for(int i = -gridSize / 2; i <= gridSize / 2; ++i) {
+    // Vertical line
+    gridVertices[gridVertexIndex].x = i;
+    gridVertices[gridVertexIndex].y = -gridSize / 2;
+    ++gridVertexIndex;
+    gridVertices[gridVertexIndex].x = i;
+    gridVertices[gridVertexIndex].y = gridSize / 2;
+    ++gridVertexIndex;
+
+    // Horizontal line
+    gridVertices[gridVertexIndex].x = -gridSize / 2;
+    gridVertices[gridVertexIndex].y = i;
+    ++gridVertexIndex;
+    gridVertices[gridVertexIndex].x = gridSize / 2;
+    gridVertices[gridVertexIndex].y = i;
+    ++gridVertexIndex;
+  }
+  D3D11_BUFFER_DESC gridVBDesc
+  {
+    sizeof(gridVertices),
+    D3D11_USAGE_IMMUTABLE,
+    D3D11_BIND_VERTEX_BUFFER
+  };
+  D3D11_SUBRESOURCE_DATA gridVBData{ gridVertices, 0, 0 };
+  if(FAILED(device->CreateBuffer(&gridVBDesc, &gridVBData, &gridVertexBuffer))) {
+    logError("Failed to create grid vertex buffer.");
+    return false;
+  }
+  D3D11_INPUT_ELEMENT_DESC gridInputElementDescs[] = {
+    {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
+  };
+  gridVertexShader = loadVertexShader("grid", gridInputElementDescs, arrayCount(gridInputElementDescs), &gridInputLayout);
+  gridPixelShader = loadPixelShader("grid");
+  D3D11_BUFFER_DESC gridCBDesc
+  {
+    sizeof(Mat4f),
+    D3D11_USAGE_DEFAULT,
+    D3D11_BIND_CONSTANT_BUFFER
+  };
+  device->CreateBuffer(&gridCBDesc, nullptr, &gridConstantBuffer);
+
+  device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
+  context->RSSetState(rasterizerState);
+
   bindD2dTargetToD3dTarget();
 
   #ifdef DAR_DEBUG
-    // WIREFRAME
-    D3D11_RASTERIZER_DESC wireframeRasterizerDesc = CD3D11_RASTERIZER_DESC(CD3D11_DEFAULT());
-    wireframeRasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
-    device->CreateRasterizerState(&wireframeRasterizerDesc, &wireframeRasterizerState);
-
     // DEBUG TEXT
     d2Context->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Yellow), &debugTextBrush);
     dwriteFactory->CreateTextFormat(L"Arial", nullptr, DWRITE_FONT_WEIGHT_LIGHT, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 12, L"en-US", &debugTextFormat);
@@ -454,9 +516,10 @@ void onWindowResize(int clientAreaWidth, int clientAreaHeight)
 static void switchWireframeState()
 {
 #ifdef DAR_DEBUG
-  useWireframe = !useWireframe;
-  if(useWireframe) context->RSSetState(wireframeRasterizerState);
-  else context->RSSetState(nullptr);
+  rasterizerDesc.FillMode = rasterizerDesc.FillMode == D3D11_FILL_SOLID ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID;
+  rasterizerState.Release();
+  device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
+  context->RSSetState(rasterizerState);
 #endif
 }
 
@@ -487,8 +550,10 @@ void render(const GameState& gameState)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f viewMatrix = Mat4f::lookAt({ 0.f, 0.f, -1.f }, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f });
-  Mat4f transformation = Mat4f::translation(2.f, -2.f, 5.f) * viewMatrix * projectionMatrix;
+  Mat4f viewMatrix = Mat4f::lookAt({ 0.f, 8.f, -8.f }, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f });
+  Mat4f viewProjectionMatrix = viewMatrix * projectionMatrix;
+
+  Mat4f transformation = Mat4f::translation(0.f, 0.f, 0.f) * viewProjectionMatrix;
   context->UpdateSubresource(cubeConstantBuffer, 0, nullptr, &transformation, 0, 0);
   context->VSSetShader(cubeVertexShader, nullptr, 0);
   context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);
@@ -500,6 +565,18 @@ void render(const GameState& gameState)
   context->IASetIndexBuffer(cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   context->DrawIndexed(36, 0, 0);
+
+  transformation = Mat4f::rotationX(degreesToRadians(90)) * viewProjectionMatrix;
+  context->UpdateSubresource(gridConstantBuffer, 0, nullptr, &transformation, 0, 0);
+  context->VSSetShader(gridVertexShader, nullptr, 0);
+  context->VSSetConstantBuffers(0, 1, &gridConstantBuffer.p);
+  context->PSSetShader(gridPixelShader, nullptr, 0);
+  context->IASetInputLayout(gridInputLayout);
+  constexpr UINT gridStride = sizeof(Vec2f);
+  constexpr UINT gridOffset = 0;
+  context->IASetVertexBuffers(0, 1, &gridVertexBuffer.p, &gridStride, &gridOffset);
+  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+  context->Draw(gridVertexCount, 0);
 
   context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
 
