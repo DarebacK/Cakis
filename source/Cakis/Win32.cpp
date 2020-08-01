@@ -189,10 +189,7 @@ try
     return -1;
   }
 
-  if(!Renderer::initialize(window)) {
-    showErrorMessageBox("Failed to initialize D3D11 renderer.", "Fatal error");
-    return -1;
-  }
+  Renderer::initialize(window);
 
   Audio audio;
 

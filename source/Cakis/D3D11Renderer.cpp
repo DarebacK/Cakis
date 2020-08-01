@@ -236,7 +236,7 @@ static bool bindD2dTargetToD3dTarget()
   return true;
 }
 
-bool initialize(HWND window)
+void initialize(HWND window)
 {
   // DEVICE
   UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
@@ -256,8 +256,7 @@ bool initialize(HWND window)
     &featureLevel, 
     &context
   ))) {
-    logError("Failed to create D3D11 device");
-    return false;
+    throw InitializeException("Failed to create D3D11 device");
   }
 
   #ifdef DAR_DEBUG
@@ -283,8 +282,7 @@ bool initialize(HWND window)
           swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
           dxgiFactory->CreateSwapChainForHwnd(dxgiDevice, window, &swapChainDesc, NULL, NULL, &swapChain);
           if(!swapChain) {
-            logError("Failed to create swapChain.");
-            return false;
+            throw InitializeException("Failed to create swapChain.");
           }
         }
         swapChain->GetDesc1(&swapChainDesc);
@@ -292,12 +290,10 @@ bool initialize(HWND window)
           logError("Failed to make window association to ignore alt enter.");
         }
         if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
-          logError("Failed to get swapchain's back buffer.");
-          return false;
+          throw InitializeException("Failed to get swapchain's back buffer.");
         }
       } else {
-        logError("Failed to get IDXGIFactory");
-        return false;
+        throw InitializeException("Failed to get IDXGIFactory");
       }
 
       if(FAILED(dxgiAdapter->GetDesc2(&dxgiAdapterDesc))) {
@@ -305,8 +301,7 @@ bool initialize(HWND window)
       }
     }
     else {
-      logError("Failed to get IDXGIAdapter.");
-      return false;
+      throw InitializeException("Failed to get IDXGIAdapter.");
     }
 
     // DirectWrite and Direct2D
@@ -320,35 +315,29 @@ bool initialize(HWND window)
       CComPtr<ID2D1Factory2> d2dFactory;
       if(SUCCEEDED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory2), &options, (void**)&d2dFactory))) {
         if(FAILED(d2dFactory->CreateDevice(dxgiDevice, &d2Device))) {
-          logError("Failed to create ID2D1Device");
-          return false;
+          throw InitializeException("Failed to create ID2D1Device");
         }
         if(FAILED(d2Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &d2Context))) {
-          logError("Failed to create ID2D1DeviceContext");
-          return false;
+          throw InitializeException("Failed to create ID2D1DeviceContext");
         }
       }
     }
   } else {
-    logError("Failed to get IDXGIDevice.");
-    return false;
+    throw InitializeException("Failed to get IDXGIDevice.");
   }
 
   renderTarget = createRenderTarget();
   if(!renderTarget) {
-    logError("Failed to create render target.");
-    return false;
+    throw InitializeException("Failed to create render target.");
   }
 
   renderTargetView = createRenderTargetView(renderTarget, renderTargetDesc.Format);
   if(!renderTargetView) {
-    logError("Failed to initialize render target view.");
-    return false;
+    throw InitializeException("Failed to initialize render target view.");
   }
   depthStencilView = createDepthStencilView();
   if(!depthStencilView) {
-    logError("Failed to initialize depth stencil view.");
-    return false;
+    throw InitializeException("Failed to initialize depth stencil view.");
   }
   context->OMSetRenderTargets(1, &renderTargetView.p, depthStencilView);
 
@@ -373,8 +362,7 @@ bool initialize(HWND window)
   };
   D3D11_SUBRESOURCE_DATA cubeVBData {cubeVertices, 0, 0};
   if(FAILED(device->CreateBuffer(&cubeVBDesc, &cubeVBData, &cubeVertexBuffer))) {
-    logError("Failed to create cube vertex buffer.");
-    return false;
+    throw InitializeException("Failed to create cube vertex buffer.");
   }
   short cubeIndices[] = { 
     0,4,5, 0,5,1, // front
@@ -392,8 +380,7 @@ bool initialize(HWND window)
   };
   D3D11_SUBRESOURCE_DATA cubeIBData{cubeIndices, 0, 0};
   if(FAILED(device->CreateBuffer(&cubeIBDesc, &cubeIBData, &cubeIndexBuffer))) {
-    logError("Failed to create cube index buffer.");
-    return false;
+    throw InitializeException("Failed to create cube index buffer.");
   }
   D3D11_INPUT_ELEMENT_DESC cubeInputElementDescs[] = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0}, 
@@ -438,8 +425,7 @@ bool initialize(HWND window)
   };
   D3D11_SUBRESOURCE_DATA gridVBData{ gridVertices, 0, 0 };
   if(FAILED(device->CreateBuffer(&gridVBDesc, &gridVBData, &gridVertexBuffer))) {
-    logError("Failed to create grid vertex buffer.");
-    return false;
+    throw InitializeException("Failed to create grid vertex buffer.");
   }
   D3D11_INPUT_ELEMENT_DESC gridInputElementDescs[] = {
     {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
@@ -467,8 +453,6 @@ bool initialize(HWND window)
     debugTextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
     debugTextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
   #endif
-
-  return true;
 }
 
 void onWindowResize(int clientAreaWidth, int clientAreaHeight)
@@ -480,35 +464,35 @@ void onWindowResize(int clientAreaWidth, int clientAreaHeight)
     renderTargetView.Release();
     renderTarget.Release();
     if(FAILED(swapChain->ResizeBuffers(0, 0, 0, swapChainDesc.Format, swapChainDesc.Flags))) {
-      logError("Failed to resize swapChain buffers");
       #ifdef DAR_DEBUG
         debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL | D3D11_RLDO_SUMMARY);
       #endif DAR_DEBUG
+      throw Exception("Failed to resize swapChain buffers");
     }
     if(FAILED(swapChain->GetDesc1(&swapChainDesc))) {
-      logError("Failed to get swapChain desc after window resize");
+      throw Exception("Failed to get swapChain desc after window resize");
     }
     if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
-      logError("Failed to get swapchain's back buffer after window resize.");
+      throw Exception("Failed to get swapchain's back buffer after window resize.");
     }
 
     renderTarget = createRenderTarget();
     if(!renderTarget) {
-      logError("Failed to create render target after window resize.");
+      throw Exception("Failed to create render target after window resize.");
     }
 
     renderTargetView = createRenderTargetView(renderTarget, renderTargetDesc.Format);
     if(!renderTargetView) {
-      logError("Failed to create render target view after window resize.");
+      throw Exception("Failed to create render target view after window resize.");
     }
     depthStencilView = createDepthStencilView();
     if(!depthStencilView) {
-      logError("Failed to create depth stencil view after window resize.");
+      throw Exception("Failed to create depth stencil view after window resize.");
     }
     context->OMSetRenderTargets(1, &renderTargetView.p, depthStencilView);
 
     if(!bindD2dTargetToD3dTarget()) {
-      logError("Failed to bind Direct2D render target to Direct3D render target after window resize.");
+      throw Exception("Failed to bind Direct2D render target to Direct3D render target after window resize.");
     }
 
     updateViewport();
