@@ -404,8 +404,9 @@ bool initialize(HWND window)
   D3D11_BUFFER_DESC cubeCBDesc
   {
     sizeof(Mat4f), 
-    D3D11_USAGE_DEFAULT,
-    D3D11_BIND_CONSTANT_BUFFER
+    D3D11_USAGE_DYNAMIC,
+    D3D11_BIND_CONSTANT_BUFFER,
+    D3D11_CPU_ACCESS_WRITE
   };
   device->CreateBuffer(&cubeCBDesc, nullptr, &cubeConstantBuffer);
 
@@ -448,8 +449,9 @@ bool initialize(HWND window)
   D3D11_BUFFER_DESC gridCBDesc
   {
     sizeof(Mat4f),
-    D3D11_USAGE_DEFAULT,
-    D3D11_BIND_CONSTANT_BUFFER
+    D3D11_USAGE_DYNAMIC,
+    D3D11_BIND_CONSTANT_BUFFER,
+    D3D11_CPU_ACCESS_WRITE
   };
   device->CreateBuffer(&gridCBDesc, nullptr, &gridConstantBuffer);
 
@@ -553,8 +555,11 @@ void render(const GameState& gameState)
   Mat4f viewMatrix = Mat4f::lookAt({ 0.f, 8.f, -8.f }, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f });
   Mat4f viewProjectionMatrix = viewMatrix * projectionMatrix;
 
-  Mat4f transformation = Mat4f::translation(0.f, 0.f, 0.f) * viewProjectionMatrix;
-  context->UpdateSubresource(cubeConstantBuffer, 0, nullptr, &transformation, 0, 0);
+  Mat4f transform = Mat4f::translation(0.f, 0.f, 0.f) * viewProjectionMatrix;
+  D3D11_MAPPED_SUBRESOURCE mappedResource;
+  context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, &transform, sizeof(transform));
+  context->Unmap(cubeConstantBuffer, 0);
   context->VSSetShader(cubeVertexShader, nullptr, 0);
   context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);
   context->PSSetShader(cubePixelShader, nullptr, 0);
@@ -566,8 +571,10 @@ void render(const GameState& gameState)
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   context->DrawIndexed(36, 0, 0);
 
-  transformation = Mat4f::rotationX(degreesToRadians(90)) * viewProjectionMatrix;
-  context->UpdateSubresource(gridConstantBuffer, 0, nullptr, &transformation, 0, 0);
+  transform = Mat4f::rotationX(degreesToRadians(90)) * viewProjectionMatrix;
+  context->Map(gridConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, &transform, sizeof(transform));
+  context->Unmap(gridConstantBuffer, 0);
   context->VSSetShader(gridVertexShader, nullptr, 0);
   context->VSSetConstantBuffers(0, 1, &gridConstantBuffer.p);
   context->PSSetShader(gridPixelShader, nullptr, 0);
