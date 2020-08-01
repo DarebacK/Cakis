@@ -18,7 +18,6 @@ CComPtr<IDXGIAdapter3> dxgiAdapter;
 DXGI_ADAPTER_DESC2 dxgiAdapterDesc{};
 CComPtr<IDXGISwapChain1> swapChain = nullptr;
 DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
-CComPtr<ID3D11Texture2D> backBuffer = nullptr;
 constexpr UINT msaaSampleCount = 8;
 CComPtr<ID3D11Texture2D> renderTarget = nullptr;
 CD3D11_TEXTURE2D_DESC renderTargetDesc = {};
@@ -273,9 +272,9 @@ void initialize(HWND window)
         swapChainDesc.SampleDesc.Count = 1;
         swapChainDesc.SampleDesc.Quality = 0;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        swapChainDesc.BufferCount = 3;
+        swapChainDesc.BufferCount = 2;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-        swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+        swapChainDesc.Flags = 0;
         dxgiFactory->CreateSwapChainForHwnd(dxgiDevice, window, &swapChainDesc, NULL, NULL, &swapChain);
         if(!swapChain) {
           // DXGI_SWAP_EFFECT_FLIP_DISCARD may not be supported on this OS. Try legacy DXGI_SWAP_EFFECT_DISCARD.
@@ -288,9 +287,6 @@ void initialize(HWND window)
         swapChain->GetDesc1(&swapChainDesc);
         if(FAILED(dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER))) {
           logError("Failed to make window association to ignore alt enter.");
-        }
-        if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
-          throw InitializeException("Failed to get swapchain's back buffer.");
         }
       } else {
         throw InitializeException("Failed to get IDXGIFactory");
@@ -460,7 +456,6 @@ void onWindowResize(int clientAreaWidth, int clientAreaHeight)
   if(swapChain) {
     d2Context->SetTarget(nullptr);  // Clears the binding to swapChain's back buffer.
     depthStencilView.Release();
-    backBuffer.Release();
     renderTargetView.Release();
     renderTarget.Release();
     if(FAILED(swapChain->ResizeBuffers(0, 0, 0, swapChainDesc.Format, swapChainDesc.Flags))) {
@@ -471,9 +466,6 @@ void onWindowResize(int clientAreaWidth, int clientAreaHeight)
     }
     if(FAILED(swapChain->GetDesc1(&swapChainDesc))) {
       throw Exception("Failed to get swapChain desc after window resize");
-    }
-    if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
-      throw Exception("Failed to get swapchain's back buffer after window resize.");
     }
 
     renderTarget = createRenderTarget();
@@ -507,6 +499,15 @@ static void switchWireframeState()
   device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
   context->RSSetState(rasterizerState);
 #endif
+}
+
+static void resolveRenderTargetIntoSwapChain()
+{
+  CComPtr<ID3D11Texture2D> backBuffer = nullptr;
+  if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
+    logError("Failed to get swapchain's back buffer.");
+  }
+  context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
 }
 
 void render(const GameState& gameState)
@@ -569,7 +570,7 @@ void render(const GameState& gameState)
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
   context->Draw(gridVertexCount, 0);
 
-  context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
+  resolveRenderTargetIntoSwapChain();
 
   #ifdef DAR_DEBUG
     // DEBUG TEXT

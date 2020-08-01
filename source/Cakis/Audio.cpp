@@ -15,7 +15,7 @@ FMOD::System* coreSystem = nullptr;
 constexpr int sampleRate = 48000;
 FMOD::Studio::EventInstance* musicInstance = nullptr;
 FMOD::Studio::Bus* masterBus = nullptr;
-float masterVolume = 0.33f;
+float masterVolume = 0.05f;
 
 #define initializeErrorCheckFatal(call) \
 result = call; \
