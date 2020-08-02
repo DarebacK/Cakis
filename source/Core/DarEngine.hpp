@@ -4,7 +4,7 @@
 using byte = unsigned char;
 
 #ifndef DAR_MODULE_NAME
-  #define DAR_MODULE_NAME "Unknown module"
+  #define DAR_MODULE_NAME ""
 #endif
 
 #ifdef _WIN32
@@ -30,6 +30,7 @@ using byte = unsigned char;
     OutputDebugStringA(stringBuffer); \
   }
 #endif
+#define logVariable(variable, format) logInfo(#variable " = " format, variable)
 
 #define arrayCount(arr) (sizeof(arr) / sizeof(arr[0]))
 

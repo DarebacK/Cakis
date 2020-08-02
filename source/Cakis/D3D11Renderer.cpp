@@ -515,7 +515,7 @@ void render(const GameState& gameState)
   d2Context->BeginDraw();
 
   #ifdef DAR_DEBUG
-    if(gameState.input.F1.pressedDown) {
+    if(gameState.input.keyboard.F1.pressedDown) {
       switchWireframeState();
     }
 
@@ -537,10 +537,10 @@ void render(const GameState& gameState)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f viewMatrix = Mat4f::lookAt({ 0.f, 8.f, -8.f }, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f });
+  Mat4f viewMatrix = gameState.camera.calculateView({0.f, 0.f, 0.f});
   Mat4f viewProjectionMatrix = viewMatrix * projectionMatrix;
 
-  Mat4f transform = Mat4f::translation(0.f, 0.f, 0.f) * viewProjectionMatrix;
+  Mat4f transform = Mat4f::translation(0.5f, 0.5f, 0.5f) * viewProjectionMatrix;
   D3D11_MAPPED_SUBRESOURCE mappedResource;
   context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
   memcpy(mappedResource.pData, &transform, sizeof(transform));

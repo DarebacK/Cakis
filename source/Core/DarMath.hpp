@@ -1,7 +1,7 @@
 #pragma once
 
 /**
- * @brief Left handed coordinate system, row major matrices, row vectors, pre-multiplication.
+ * @brief Left handed coordinate system, row major matrices, row vectors (pre-multiplication).
  */
 
 #include <algorithm>
@@ -10,6 +10,11 @@
 #include "DarEngine.hpp"
 
 constexpr float Pi = 3.14159265358979323846f;
+
+struct Vec2i
+{
+  int x, y;
+};
 
 struct Vec2f
 {
@@ -39,6 +44,16 @@ constexpr inline bool operator==(const Vec2f& left, const Vec2f& right) noexcept
 constexpr inline bool operator!=(const Vec2f& left, const Vec2f& right) noexcept { return !(left == right); }
 struct Vec3f
 {
+  static constexpr Vec3f up() noexcept { return { 0.f, 1.f, 0.f }; }
+
+  Vec3f& operator+=(const Vec3f& rhs) noexcept
+  {
+    x += rhs.x;
+    y += rhs.y;
+    z += rhs.z;
+    return *this;
+  }
+
   float x, y, z;
 };
 constexpr inline Vec3f operator-(const Vec3f& v) noexcept { return { -v.x, -v.y, -v.z }; }
@@ -166,6 +181,15 @@ inline bool isNormalized(const Vec3f& v) noexcept { return abs(length(v) - 1.f) 
 inline bool isNormalized(const Vec4f& v) noexcept { return abs(length(v) - 1.f) <= FLT_EPSILON; }
 
 using std::clamp;
+inline float clampAngle(float angle)
+{
+  while(angle >= 2 * Pi) {
+    angle -= 2 * Pi;
+  } /*else*/ while(angle < 0.f) {
+    angle += 2 * Pi;
+  }
+  return angle;
+}
 
 constexpr inline float degreesToRadians(float degrees) noexcept
 {
@@ -393,3 +417,75 @@ inline Quatf slerp(const Quatf& q1, const Quatf& q2, float t) noexcept
   float wq2 = sin(t)*theta / sin(theta);
   return wq1*q1 + wq2*q2;
 }
+
+/**
+ * @brief Object that tracks it's target and moves on a sphere around it.
+ */
+class TrackSphere
+{
+public:
+  /**
+   * @param theta Radians to rotate in theta direction, which moves camera side to side.
+   * @param phi Radians to rotate in phi direction, which tilts the camera forward and backward.
+   * @param radius Distance from target.
+   * @param radiusMin Minimum radius.
+   * @param radiusMax Maximum radius.
+  */
+  TrackSphere(float theta, float phi, float radius, float radiusMin, float radiusMax) noexcept
+    : theta(theta)
+    , phi(clamp(phi, phiMin, phiMax))
+    , radius(clamp(radius, radiusMin, radiusMax))
+    , radiusMin(radiusMin)
+    , radiusMax(radiusMax)
+  {}
+
+  Vec3f toCartesian(const Vec3f& target) const noexcept
+  {
+    return target + toCartesianLocal();
+  }
+  Vec3f toCartesianLocal() const noexcept
+  {
+    float x = radius * sinf(phi) * sinf(theta);
+    float y = radius * cosf(phi);
+    float z = radius * sinf(-phi) * cosf(theta);
+
+    return { x, y, z };
+  }
+  Mat4f calculateView(const Vec3f& target) const noexcept
+  {
+    return Mat4f::lookAt(toCartesian(target), target, { 0.f, 1.f, 0.f });
+  }
+
+  /**
+   * @param dTheta Radians to rotate in theta direction, which moves camera side to side.
+   */
+  void rotateTheta(float dTheta) noexcept
+  {
+    theta = clampAngle(theta + dTheta);
+  }
+  /**
+   * @param dPhi Radians to rotate in phi direction, which tilts the camera forward and backward.
+   */
+  void rotatePhi(float dPhi) noexcept
+  {
+    phi = clamp(phi + dPhi, phiMin, phiMax);
+  }
+  /**
+   * @param distance Distance to zoom in if positive, zoom out if negative.
+   */
+  void zoom(float distance) noexcept
+  {
+    radius -= distance;
+    radius = clamp(radius, radiusMin, radiusMax);
+  }
+
+private:
+  static constexpr float phiMax = Pi - FLT_EPSILON; // Can't be exactly Pi, otherwise shit happens
+  static constexpr float phiMin = FLT_EPSILON; // Can't be exactly zero, otherwise shit happens
+
+  float phi;
+  float theta;
+  float radius;
+  float radiusMin;
+  float radiusMax;
+};

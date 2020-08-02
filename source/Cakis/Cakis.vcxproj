@@ -97,6 +97,7 @@ xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /
   <ItemGroup>
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="D3D11Renderer.cpp" />
+    <ClCompile Include="Game.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
     <ClCompile Include="Win32.cpp">
       <SubType>
@@ -111,6 +112,7 @@ xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /
   <ItemGroup>
     <ClInclude Include="Audio.hpp" />
     <ClInclude Include="D3D11Renderer.hpp" />
+    <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameState.hpp" />
     <ClInclude Include="VulkanRenderer.h" />
   </ItemGroup>

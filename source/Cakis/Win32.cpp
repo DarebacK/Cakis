@@ -8,88 +8,120 @@
 #include <windowsx.h>
 #include <Psapi.h>
 
-#include "D3D11Renderer.hpp"
-#include "DarEngine.hpp"
-#include "GameState.hpp"
 #include "Audio.hpp"
+#include "DarEngine.hpp"
+#include "D3D11Renderer.hpp"
+#include "Game.hpp"
+#include "GameState.hpp"
 
 namespace 
 {
-int clientAreaWidth = GetSystemMetrics(SM_CXSCREEN);
-int clientAreaHeight = GetSystemMetrics(SM_CYSCREEN);
-HWND window = nullptr;
-HANDLE process = nullptr;
-WINDOWPLACEMENT windowPosition = {sizeof(windowPosition)};
-const char* gameName = "Demo";
-Input input = {};
-int processorCount = 0;
+  class GameStates
+  {
+  public:
+    GameState* getLastState(unsigned int frameIndex) { return states + (--frameIndex % size); };  // overflow when frameIndex == 0 shouldn't be a problem
+    GameState* getNextState(unsigned int frameIndex) { return states + (frameIndex % size); };
 
-LRESULT CALLBACK WindowProc(
-  HWND   windowHandle,
-  UINT   message,
-  WPARAM wParam,
-  LPARAM lParam
-)
-{
-  LRESULT result = 0;
-  switch(message) {
-    case WM_SIZE: {
-      int newClientAreaWidth = LOWORD(lParam);
-      int newClientAreaHeight = HIWORD(lParam);
-      if(newClientAreaWidth != clientAreaWidth || newClientAreaHeight != clientAreaHeight) {
-        clientAreaWidth = newClientAreaWidth;
-        clientAreaHeight = newClientAreaHeight;
-        Renderer::onWindowResize(clientAreaWidth, clientAreaHeight);
+  private:
+    static constexpr int size = 2;
+    GameState states[size] = {};
+  };
+
+  int clientAreaWidth = GetSystemMetrics(SM_CXSCREEN);
+  int clientAreaHeight = GetSystemMetrics(SM_CYSCREEN);
+  HWND window = nullptr;
+  HANDLE process = nullptr;
+  WINDOWPLACEMENT windowPosition = {sizeof(windowPosition)};
+  const char* gameName = "Demo";
+  int processorCount = 0;
+  GameStates gameStates;
+  GameState* lastGameState = nullptr;
+  GameState* nextGameState = nullptr;
+  int frameCount = 0;
+
+  LRESULT CALLBACK WindowProc(
+    HWND   windowHandle,
+    UINT   message,
+    WPARAM wParam,
+    LPARAM lParam
+  )
+  {
+    LRESULT result = 0;
+    switch(message) {
+      case WM_SIZE: {
+        int newClientAreaWidth = LOWORD(lParam);
+        int newClientAreaHeight = HIWORD(lParam);
+        if(newClientAreaWidth != clientAreaWidth || newClientAreaHeight != clientAreaHeight) {
+          clientAreaWidth = newClientAreaWidth;
+          clientAreaHeight = newClientAreaHeight;
+          Renderer::onWindowResize(clientAreaWidth, clientAreaHeight);
+        }
       }
-    }
-    break;
-    case WM_DESTROY:
-      PostQuitMessage(0);
-    break;
-    case WM_LBUTTONDOWN:
-      input.mouse.left.pressedDown = true;
-    break;
-    case WM_LBUTTONUP:
-      input.mouse.left.pressedUp = true;
-    break;
-    case WM_MBUTTONDOWN:
-      input.mouse.middle.pressedDown = true;
-    break;
-    case WM_MBUTTONUP:
-      input.mouse.middle.pressedUp = true;
-    break;
-    case WM_RBUTTONDOWN:
-      input.mouse.right.pressedDown = true;
-    break;
-    case WM_RBUTTONUP:
-      input.mouse.right.pressedUp = true;
-    break;
-    case WM_MOUSEMOVE:
-      input.mouse.x = GET_X_LPARAM(lParam);
-      input.mouse.y = GET_Y_LPARAM(lParam);
-    break;
-    case WM_KEYDOWN:
-      switch(wParam) {
-        case VK_ESCAPE :
-          PostQuitMessage(0);
+      break;
+      case WM_DESTROY:
+        PostQuitMessage(0);
+      break;
+      case WM_LBUTTONDOWN:
+        nextGameState->input.mouse.left.pressedDown = true;
+        nextGameState->input.mouse.left.isDown = true;
+      break;
+      case WM_LBUTTONUP:
+        nextGameState->input.mouse.left.pressedUp = true;
+        nextGameState->input.mouse.left.isDown = false;
+      break;
+      case WM_MBUTTONDOWN:
+        nextGameState->input.mouse.middle.pressedDown = true;
+        nextGameState->input.mouse.middle.isDown = true;
+      break;
+      case WM_MBUTTONUP:
+        nextGameState->input.mouse.middle.pressedUp = true;
+        nextGameState->input.mouse.middle.isDown = false;
+      break;
+      case WM_RBUTTONDOWN:
+        nextGameState->input.mouse.right.pressedDown = true;
+        nextGameState->input.mouse.right.isDown = true;
+      break;
+      case WM_RBUTTONUP:
+        nextGameState->input.mouse.right.pressedUp = true;
+        nextGameState->input.mouse.right.isDown = false;
+      break;
+      case WM_MOUSEWHEEL:
+        nextGameState->input.mouse.dWheel += (float)GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
         break;
+      case WM_KEYDOWN:
+        switch(wParam) {
+          case VK_ESCAPE :
+            PostQuitMessage(0);
+          break;
+          case VK_F1:
+            nextGameState->input.keyboard.F1.pressedDown = true;
+          break;
+          case VK_MENU:
+            nextGameState->input.keyboard.rightAlt.pressedDown = true;
+          break;
+          case VK_RETURN:
+            nextGameState->input.keyboard.enter.pressedDown = true;
+          break;
+        }
+      break;
+      case WM_KEYUP:
+        switch(wParam) {
         case VK_F1:
-          input.F1.pressedDown = true;
-        break;
+          nextGameState->input.keyboard.F1.pressedUp = true;
+          break;
         case VK_MENU:
-          input.rightAlt.pressedDown = true;
-        break;
+          nextGameState->input.keyboard.rightAlt.pressedUp = true;
+          break;
         case VK_RETURN:
-          input.enter.pressedDown = true;
-        break;
-      }
-    break;
-    default:
-      result = DefWindowProc(windowHandle, message, wParam, lParam);
-    break;
+          nextGameState->input.keyboard.enter.pressedUp = true;
+          break;
+        }
+      default:
+        result = DefWindowProc(windowHandle, message, wParam, lParam);
+      break;
+    }
+    return result;
   }
-  return result;
-}
 }
 
 static void debugShowResourcesUsage()
@@ -138,6 +170,18 @@ static void debugShowResourcesUsage()
 static void showErrorMessageBox(const char* text, const char* caption) 
 {
   MessageBoxA(window, text, caption, MB_OK | MB_ICONERROR);
+}
+
+static Vec2i getCursorPosition()
+{
+  Vec2i mousePosition;
+  if(!GetCursorPos((LPPOINT)&mousePosition)) {
+    return {};
+  }
+  if(!ScreenToClient(window, (LPPOINT)&mousePosition)) {
+    return {};
+  }
+  return mousePosition;
 }
 
 int WINAPI WinMain(
@@ -193,12 +237,20 @@ try
 
   Audio audio;
 
+  Game game;
+
   ShowWindow(window, SW_SHOWNORMAL);
+
+  Vec2i cursorPosition = getCursorPosition();
+  lastGameState = gameStates.getLastState(frameCount);
+  lastGameState->input.cursorPosition = cursorPosition;
+  nextGameState = gameStates.getNextState(frameCount);
 
   LARGE_INTEGER counterFrequency;
   QueryPerformanceFrequency(&counterFrequency);
   LARGE_INTEGER lastCounterValue;
   QueryPerformanceCounter(&lastCounterValue);
+
   MSG message{};
   while (message.message != WM_QUIT) {
     if(PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
@@ -207,25 +259,32 @@ try
     } else {
       // process frame
 
-      GameState gameState{};
-      gameState.input = input;
-      gameState.clientAreaWidth = clientAreaWidth;
-      gameState.clientAreaHeight = clientAreaHeight;
+      nextGameState->input.cursorPosition = getCursorPosition();
+      nextGameState->clientAreaWidth = clientAreaWidth;
+      nextGameState->clientAreaHeight = clientAreaHeight;
 
       LARGE_INTEGER currentCounterValue;
       QueryPerformanceCounter(&currentCounterValue);
-      gameState.dTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
+      nextGameState->dTime = (float)(currentCounterValue.QuadPart - lastCounterValue.QuadPart) / counterFrequency.QuadPart;
       lastCounterValue = currentCounterValue;
 
       debugResetText();
-      debugText(L"%.3f ms / %d fps", gameState.dTime, (int)(1/gameState.dTime));
+      debugText(L"%.3f s / %d fps", nextGameState->dTime, (int)(1.f / nextGameState->dTime));
       debugShowResourcesUsage();
 
-      Renderer::render(gameState);
+      game.update(*lastGameState, nextGameState);
 
-      audio.update(gameState);
+      Renderer::render(*nextGameState);
 
-      input = {};
+      audio.update(*nextGameState);
+
+      ++frameCount;
+
+      lastGameState = gameStates.getLastState(frameCount);
+      nextGameState = gameStates.getNextState(frameCount);
+      nextGameState->input = lastGameState->input;
+      nextGameState->input.keyboard = {};
+      nextGameState->input.mouse.dWheel = 0.f;
     }
   }
   return 0;
