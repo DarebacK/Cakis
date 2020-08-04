@@ -2,18 +2,17 @@
 
 #include <DarMath.hpp>
 
-struct MouseButton
-{
-  bool pressedDown;
-  bool isDown;
-  bool pressedUp;
-};
-
 struct Mouse
 {
-  MouseButton left;
-  MouseButton middle;
-  MouseButton right;
+  struct Button
+  {
+    bool pressedDown;
+    bool isDown;
+    bool pressedUp;
+  };
+  Button left;
+  Button middle;
+  Button right;
   float dWheel;
 };
 
@@ -47,6 +46,8 @@ struct GameState
 
   int clientAreaWidth;
   int clientAreaHeight;
+
+  static constexpr Vec3i gridSize = {8, 6, 4};
 };
 
 

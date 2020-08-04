@@ -1,13 +1,15 @@
 #define DAR_MODULE_NAME "Renderer"
 
-#include "D3D11Renderer.hpp"
-#include "DarEngine.hpp"
-#include "DarMath.hpp"
+#include <vector>
 
 #include <d3d11_4.h>
 #include <dwrite_2.h>
 #include <d2d1_2.h>
 #include <atlbase.h>
+
+#include "D3D11Renderer.hpp"
+#include "DarEngine.hpp"
+#include "DarMath.hpp"
 
 namespace Renderer
 {
@@ -53,13 +55,20 @@ Mat4f projectionMatrix = Mat4f::identity();
 #endif
 
 // Grid
-constexpr int gridSize = 8;  // e.g. 10 means 11x11 lines, odd only
-constexpr int gridVertexCount = 2 * 2 * (gridSize + 1);
-CComPtr<ID3D11Buffer> gridVertexBuffer = nullptr;
 CComPtr<ID3D11VertexShader> gridVertexShader = nullptr;
 CComPtr<ID3D11PixelShader> gridPixelShader = nullptr;
 CComPtr<ID3D11InputLayout> gridInputLayout = nullptr;
 CComPtr<ID3D11Buffer> gridConstantBuffer = nullptr;
+constexpr int bottomGridVertexCount = 2 * (GameState::gridSize.x + 1 + GameState::gridSize.z + 1);
+constexpr int leftRightGridVertexCount = 2 * (GameState::gridSize.y + 1 + GameState::gridSize.z + 1);
+constexpr int frontBackGridVertexCount = 2 * (GameState::gridSize.x + 1 + GameState::gridSize.y + 1);
+CComPtr<ID3D11Buffer> bottomGridVertexBuffer = nullptr;
+Mat4f bottomGridTransformation = Mat4f::rotationX(degreesToRadians(90)); 
+CComPtr<ID3D11Buffer> leftRightVertexBuffer = nullptr;
+Mat4f leftGridTransformation = Mat4f::rotationY(degreesToRadians(-90));
+Mat4f rightGridTransformation = Mat4f::rotationY(degreesToRadians(-90)) * Mat4f::translation(GameState::gridSize.x, 0.f, 0.f);
+CComPtr<ID3D11Buffer> frontBackGridVertexBuffer = nullptr;
+Mat4f backGridTransformation = Mat4f::translation(0.f, 0.f, GameState::gridSize.z);
 
 // Cube
 CComPtr<ID3D11Buffer> cubeVertexBuffer = nullptr;
@@ -235,6 +244,77 @@ static bool bindD2dTargetToD3dTarget()
   return true;
 }
 
+static void generateGridVertices(int xSize, int ySize, Vec2f* output)
+{
+  int gridVertexIndex = 0;
+  // Vertical lines
+  for(int i = 0; i <= xSize; ++i) {
+    output[gridVertexIndex].x = i;
+    output[gridVertexIndex].y = 0;
+    ++gridVertexIndex;
+    output[gridVertexIndex].x = i;
+    output[gridVertexIndex].y = ySize;
+    ++gridVertexIndex;
+  }
+  // Horizontal lines
+  for(int i = 0; i <= ySize; ++i) {
+    output[gridVertexIndex].x = 0;
+    output[gridVertexIndex].y = i;
+    ++gridVertexIndex;
+    output[gridVertexIndex].x = xSize;
+    output[gridVertexIndex].y = i;
+    ++gridVertexIndex;
+  }
+}
+
+static void generateGrid(std::vector<Vec2f>& vertices, int xSize, int ySize, ID3D11Buffer** vertexBuffer)
+{
+  generateGridVertices(xSize, ySize, vertices.data());
+  D3D11_BUFFER_DESC vertexBufferDesc
+  {
+    vertices.size() * sizeof(Vec2f),
+    D3D11_USAGE_IMMUTABLE,
+    D3D11_BIND_VERTEX_BUFFER
+  };
+  D3D11_SUBRESOURCE_DATA vertexBufferData{ vertices.data(), 0, 0 };
+  if(FAILED(device->CreateBuffer(&vertexBufferDesc, &vertexBufferData, vertexBuffer))) {
+    throw InitializeException("Failed to create grid vertex buffer.");
+  }
+}
+
+static void initializeGrid()
+{
+  std::vector<Vec2f> vertices(bottomGridVertexCount);
+  generateGrid(vertices, GameState::gridSize.x, GameState::gridSize.z, &bottomGridVertexBuffer);
+  if(GameState::gridSize.z == GameState::gridSize.x && GameState::gridSize.y == GameState::gridSize.z) {
+    leftRightVertexBuffer = bottomGridVertexBuffer;
+  } else {
+    vertices.resize(leftRightGridVertexCount);
+    generateGrid(vertices, GameState::gridSize.z, GameState::gridSize.y, &leftRightVertexBuffer);
+  }
+  if(GameState::gridSize.y == GameState::gridSize.z) {
+    frontBackGridVertexBuffer = bottomGridVertexBuffer;
+  }
+  else {
+    vertices.resize(frontBackGridVertexCount);
+    generateGrid(vertices, GameState::gridSize.x, GameState::gridSize.y, &frontBackGridVertexBuffer);
+  }
+
+  D3D11_INPUT_ELEMENT_DESC gridInputElementDescs[] = {
+    {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
+  };
+  gridVertexShader = loadVertexShader("grid", gridInputElementDescs, arrayCount(gridInputElementDescs), &gridInputLayout);
+  gridPixelShader = loadPixelShader("grid");
+  D3D11_BUFFER_DESC gridCBDesc
+  {
+    sizeof(Mat4f),
+    D3D11_USAGE_DYNAMIC,
+    D3D11_BIND_CONSTANT_BUFFER,
+    D3D11_CPU_ACCESS_WRITE
+  };
+  device->CreateBuffer(&gridCBDesc, nullptr, &gridConstantBuffer);
+}
+
 void initialize(HWND window)
 {
   // DEVICE
@@ -393,49 +473,7 @@ void initialize(HWND window)
   };
   device->CreateBuffer(&cubeCBDesc, nullptr, &cubeConstantBuffer);
 
-  // Grid
-  Vec2f gridVertices[gridVertexCount];
-  int gridVertexIndex = 0;
-  for(int i = -gridSize / 2; i <= gridSize / 2; ++i) {
-    // Vertical line
-    gridVertices[gridVertexIndex].x = i;
-    gridVertices[gridVertexIndex].y = -gridSize / 2;
-    ++gridVertexIndex;
-    gridVertices[gridVertexIndex].x = i;
-    gridVertices[gridVertexIndex].y = gridSize / 2;
-    ++gridVertexIndex;
-
-    // Horizontal line
-    gridVertices[gridVertexIndex].x = -gridSize / 2;
-    gridVertices[gridVertexIndex].y = i;
-    ++gridVertexIndex;
-    gridVertices[gridVertexIndex].x = gridSize / 2;
-    gridVertices[gridVertexIndex].y = i;
-    ++gridVertexIndex;
-  }
-  D3D11_BUFFER_DESC gridVBDesc
-  {
-    sizeof(gridVertices),
-    D3D11_USAGE_IMMUTABLE,
-    D3D11_BIND_VERTEX_BUFFER
-  };
-  D3D11_SUBRESOURCE_DATA gridVBData{ gridVertices, 0, 0 };
-  if(FAILED(device->CreateBuffer(&gridVBDesc, &gridVBData, &gridVertexBuffer))) {
-    throw InitializeException("Failed to create grid vertex buffer.");
-  }
-  D3D11_INPUT_ELEMENT_DESC gridInputElementDescs[] = {
-    {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
-  };
-  gridVertexShader = loadVertexShader("grid", gridInputElementDescs, arrayCount(gridInputElementDescs), &gridInputLayout);
-  gridPixelShader = loadPixelShader("grid");
-  D3D11_BUFFER_DESC gridCBDesc
-  {
-    sizeof(Mat4f),
-    D3D11_USAGE_DYNAMIC,
-    D3D11_BIND_CONSTANT_BUFFER,
-    D3D11_CPU_ACCESS_WRITE
-  };
-  device->CreateBuffer(&gridCBDesc, nullptr, &gridConstantBuffer);
+  initializeGrid();
 
   device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
   context->RSSetState(rasterizerState);
@@ -537,10 +575,14 @@ void render(const GameState& gameState)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f viewMatrix = gameState.camera.calculateView({0.f, 0.f, 0.f});
+  Mat4f viewMatrix = gameState.camera.calculateView({GameState::gridSize.x / 2.f, 0.f, GameState::gridSize.z / 2.f });
   Mat4f viewProjectionMatrix = viewMatrix * projectionMatrix;
 
-  Mat4f transform = Mat4f::translation(0.5f, 0.5f, 0.5f) * viewProjectionMatrix;
+  Mat4f transform = Mat4f::translation(
+    GameState::gridSize.x % 2 == 0 ? 0.5f : 0.f, 
+    0.5f, 
+    GameState::gridSize.x % 2 == 0 ? 0.5f : 0.f
+  ) * viewProjectionMatrix;
   D3D11_MAPPED_SUBRESOURCE mappedResource;
   context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
   memcpy(mappedResource.pData, &transform, sizeof(transform));
@@ -556,7 +598,8 @@ void render(const GameState& gameState)
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   context->DrawIndexed(36, 0, 0);
 
-  transform = Mat4f::rotationX(degreesToRadians(90)) * viewProjectionMatrix;
+  // Bottom grid.
+  transform = bottomGridTransformation * viewProjectionMatrix;
   context->Map(gridConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
   memcpy(mappedResource.pData, &transform, sizeof(transform));
   context->Unmap(gridConstantBuffer, 0);
@@ -566,9 +609,35 @@ void render(const GameState& gameState)
   context->IASetInputLayout(gridInputLayout);
   constexpr UINT gridStride = sizeof(Vec2f);
   constexpr UINT gridOffset = 0;
-  context->IASetVertexBuffers(0, 1, &gridVertexBuffer.p, &gridStride, &gridOffset);
+  context->IASetVertexBuffers(0, 1, &bottomGridVertexBuffer.p, &gridStride, &gridOffset);
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-  context->Draw(gridVertexCount, 0);
+  context->Draw(bottomGridVertexCount, 0);
+
+  // Left and right grid.
+  transform = leftGridTransformation * viewProjectionMatrix;
+  context->Map(gridConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, &transform, sizeof(transform));
+  context->Unmap(gridConstantBuffer, 0);
+  context->IASetVertexBuffers(0, 1, &leftRightVertexBuffer.p, &gridStride, &gridOffset);
+  context->Draw(leftRightGridVertexCount, 0);
+  transform = rightGridTransformation * viewProjectionMatrix;
+  context->Map(gridConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, &transform, sizeof(transform));
+  context->Unmap(gridConstantBuffer, 0);
+  context->Draw(leftRightGridVertexCount, 0);
+
+  // Front and back grid.
+  transform = viewProjectionMatrix;
+  context->Map(gridConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, &transform, sizeof(transform));
+  context->Unmap(gridConstantBuffer, 0);
+  context->IASetVertexBuffers(0, 1, &frontBackGridVertexBuffer.p, &gridStride, &gridOffset);
+  context->Draw(frontBackGridVertexCount, 0);
+  transform = backGridTransformation * viewProjectionMatrix;
+  context->Map(gridConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, &transform, sizeof(transform));
+  context->Unmap(gridConstantBuffer, 0);
+  context->Draw(frontBackGridVertexCount, 0);
 
   resolveRenderTargetIntoSwapChain();
 

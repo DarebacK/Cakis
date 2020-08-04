@@ -15,7 +15,10 @@ struct Vec2i
 {
   int x, y;
 };
-
+struct Vec3i
+{
+  int x, y, z;
+};
 struct Vec2f
 {
   float x, y;
@@ -226,11 +229,31 @@ struct Mat4f
   {
     return 
     {{
-      {1.f,                0.f,               0.f, 0.f},
-      {0.f,  std::cos(radians), std::sin(radians), 0.f},
-      {0.f, -std::sin(radians), std::cos(radians), 0.f},
-      {0.f,                0.f,               0.f, 1.f}
+      {1.f,           0.f,          0.f, 0.f},
+      {0.f,  cos(radians), sin(radians), 0.f},
+      {0.f, -sin(radians), cos(radians), 0.f},
+      {0.f,           0.f,          0.f, 1.f}
     }};
+  }
+  static Mat4f rotationY(float radians) noexcept
+  {
+    return
+    {{
+      {cos(radians), 0.f, -sin(radians), 0.f},
+      {         0.f, 1.f,           0.f, 0.f},
+      {sin(radians), 0.f,  cos(radians), 0.f},
+      {         0.f, 0.f,           0.f, 1.f}
+    }};
+  }
+  static Mat4f rotationZ(float radians) noexcept
+  {
+    return
+    { {
+      { cos(radians), sin(radians), 0.f, 0.f},
+      {-sin(radians), cos(radians), 0.f, 0.f},
+      {          0.f,          0.f, 1.f, 0.f},
+      {          0.f,          0.f, 0.f, 1.f}
+    } };
   }
   static Mat4f perspectiveProjectionD3d(
     float verticalFieldOfViewRadians, 
