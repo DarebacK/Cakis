@@ -47,7 +47,7 @@ struct GameState
   int clientAreaWidth;
   int clientAreaHeight;
 
-  static constexpr Vec3i gridSize = {8, 6, 4};
+  static constexpr Vec3i gridSize = {6, 5, 4};
 };
 
 
