@@ -569,13 +569,14 @@ static void switchWireframeState()
 #endif
 }
 
-static void resolveRenderTargetIntoSwapChain()
+static void resolveRenderTargetIntoBackBuffer()
 {
   CComPtr<ID3D11Texture2D> backBuffer = nullptr;
-  if(FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
-    logError("Failed to get swapchain's back buffer.");
+  if(SUCCEEDED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
+    context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
+  } else {
+    logError("resolveRenderTargetIntoBackBuffer failed. Failed to get swapchain's back buffer.");
   }
-  context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
 }
 
 void render(const GameState& gameState)
@@ -630,7 +631,7 @@ void render(const GameState& gameState)
 
   renderGrids(viewProjection);
 
-  resolveRenderTargetIntoSwapChain();
+  resolveRenderTargetIntoBackBuffer();
 
   #ifdef DAR_DEBUG
     // DEBUG TEXT
