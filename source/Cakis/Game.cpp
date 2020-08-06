@@ -8,7 +8,7 @@ static void updateCamera(const GameState& lastState, GameState* nextState)
     int dX = nextState->input.cursorPosition.x - lastState.input.cursorPosition.x;
     if(dX != 0) {
       float normalizedDx = float(dX) / nextState->clientAreaWidth;
-      float dTheta = -normalizedDx * 2 * Pi;
+      float dTheta = normalizedDx * 2 * Pi;
       nextState->camera.rotateTheta(dTheta);
     }
 

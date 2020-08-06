@@ -455,7 +455,7 @@ public:
    * @param radiusMax Maximum radius.
   */
   TrackSphere(float theta, float phi, float radius, float radiusMin, float radiusMax) noexcept
-    : theta(theta)
+    : theta(theta - Pi)
     , phi(clamp(phi, phiMin, phiMax))
     , radius(clamp(radius, radiusMin, radiusMax))
     , radiusMin(radiusMin)
@@ -470,7 +470,7 @@ public:
   {
     float x = radius * sinf(phi) * sinf(theta);
     float y = radius * cosf(phi);
-    float z = radius * sinf(-phi) * cosf(theta);
+    float z = radius * sinf(phi) * cosf(theta);
 
     return { x, y, z };
   }
