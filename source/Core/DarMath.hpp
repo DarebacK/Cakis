@@ -503,8 +503,8 @@ public:
   }
 
 private:
-  static constexpr float phiMax = Pi - FLT_EPSILON; // Can't be exactly Pi, otherwise shit happens
-  static constexpr float phiMin = FLT_EPSILON; // Can't be exactly zero, otherwise shit happens
+  static constexpr float phiMin = degreesToRadians(0.001f); // Can't be exactly zero, otherwise shit happens
+  static constexpr float phiMax = Pi - phiMin; // Can't be exactly Pi, otherwise shit happens
 
   float phi;
   float theta;
