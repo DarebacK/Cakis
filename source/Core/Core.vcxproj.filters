@@ -58,5 +58,8 @@
     <ClInclude Include="detail\Win32Library.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Color.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

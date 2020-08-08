@@ -41,6 +41,10 @@ Audio::Audio()
   // CoUninitialize() when you are completely finished with all calls to FMOD.
   CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
+  #ifdef DAR_DEBUG
+    FMOD::Debug_Initialize(FMOD_DEBUG_LEVEL_WARNING);
+  #endif
+
   initializeErrorCheckFatal(FMOD::Studio::System::create(&studioSystem));
 
   initializeErrorCheckFatal(studioSystem->getCoreSystem(&coreSystem));

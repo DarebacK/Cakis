@@ -29,6 +29,7 @@
       <SubType>
       </SubType>
     </ClInclude>
+    <ClInclude Include="Color.hpp" />
     <ClInclude Include="DarEngine.hpp" />
     <ClInclude Include="detail\LinuxLibrary.hpp" />
     <ClInclude Include="detail\Win32Library.hpp" />

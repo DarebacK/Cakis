@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DarMath.hpp>
+#include <Color.hpp>
 
 struct Mouse
 {
@@ -36,6 +37,11 @@ struct Input
   Keyboard keyboard;
 };
 
+struct CubeClass
+{
+  ColorRgbaf color;
+};
+
 class PlayingSpace
 {
 public:
@@ -48,7 +54,7 @@ public:
   {
     std::fill_n(values, count, ValueType(-1));
   }
-  ~PlayingSpace() { delete values; }
+  ~PlayingSpace() { delete[] values; }
   PlayingSpace(const PlayingSpace& other)
     : PlayingSpace(other.size)
   {
@@ -65,7 +71,7 @@ public:
   {
     size = rhs.size;
     if(count != rhs.count) {
-      delete values;
+      delete[] values;
       values = new ValueType[rhs.count];
     }
     count = rhs.count;
@@ -114,6 +120,8 @@ struct GameState
 
   static constexpr Vec3i gridSize = {6, 5, 4};
   PlayingSpace playingSpace{ gridSize };
+  CubeClass* cubeClasses;
+  int cubeClassCount;
 };
 
 
