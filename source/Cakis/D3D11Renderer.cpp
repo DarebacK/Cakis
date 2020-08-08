@@ -73,29 +73,29 @@ Mat4f projectionMatrix = Mat4f::identity();
   Grid grids[5] = {
     {Mat4f::rotationX(degreesToRadians(90)), nullptr, calculateGridVertexCount(GameState::gridSize.x, GameState::gridSize.z)}, // Bottom.
     {Mat4f::rotationY(degreesToRadians(-90)), nullptr, calculateGridVertexCount(GameState::gridSize.z, GameState::gridSize.y)}, // Left.
-    {Mat4f::rotationY(degreesToRadians(-90)) * Mat4f::translation(GameState::gridSize.x, 0.f, 0.f), nullptr, calculateGridVertexCount(GameState::gridSize.z, GameState::gridSize.y)}, // Right.
+    {Mat4f::rotationY(degreesToRadians(-90)) * Mat4f::translation((float)GameState::gridSize.x, 0.f, 0.f), nullptr, calculateGridVertexCount(GameState::gridSize.z, GameState::gridSize.y)}, // Right.
     {Mat4f::identity(), nullptr, calculateGridVertexCount(GameState::gridSize.x, GameState::gridSize.y)}, // Front.
-    {Mat4f::translation(0.f, 0.f, GameState::gridSize.z), nullptr, calculateGridVertexCount(GameState::gridSize.x, GameState::gridSize.y)} // Back.
+    {Mat4f::translation(0.f, 0.f, (float)GameState::gridSize.z), nullptr, calculateGridVertexCount(GameState::gridSize.x, GameState::gridSize.y)} // Back.
   };
   static void generateGridVertices(int xSize, int ySize, Vec2f* output)
   {
     int gridVertexIndex = 0;
     // Vertical lines
     for(int i = 0; i <= xSize; ++i) {
-      output[gridVertexIndex].x = i;
-      output[gridVertexIndex].y = 0;
+      output[gridVertexIndex].x = (float)i;
+      output[gridVertexIndex].y = 0.f;
       ++gridVertexIndex;
-      output[gridVertexIndex].x = i;
-      output[gridVertexIndex].y = ySize;
+      output[gridVertexIndex].x = (float)i;
+      output[gridVertexIndex].y = (float)ySize;
       ++gridVertexIndex;
     }
     // Horizontal lines
     for(int i = 0; i <= ySize; ++i) {
-      output[gridVertexIndex].x = 0;
-      output[gridVertexIndex].y = i;
+      output[gridVertexIndex].x = 0.f;
+      output[gridVertexIndex].y = (float)i;
       ++gridVertexIndex;
-      output[gridVertexIndex].x = xSize;
-      output[gridVertexIndex].y = i;
+      output[gridVertexIndex].x = (float)xSize;
+      output[gridVertexIndex].y = (float)i;
       ++gridVertexIndex;
     }
   }
@@ -104,7 +104,7 @@ Mat4f projectionMatrix = Mat4f::identity();
     generateGridVertices(xSize, ySize, vertices.data());
     D3D11_BUFFER_DESC vertexBufferDesc
     {
-      vertices.size() * sizeof(Vec2f),
+      UINT(vertices.size() * sizeof(Vec2f)),
       D3D11_USAGE_IMMUTABLE,
       D3D11_BIND_VERTEX_BUFFER
     };
@@ -579,6 +579,40 @@ static void resolveRenderTargetIntoBackBuffer()
   }
 }
 
+static void renderCubes(const PlayingSpace& playingSpace, const Mat4f& viewProjection)
+{
+  constexpr Vec3f cubePositionOffset = { 0.5f, 0.5f, 0.5f };
+  Mat4f baseTransform = Mat4f::translation(cubePositionOffset) * viewProjection;
+
+  context->VSSetShader(cubeVertexShader, nullptr, 0);
+  context->PSSetShader(cubePixelShader, nullptr, 0);
+  context->IASetInputLayout(cubeInputLayout);
+  constexpr UINT cubeIndexBufferStride = 2 * sizeof(Vec3f);
+  constexpr UINT cubeIndexBufferOffset = 0;
+  context->IASetVertexBuffers(0, 1, &cubeVertexBuffer.p, &cubeIndexBufferStride, &cubeIndexBufferOffset);
+  context->IASetIndexBuffer(cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+  D3D11_MAPPED_SUBRESOURCE mappedResource;
+
+  Vec3i size = playingSpace.getSize();
+  for(int y = 0; y < size.y; ++y) {
+    for(int z = 0; z < size.z; ++z) {
+      for(int x = 0; x < size.x; ++x) {
+        if(playingSpace.at(x, y, z) >= 0) {
+          Mat4f transform = Mat4f::translation((float)x, (float)y, (float)z) * baseTransform;
+          context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+          memcpy(mappedResource.pData, &transform, sizeof(transform));
+          context->Unmap(cubeConstantBuffer, 0);
+          context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);
+
+          context->DrawIndexed(36, 0, 0);
+        }
+      }
+    }
+  }
+}
+
 void render(const GameState& gameState)
 {
   d2Context->BeginDraw();
@@ -609,25 +643,7 @@ void render(const GameState& gameState)
   Mat4f viewMatrix = gameState.camera.calculateView({GameState::gridSize.x / 2.f, GameState::gridSize.y / 2.f, GameState::gridSize.z / 2.f });
   Mat4f viewProjection = viewMatrix * projectionMatrix;
 
-  Mat4f transform = Mat4f::translation(
-    0.5f, 
-    0.5f, 
-    0.5f
-  ) * viewProjection;
-  D3D11_MAPPED_SUBRESOURCE mappedResource;
-  context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-  memcpy(mappedResource.pData, &transform, sizeof(transform));
-  context->Unmap(cubeConstantBuffer, 0);
-  context->VSSetShader(cubeVertexShader, nullptr, 0);
-  context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);
-  context->PSSetShader(cubePixelShader, nullptr, 0);
-  context->IASetInputLayout(cubeInputLayout);
-  constexpr UINT cubeStride = 2 * sizeof(Vec3f);
-  constexpr UINT cubeOffset = 0;
-  context->IASetVertexBuffers(0, 1, &cubeVertexBuffer.p, &cubeStride, &cubeOffset);
-  context->IASetIndexBuffer(cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-  context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  context->DrawIndexed(36, 0, 0);
+  renderCubes(gameState.playingSpace, viewProjection);
 
   renderGrids(viewProjection);
 
