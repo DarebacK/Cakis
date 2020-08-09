@@ -75,30 +75,74 @@ static void updatePlayingSpace(const GameState& lastState, GameState* nextState)
 
 static void updateCurrentTetracube(const GameState& lastState, GameState* nextState)
 {
-  const bool shouldSpawnTetracube = lastState.events.count(Event::TetracubeDropped) != 0 ||
-    lastState.events.count(Event::GameStarted) != 0;
-  if(shouldSpawnTetracube) {
-    int tetracubeIndex = std::rand() % arrayCount(cubeClasses);
-    
-    Tetracube* currentTetracube = &nextState->currentTetracube;
+  nextState->currentTetracubeDTimeLeftover = lastState.currentTetracubeDTimeLeftover + nextState->dTime;;
 
-    std::copy(
-      tetraCubePositions[tetracubeIndex], tetraCubePositions[tetracubeIndex] + 4, 
-      currentTetracube->positions
-    );
-    Vec3i translationToCenter = {
-      (int)std::floor(GameState::gridSize.x / 2.f) - 2,
-      GameState::gridSize.y + 1,
-      (int)std::floor(GameState::gridSize.z / 2.f) - 1
-    };
-    for(Vec3i& position : currentTetracube->positions) {
-      position += translationToCenter;
+  bool collisionHappened;
+  do {
+    collisionHappened = false;
+    const bool shouldSpawnTetracube = nextState->events.count(Event::TetracubeDropped) != 0 ||
+      lastState.events.count(Event::GameStarted) != 0;
+    if(shouldSpawnTetracube) {
+      int tetracubeIndex = std::rand() % arrayCount(cubeClasses);
+
+      Tetracube* currentTetracube = &nextState->currentTetracube;
+
+      std::copy(
+        tetraCubePositions[tetracubeIndex], tetraCubePositions[tetracubeIndex] + 4,
+        currentTetracube->positions
+      );
+      Vec3i translationToCenter = {
+        (int)std::floor(GameState::gridSize.x / 2.f) - 2,
+        GameState::gridSize.y + 1,
+        (int)std::floor(GameState::gridSize.z / 2.f) - 1
+      };
+      for(Vec3i& position : currentTetracube->positions) {
+        position += translationToCenter;
+      }
+
+      currentTetracube->cubeClassIndex = (PlayingSpace::ValueType)tetracubeIndex;
+    }
+    else {
+      nextState->currentTetracube = lastState.currentTetracube;
+      nextState->currentTetracubeFallingSpeed = lastState.currentTetracubeFallingSpeed;
     }
 
-    currentTetracube->cubeClass = cubeClasses + tetracubeIndex;
-  } else {
-    nextState->currentTetracube = lastState.currentTetracube;
-  }
+    Tetracube* currentTetracube = &nextState->currentTetracube;
+
+    assert(nextState->currentTetracubeFallingSpeed != 0.f);
+    float fallingSpeedInverse = 1.f / nextState->currentTetracubeFallingSpeed;
+    int toMove = nextState->currentTetracubeDTimeLeftover / fallingSpeedInverse;
+    if(toMove > 0) {
+      int moveBy;
+      for(moveBy = 1; moveBy <= toMove; ++moveBy) {
+        for(const Vec3i& position : currentTetracube->positions) {
+          int newY = position.y - moveBy;
+          if(nextState->playingSpace.isInside(position.x, newY, position.z) &&
+            nextState->playingSpace.at(position.x, newY, position.z) >= 0 ||
+            newY <= -1) {
+            collisionHappened = true;
+            nextState->events.emplace(Event::TetracubeDropped, Event());
+            goto collisionCheckEnd;
+          }
+        }
+      }
+      collisionCheckEnd:
+      --moveBy;
+      for(Vec3i& position : currentTetracube->positions) {
+        position.y -= moveBy;
+        if(collisionHappened) {
+          if(nextState->playingSpace.isInside(position)) {
+            nextState->playingSpace.at(position) = currentTetracube->cubeClassIndex;
+          } else {
+            nextState->events.emplace(Event::GameLost, Event());
+            logInfo("Lose condition triggered.");
+            return;
+          }
+        }
+      }
+      nextState->currentTetracubeDTimeLeftover -= moveBy * fallingSpeedInverse;
+    }
+  } while(collisionHappened);
 }
 
 void Game::update(const GameState& lastState, GameState* nextState)

@@ -45,7 +45,8 @@ struct Event
     Invalid = 0,
     GameStarted,
     TetracubeDropped,
-    RowCleared
+    RowCleared,
+    GameLost
   };
 };
 
@@ -99,9 +100,23 @@ public:
     return *this;
   }
 
-  ValueType at(int x, int y, int z) const noexcept { return *(begin() + x + z*size.x + y*size.x*size.z); }
+  bool isInside(int x, int y, int z) const noexcept 
+  {
+    int offset = x + z * size.x + y * size.x * size.z;
+    return offset >= 0 && offset < count;
+  };
+  bool isInside(const Vec3i& position) const noexcept { return isInside(position.x, position.y, position.z); };
+  ValueType at(int x, int y, int z) const noexcept 
+  { 
+    assert(isInside(x, y, z));
+    return *(begin() + x + z*size.x + y*size.x*size.z); 
+  }
   ValueType at(const Vec3i& position) const noexcept { return at(position.x, position.y, position.z); }
-  ValueType& at(int x, int y, int z) noexcept { return *(begin() + x + z*size.x + y*size.x*size.z); }
+  ValueType& at(int x, int y, int z) noexcept 
+  { 
+    assert(isInside(x, y, z));
+    return *(begin() + x + z*size.x + y*size.x*size.z);; 
+  }
   ValueType& at(const Vec3i& position) noexcept { return at(position.x, position.y, position.z); }
   ValueType* begin() noexcept { return values; }
   const ValueType* begin() const noexcept { return values; }
@@ -122,7 +137,7 @@ private:
 struct Tetracube
 {
   Vec3i positions[4];
-  const CubeClass* cubeClass;
+  PlayingSpace::ValueType cubeClassIndex;
 };
 
 struct GameState
@@ -144,6 +159,8 @@ struct GameState
   int cubeClassCount;
 
   Tetracube currentTetracube;
+  float currentTetracubeFallingSpeed = 0.5f;
+  float currentTetracubeDTimeLeftover = 0.f;
 };
 
 

@@ -626,7 +626,7 @@ static void renderCubes(
   }
 
   if(currentTetracube) {
-    cubeConstantBufferData.color = currentTetracube->cubeClass->color;
+    cubeConstantBufferData.color = cubeClasses[currentTetracube->cubeClassIndex].color;
     for(const Vec3i& position : currentTetracube->positions) {
       cubeConstantBufferData.transform = Mat4f::translation((Vec3f)position) * baseTransform;
 
