@@ -244,6 +244,7 @@ try
   Vec2i cursorPosition = getCursorPosition();
   lastGameState = gameStates.getLastState(frameCount);
   lastGameState->input.cursorPosition = cursorPosition;
+  lastGameState->events.emplace(Event::GameStarted, Event());
   nextGameState = gameStates.getNextState(frameCount);
 
   LARGE_INTEGER counterFrequency;
@@ -285,6 +286,7 @@ try
       nextGameState->input = lastGameState->input;
       nextGameState->input.keyboard = {};
       nextGameState->input.mouse.dWheel = 0.f;
+      nextGameState->events.clear();
     }
   }
   return 0;

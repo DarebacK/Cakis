@@ -1,17 +1,19 @@
 #include "Game.hpp"
 
-using Tetracube = Vec3f[4];
-static constexpr Tetracube tetraCubes[] = {
-  {{0.f, 0.f, 0.f}, {1.f, 0.f, 0.f}, {2.f, 0.f, 0.f}, {3.f, 0.f, 0.f}}, // I
-  {{1.f, 0.f, 0.f}, {2.f, 0.f, 0.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}}, // O
-  {{1.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}}, // T
-  {{0.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}}, // L
-  {{2.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}}, // J
-  {{0.f, 0.f, 0.f}, {1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}}, // S
-  {{1.f, 0.f, 0.f}, {2.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f, 1.f}}, // Z
-  {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}, {1.f, 1.f, 1.f}}, // B
-  {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}, {1.f, 1.f, 0.f}}, // D
-  {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}, {2.f, 0.f, 1.f}, {2.f, 1.f, 1.f}}  // F
+#include <cstdlib>
+#include <ctime>
+
+static constexpr Vec3i tetraCubePositions[][4] = {
+  {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}}, // I
+  {{1, 0, 0}, {2, 0, 0}, {1, 0, 1}, {2, 0, 1}}, // O
+  {{1, 0, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}}, // T
+  {{0, 0, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}}, // L
+  {{2, 0, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}}, // J
+  {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {2, 0, 1}}, // S
+  {{1, 0, 0}, {2, 0, 0}, {0, 0, 1}, {1, 0, 1}}, // Z
+  {{1, 0, 0}, {1, 0, 1}, {2, 0, 1}, {1, 1, 1}}, // B
+  {{1, 0, 0}, {1, 0, 1}, {2, 0, 1}, {1, 1, 0}}, // D
+  {{1, 0, 0}, {1, 0, 1}, {2, 0, 1}, {2, 1, 1}}  // F
 };
 CubeClass cubeClasses[] = {
   {ColorRgbaf{  0.f,   1.f,   1.f, 1.f}},
@@ -25,6 +27,11 @@ CubeClass cubeClasses[] = {
   {ColorRgbaf{0.25f, 0.25f, 0.25f, 1.f}},
   {ColorRgbaf{0.77f, 0.77f, 0.77f, 1.f}}
 };
+
+Game::Game()
+{
+  std::srand((unsigned int)std::time(0));
+}
 
 static void updateCamera(const GameState& lastState, GameState* nextState)
 {
@@ -66,10 +73,39 @@ static void updatePlayingSpace(const GameState& lastState, GameState* nextState)
   nextState->playingSpace.at(xMax, yMax, zMax) = 7;
 }
 
+static void updateCurrentTetracube(const GameState& lastState, GameState* nextState)
+{
+  const bool shouldSpawnTetracube = lastState.events.count(Event::TetracubeDropped) != 0 ||
+    lastState.events.count(Event::GameStarted) != 0;
+  if(shouldSpawnTetracube) {
+    int tetracubeIndex = std::rand() % arrayCount(cubeClasses);
+    
+    Tetracube* currentTetracube = &nextState->currentTetracube;
+
+    std::copy(
+      tetraCubePositions[tetracubeIndex], tetraCubePositions[tetracubeIndex] + 4, 
+      currentTetracube->positions
+    );
+    Vec3i translationToCenter = {
+      (int)std::floor(GameState::gridSize.x / 2.f) - 2,
+      GameState::gridSize.y + 1,
+      (int)std::floor(GameState::gridSize.z / 2.f) - 1
+    };
+    for(Vec3i& position : currentTetracube->positions) {
+      position += translationToCenter;
+    }
+
+    currentTetracube->cubeClass = cubeClasses + tetracubeIndex;
+  } else {
+    nextState->currentTetracube = lastState.currentTetracube;
+  }
+}
+
 void Game::update(const GameState& lastState, GameState* nextState)
 {
   updateCamera(lastState, nextState);
   updatePlayingSpace(lastState, nextState);
+  updateCurrentTetracube(lastState, nextState);
   nextState->cubeClasses = cubeClasses;
   nextState->cubeClassCount = arrayCount(cubeClasses);
 }

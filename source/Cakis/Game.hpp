@@ -5,5 +5,6 @@
 class Game
 {
 public:
+  Game();
   void update(const GameState& lastState, GameState* nextState);
 };

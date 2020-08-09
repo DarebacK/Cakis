@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include <DarMath.hpp>
 #include <Color.hpp>
 
@@ -35,6 +37,16 @@ struct Input
   Mouse mouse;
   Vec2i cursorPosition;
   Keyboard keyboard;
+};
+
+struct Event
+{
+  enum Type {
+    Invalid = 0,
+    GameStarted,
+    TetracubeDropped,
+    RowCleared
+  };
 };
 
 struct CubeClass
@@ -107,9 +119,17 @@ private:
   ValueType* values;
 };
 
+struct Tetracube
+{
+  Vec3i positions[4];
+  const CubeClass* cubeClass;
+};
+
 struct GameState
 {
   Input input;
+
+  std::unordered_multimap<Event::Type, Event> events;
 
   float dTime;
 
@@ -120,8 +140,10 @@ struct GameState
 
   static constexpr Vec3i gridSize = {6, 5, 4};
   PlayingSpace playingSpace{ gridSize };
-  CubeClass* cubeClasses;
+  const CubeClass* cubeClasses;
   int cubeClassCount;
+
+  Tetracube currentTetracube;
 };
 
 

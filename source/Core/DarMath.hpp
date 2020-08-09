@@ -11,14 +11,6 @@
 
 constexpr float Pi = 3.14159265358979323846f;
 
-struct Vec2i
-{
-  int x, y;
-};
-struct Vec3i
-{
-  int x, y, z;
-};
 struct Vec2f
 {
   float x, y;
@@ -138,6 +130,24 @@ constexpr inline Vec3f cross(const Vec3f& v1, const Vec3f& v2) noexcept
 {
   return {(v1.y * v2.z) - (v1.z * v2.y), (v1.z * v2.x) - (v1.x * v2.z), (v1.x * v2.y) - (v1.y * v2.x)};
 }
+
+struct Vec2i
+{
+  int x, y;
+};
+struct Vec3i
+{
+  explicit operator Vec3f() const noexcept { return { (float)x, (float)y, (float)z }; }
+  Vec3i& operator+=(const Vec3i& rhs) noexcept
+  {
+    x += rhs.x;
+    y += rhs.y;
+    z += rhs.z;
+    return *this;
+  }
+
+  int x, y, z;
+};
 
 using std::sqrt;
 
