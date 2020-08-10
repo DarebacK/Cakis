@@ -28,6 +28,10 @@ struct Keyboard
   };
 
   Key enter;
+  Key left;
+  Key right;
+  Key down;
+  Key up;
   Key F1;
   Key rightAlt;
 };

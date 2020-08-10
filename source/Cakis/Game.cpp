@@ -1,3 +1,5 @@
+#define DAR_MODULE_NAME "Game"
+
 #include "Game.hpp"
 
 #include <cstdlib>
@@ -55,24 +57,10 @@ static void updateCamera(const GameState& lastState, GameState* nextState)
 
   nextState->camera.zoom(nextState->input.mouse.dWheel);
 }
-
 static void updatePlayingSpace(const GameState& lastState, GameState* nextState)
 {
   nextState->playingSpace = lastState.playingSpace;
-
-  constexpr int xMax = GameState::gridSize.x - 1;
-  constexpr int yMax = GameState::gridSize.y - 1;
-  constexpr int zMax = GameState::gridSize.z - 1;
-  nextState->playingSpace.at(0, 0, 0) = 0;
-  nextState->playingSpace.at(xMax, 0, 0) = 1;
-  nextState->playingSpace.at(0, yMax, 0) = 2;
-  nextState->playingSpace.at(0, 0, zMax) = 3;
-  nextState->playingSpace.at(xMax, yMax, 0) = 4;
-  nextState->playingSpace.at(xMax, 0, zMax) = 5;
-  nextState->playingSpace.at(0, yMax, zMax) = 6;
-  nextState->playingSpace.at(xMax, yMax, zMax) = 7;
 }
-
 static void updateCurrentTetracube(const GameState& lastState, GameState* nextState)
 {
   nextState->currentTetracubeDTimeLeftover = lastState.currentTetracubeDTimeLeftover + nextState->dTime;;
@@ -105,6 +93,78 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
     else {
       nextState->currentTetracube = lastState.currentTetracube;
       nextState->currentTetracubeFallingSpeed = lastState.currentTetracubeFallingSpeed;
+
+      Tetracube* currentTetracube = &nextState->currentTetracube;
+      int currentTetracubeXMin = GameState::gridSize.x - 1;
+      int currentTetracubeXMax = 0;
+      int currentTetracubeZMin = GameState::gridSize.z - 1;
+      int currentTetracubeZMax = 0;
+      for(const Vec3i& position : currentTetracube->positions) {
+        currentTetracubeXMin = std::min(currentTetracubeXMin, position.x);
+        currentTetracubeXMax = std::max(currentTetracubeXMax, position.x);
+        currentTetracubeZMin = std::min(currentTetracubeZMin, position.z);
+        currentTetracubeZMax = std::max(currentTetracubeZMax, position.z);
+      }
+      if(nextState->input.keyboard.left.pressedDown && currentTetracubeXMin > 0) {
+        bool isBlockedByAnotherCube = false;
+        for(const Vec3i& position : currentTetracube->positions) {
+          if(nextState->playingSpace.isInside(position.x - 1, position.y, position.z) &&
+            nextState->playingSpace.at(position.x - 1, position.y, position.z) >= 0) {
+            isBlockedByAnotherCube = true;
+            break;
+          }
+        }
+        if(!isBlockedByAnotherCube) {
+          for(Vec3i& position : currentTetracube->positions) {
+            --position.x;
+          }
+        }
+      }
+      if(nextState->input.keyboard.right.pressedDown && currentTetracubeXMax < GameState::gridSize.x - 1) {
+        bool isBlockedByAnotherCube = false;
+        for(const Vec3i& position : currentTetracube->positions) {
+          if(nextState->playingSpace.isInside(position.x + 1, position.y, position.z) &&
+            nextState->playingSpace.at(position.x + 1, position.y, position.z) >= 0) {
+            isBlockedByAnotherCube = true;
+            break;
+          }
+        }
+        if(!isBlockedByAnotherCube) {
+          for(Vec3i& position : currentTetracube->positions) {
+            ++position.x;
+          }
+        }
+      }
+      if(nextState->input.keyboard.down.pressedDown && currentTetracubeZMin > 0) {
+        bool isBlockedByAnotherCube = false;
+        for(const Vec3i& position : currentTetracube->positions) {
+          if(nextState->playingSpace.isInside(position.x, position.y, position.z - 1) &&
+            nextState->playingSpace.at(position.x, position.y, position.z - 1) >= 0) {
+            isBlockedByAnotherCube = true;
+            break;
+          }
+        }
+        if(!isBlockedByAnotherCube) {
+          for(Vec3i& position : currentTetracube->positions) {
+            --position.z;
+          }
+        }
+      }
+      if(nextState->input.keyboard.up.pressedDown && currentTetracubeZMax < GameState::gridSize.z - 1) {
+        bool isBlockedByAnotherCube = false;
+        for(const Vec3i& position : currentTetracube->positions) {
+          if(nextState->playingSpace.isInside(position.x, position.y, position.z + 1) &&
+            nextState->playingSpace.at(position.x, position.y, position.z + 1) >= 0) {
+            isBlockedByAnotherCube = true;
+            break;
+          }
+        }
+        if(!isBlockedByAnotherCube) {
+          for(Vec3i& position : currentTetracube->positions) {
+            ++position.z;
+          }
+        }
+      }
     }
 
     Tetracube* currentTetracube = &nextState->currentTetracube;
@@ -144,12 +204,16 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
     }
   } while(collisionHappened);
 }
+static void updateCubeClasses(const GameState& lastState, GameState* nextState)
+{
+  nextState->cubeClasses = cubeClasses;
+  nextState->cubeClassCount = arrayCount(cubeClasses);
+}
 
 void Game::update(const GameState& lastState, GameState* nextState)
 {
   updateCamera(lastState, nextState);
   updatePlayingSpace(lastState, nextState);
   updateCurrentTetracube(lastState, nextState);
-  nextState->cubeClasses = cubeClasses;
-  nextState->cubeClassCount = arrayCount(cubeClasses);
+  updateCubeClasses(lastState, nextState);
 }

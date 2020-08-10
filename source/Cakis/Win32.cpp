@@ -102,6 +102,18 @@ namespace
           case VK_RETURN:
             nextGameState->input.keyboard.enter.pressedDown = true;
           break;
+          case VK_LEFT:
+            nextGameState->input.keyboard.left.pressedDown = true;
+            break;
+          case VK_UP:
+            nextGameState->input.keyboard.up.pressedDown = true;
+            break;
+          case VK_RIGHT:
+            nextGameState->input.keyboard.right.pressedDown = true;
+            break;
+          case VK_DOWN:
+            nextGameState->input.keyboard.down.pressedDown = true;
+            break;
         }
       break;
       case WM_KEYUP:
@@ -114,6 +126,18 @@ namespace
           break;
         case VK_RETURN:
           nextGameState->input.keyboard.enter.pressedUp = true;
+          break;
+        case VK_LEFT:
+          nextGameState->input.keyboard.left.pressedUp = true;
+          break;
+        case VK_UP:
+          nextGameState->input.keyboard.up.pressedUp = true;
+          break;
+        case VK_RIGHT:
+          nextGameState->input.keyboard.right.pressedUp = true;
+          break;
+        case VK_DOWN:
+          nextGameState->input.keyboard.down.pressedUp = true;
           break;
         }
       default:
