@@ -114,6 +114,9 @@ namespace
           case VK_DOWN:
             nextGameState->input.keyboard.down.pressedDown = true;
             break;
+          case VK_SPACE:
+            nextGameState->input.keyboard.space.pressedDown = true;
+            break;
         }
       break;
       case WM_KEYUP:
@@ -139,6 +142,9 @@ namespace
         case VK_DOWN:
           nextGameState->input.keyboard.down.pressedUp = true;
           break;
+        case VK_SPACE:
+          nextGameState->input.keyboard.space.pressedUp = true;
+          break;
         }
       default:
         result = DefWindowProc(windowHandle, message, wParam, lParam);
@@ -163,10 +169,10 @@ static void debugShowResourcesUsage()
     GetSystemTimeAsFileTime((LPFILETIME)&now);
     FILETIME fileTime;
     GetProcessTimes(process, &fileTime, &fileTime, (LPFILETIME)&sys, (LPFILETIME)&user);
-    percent = (sys.QuadPart - lastSysCPU.QuadPart) +
-        (user.QuadPart - lastUserCPU.QuadPart);
-    percent /= (now.QuadPart - lastCPU.QuadPart);
-    percent /= processorCount;
+    percent = double((sys.QuadPart - lastSysCPU.QuadPart) +
+        (user.QuadPart - lastUserCPU.QuadPart));
+    percent /= double(now.QuadPart - lastCPU.QuadPart);
+    percent /= double(processorCount);
     percent *= 100;
     lastCPU = now;
     lastUserCPU = user;
@@ -269,6 +275,7 @@ try
   lastGameState = gameStates.getLastState(frameCount);
   lastGameState->input.cursorPosition = cursorPosition;
   lastGameState->events.emplace(Event::GameStarted, Event());
+  lastGameState->phase = GameState::Phase::Playing;
   nextGameState = gameStates.getNextState(frameCount);
 
   LARGE_INTEGER counterFrequency;

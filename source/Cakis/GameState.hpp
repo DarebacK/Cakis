@@ -34,6 +34,7 @@ struct Keyboard
   Key up;
   Key F1;
   Key rightAlt;
+  Key space;
 };
 
 struct Input
@@ -149,6 +150,13 @@ struct GameState
   Input input;
 
   std::unordered_multimap<Event::Type, Event> events;
+
+  enum class Phase
+  {
+    Invalid = 0,
+    Playing,
+    GameLost
+  } phase;
 
   float dTime;
 
