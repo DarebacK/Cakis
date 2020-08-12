@@ -79,6 +79,23 @@ static void spawnTetracube(Tetracube* tetracube)
 
   tetracube->cubeClassIndex = (PlayingSpace::ValueType)tetracubeIndex;
 }
+static void moveTetracube(Tetracube* tetracube, const Vec3i& moveBy, const PlayingSpace& playingSpace)
+{
+  bool isBlockedByAnotherCube = false;
+  for(const Vec3i& position : tetracube->positions) {
+    Vec3i movedBy = position + moveBy;
+    if(playingSpace.isInside(movedBy) &&
+      playingSpace.at(movedBy) >= 0) {
+      isBlockedByAnotherCube = true;
+      break;
+    }
+  }
+  if(!isBlockedByAnotherCube) {
+    for(Vec3i& position : tetracube->positions) {
+      position += moveBy;
+    }
+  }
+}
 static void updateCurrentTetracube(const GameState& lastState, GameState* nextState)
 {
   nextState->currentTetracube = lastState.currentTetracube;
@@ -110,64 +127,13 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
           currentTetracubeYMin = std::min(currentTetracubeYMin, position.y);
         }
         if(nextState->input.keyboard.left.pressedDown && currentTetracubeXMin > 0) {
-          bool isBlockedByAnotherCube = false;
-          for(const Vec3i& position : currentTetracube->positions) {
-            if(nextState->playingSpace.isInside(position.x - 1, position.y, position.z) &&
-              nextState->playingSpace.at(position.x - 1, position.y, position.z) >= 0) {
-              isBlockedByAnotherCube = true;
-              break;
-            }
-          }
-          if(!isBlockedByAnotherCube) {
-            for(Vec3i& position : currentTetracube->positions) {
-              --position.x;
-            }
-          }
-        }
-        if(nextState->input.keyboard.right.pressedDown && currentTetracubeXMax < GameState::gridSize.x - 1) {
-          bool isBlockedByAnotherCube = false;
-          for(const Vec3i& position : currentTetracube->positions) {
-            if(nextState->playingSpace.isInside(position.x + 1, position.y, position.z) &&
-              nextState->playingSpace.at(position.x + 1, position.y, position.z) >= 0) {
-              isBlockedByAnotherCube = true;
-              break;
-            }
-          }
-          if(!isBlockedByAnotherCube) {
-            for(Vec3i& position : currentTetracube->positions) {
-              ++position.x;
-            }
-          }
-        }
-        if(nextState->input.keyboard.down.pressedDown && currentTetracubeZMin > 0) {
-          bool isBlockedByAnotherCube = false;
-          for(const Vec3i& position : currentTetracube->positions) {
-            if(nextState->playingSpace.isInside(position.x, position.y, position.z - 1) &&
-              nextState->playingSpace.at(position.x, position.y, position.z - 1) >= 0) {
-              isBlockedByAnotherCube = true;
-              break;
-            }
-          }
-          if(!isBlockedByAnotherCube) {
-            for(Vec3i& position : currentTetracube->positions) {
-              --position.z;
-            }
-          }
-        }
-        if(nextState->input.keyboard.up.pressedDown && currentTetracubeZMax < GameState::gridSize.z - 1) {
-          bool isBlockedByAnotherCube = false;
-          for(const Vec3i& position : currentTetracube->positions) {
-            if(nextState->playingSpace.isInside(position.x, position.y, position.z + 1) &&
-              nextState->playingSpace.at(position.x, position.y, position.z + 1) >= 0) {
-              isBlockedByAnotherCube = true;
-              break;
-            }
-          }
-          if(!isBlockedByAnotherCube) {
-            for(Vec3i& position : currentTetracube->positions) {
-              ++position.z;
-            }
-          }
+          moveTetracube(currentTetracube, {-1, 0, 0}, nextState->playingSpace);
+        } else if(nextState->input.keyboard.right.pressedDown && currentTetracubeXMax < GameState::gridSize.x - 1) {
+          moveTetracube(currentTetracube, {1, 0, 0}, nextState->playingSpace);
+        } else if(nextState->input.keyboard.down.pressedDown && currentTetracubeZMin > 0) {
+          moveTetracube(currentTetracube, {0, 0, -1}, nextState->playingSpace);
+        } else if(nextState->input.keyboard.up.pressedDown && currentTetracubeZMax < GameState::gridSize.z - 1) {
+          moveTetracube(currentTetracube, {0, 0, 1}, nextState->playingSpace);
         }
       }
 
@@ -190,7 +156,7 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
             }
           }
         }
-      collisionCheckEnd:
+        collisionCheckEnd:
         --moveBy;
         for(Vec3i& position : currentTetracube->positions) {
           position.y -= moveBy;
@@ -223,7 +189,7 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
         }
         ++toMove;
       }
-    dropDistanceCalculationEnd:
+      dropDistanceCalculationEnd:
 
       bool loseConditionTriggered = false;
       for(Vec3i& position : currentTetracube->positions) {
@@ -238,8 +204,7 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
         logInfo("Lose condition triggered.");
         nextState->events.emplace(Event::GameLost, Event());
         return;
-      }
-      else {
+      } else {
         for(const Vec3i& position : currentTetracube->positions) {
           nextState->playingSpace.at(position.x, position.y, position.z) = currentTetracube->cubeClassIndex;
         }

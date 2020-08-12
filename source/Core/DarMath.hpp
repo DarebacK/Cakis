@@ -148,6 +148,28 @@ struct Vec3i
 
   int x, y, z;
 };
+constexpr inline Vec3i operator-(const Vec3i& v) noexcept { return { -v.x, -v.y, -v.z }; }
+constexpr inline Vec3i operator-(const Vec3i& left, const Vec3i& right) noexcept
+{
+  return Vec3i{ left.x - right.x, left.y - right.y, left.z - right.z };
+}
+constexpr inline Vec3i operator+(const Vec3i& left, const Vec3i& right) noexcept
+{
+  return Vec3i{ left.x + right.x, left.y + right.y, left.z + right.z };
+}
+constexpr inline Vec3i operator*(int left, const Vec3i& right) noexcept
+{
+  return Vec3i{ left * right.x, left * right.y, left * right.z };
+}
+constexpr inline Vec3i operator*(const Vec3i& left, int right) noexcept
+{
+  return right * left;
+}
+constexpr inline bool operator==(const Vec3i& left, const Vec3i& right) noexcept
+{
+  return left.x == right.x && left.y == right.y && left.z == right.z;
+}
+constexpr inline bool operator!=(const Vec3i& left, const Vec3i& right) noexcept { return !(left == right); }
 
 using std::sqrt;
 
