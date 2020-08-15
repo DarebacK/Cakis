@@ -174,19 +174,17 @@ constexpr inline bool operator==(const Vec3i& left, const Vec3i& right) noexcept
 }
 constexpr inline bool operator!=(const Vec3i& left, const Vec3i& right) noexcept { return !(left == right); }
 
-using std::sqrt;
-
 inline auto length(const Vec2f& v) noexcept
 {
-  return sqrt(dot(v, v));
+  return std::sqrt(dot(v, v));
 }
 inline auto length(const Vec3f& v) noexcept
 {
-  return sqrt(dot(v, v));
+  return std::sqrt(dot(v, v));
 }
 inline auto length(const Vec4f& v) noexcept
 {
-  return sqrt(dot(v, v));
+  return std::sqrt(dot(v, v));
 }
 
 inline Vec2f normalized(const Vec2f& v, float length) noexcept
@@ -218,7 +216,6 @@ inline bool isNormalized(const Vec2f& v) noexcept { return abs(length(v) - 1.f) 
 inline bool isNormalized(const Vec3f& v) noexcept { return abs(length(v) - 1.f) <= FLT_EPSILON; }
 inline bool isNormalized(const Vec4f& v) noexcept { return abs(length(v) - 1.f) <= FLT_EPSILON; }
 
-using std::clamp;
 inline float clampAngle(float angle)
 {
   while(angle >= 2 * Pi) {
@@ -279,6 +276,104 @@ struct Mat3f
   float values[3][3];
 };
 Vec3f operator*(const Vec3f& left, const Mat3f& right) noexcept;
+/**
+ * @brief Optimization for Matrices where last column is 0.f, 0.f, 0.f, 1.f
+ */
+struct Mat4x3f
+{
+  constexpr static Mat4x3f identity() noexcept
+  {
+    return
+    { {
+     {1.0f, 0.0f, 0.0f},
+     {0.0f, 1.0f, 0.0f},
+     {0.0f, 0.0f, 1.0f},
+     {0.0f, 0.0f, 0.0f}
+    } };
+  }
+  constexpr static Mat4x3f translation(float x, float y, float z) noexcept
+  {
+    return
+    { {
+     {1.0f, 0.0f, 0.0f},
+     {0.0f, 1.0f, 0.0f},
+     {0.0f, 0.0f, 1.0f},
+     {   x,    y,    z}
+    } };
+  }
+  constexpr static Mat4x3f translation(const Vec3f& by) noexcept
+  {
+    return translation(by.x, by.y, by.z);
+  }
+  static Mat4x3f rotationX(float radians) noexcept
+  {
+    return
+    { {
+     {1.f,           0.f,          0.f},
+     {0.f,  cos(radians), sin(radians)},
+     {0.f, -sin(radians), cos(radians)},
+     {0.f,           0.f,          0.f}
+    } };
+  }
+  static Mat4x3f rotationY(float radians) noexcept
+  {
+    return
+    { {
+     {cos(radians), 0.f, -sin(radians)},
+     {         0.f, 1.f,           0.f},
+     {sin(radians), 0.f,  cos(radians)},
+     {         0.f, 0.f,           0.f}
+    } };
+  }
+  static Mat4x3f rotationZ(float radians) noexcept
+  {
+    return
+    { {
+     { cos(radians), sin(radians), 0.f},
+     {-sin(radians), cos(radians), 0.f},
+     {          0.f,          0.f, 1.f},
+     {          0.f,          0.f, 0.f}
+    } };
+  }
+  static Mat4x3f lookAt(const Vec3f& eyePosition, const Vec3f& focusPosition, const Vec3f& upDirection) noexcept
+  {
+    assert(eyePosition != focusPosition);
+    Vec3f eyeDirection = normalized(focusPosition - eyePosition);
+    return lookTo(eyePosition, eyeDirection, upDirection);
+  }
+  /**
+   * @param eyeDirection has to be normalized
+   */
+  static Mat4x3f lookTo(const Vec3f& eyePosition, const Vec3f& eyeDirection, const Vec3f& upDirection) noexcept
+  {
+    assert(eyeDirection != (Vec3f{ 0.f, 0.f, 0.f }));
+    assert(upDirection != (Vec3f{ 0.f, 0.f, 0.f }));
+    assert(isNormalized(eyeDirection));
+    // from https://github.com/microsoft/DirectXMath/blob/83634c742a85d1027765af53fbe79506fd72e0c3/Inc/DirectXMathMatrix.inl
+    Vec3f r0 = normalized(cross(upDirection, eyeDirection));
+    Vec3f r1 = cross(eyeDirection, r0);
+    Vec3f negatedEyePosition = -eyePosition;
+    float d0 = dot(r0, negatedEyePosition);
+    float d1 = dot(r1, negatedEyePosition);
+    float d2 = dot(eyeDirection, negatedEyePosition);
+    return
+    { {
+     {r0.x, r1.x, eyeDirection.x},
+     {r0.y, r1.y, eyeDirection.y},
+     {r0.z, r1.z, eyeDirection.z},
+     {  d0,   d1,             d2}
+    } };
+  }
+
+  float* operator[](int index) noexcept { return values[index]; }
+  const float* operator[](int index) const noexcept { return values[index]; }
+
+  float values[4][3];
+};
+Vec4f operator*(const Vec4f& left, const Mat4x3f& right) noexcept;
+Mat4x3f operator*(const Mat3f& left, const Mat4x3f& right) noexcept;
+Mat4x3f operator*(const Mat4x3f& left, const Mat3f& right) noexcept;
+Mat4x3f operator*(const Mat4x3f& left, const Mat4x3f& right) noexcept;
 struct Mat4f
 {
   constexpr static Mat4f identity() noexcept
@@ -383,15 +478,8 @@ struct Mat4f
       {r0.x, r1.x, eyeDirection.x, 0.f},
       {r0.y, r1.y, eyeDirection.y, 0.f},
       {r0.z, r1.z, eyeDirection.z, 0.f},
-      {d0,   d1,   d2,             1.f}
+      {  d0,   d1,             d2, 1.f}
     }};
-  }
-
-  void translateBy(const Vec3f& translation) noexcept
-  {
-    values[3][0] += translation.x;
-    values[3][1] += translation.y;
-    values[3][2] += translation.z;
   }
 
   float* operator[](int index) noexcept {return values[index];}
@@ -399,9 +487,20 @@ struct Mat4f
 
   float values[4][4];
 };
-
-Mat4f operator*(const Mat4f& left, const Mat4f& right) noexcept;
 Vec4f operator*(const Vec4f& left, const Mat4f& right) noexcept;
+Mat4f operator*(const Mat4x3f& left, const Mat4f& right) noexcept;
+Mat4f operator*(const Mat4f& left, const Mat4x3f& right) noexcept;
+Mat4f operator*(const Mat4f& left, const Mat4f& right) noexcept;
+inline Mat4f toMat4f(const Mat4x3f& m) noexcept 
+{
+  return
+  {
+    m[0][0], m[0][1], m[0][2], 0.f,
+    m[1][0], m[1][1], m[1][2], 0.f,
+    m[2][0], m[2][1], m[2][2], 0.f,
+    m[3][0], m[3][1], m[3][2], 1.f
+  };
+}
 
 struct Quatf
 {
@@ -525,8 +624,8 @@ public:
   */
   TrackSphere(float theta, float phi, float radius, float radiusMin, float radiusMax) noexcept
     : theta(theta - Pi)
-    , phi(clamp(phi, phiMin, phiMax))
-    , radius(clamp(radius, radiusMin, radiusMax))
+    , phi(std::clamp(phi, phiMin, phiMax))
+    , radius(std::clamp(radius, radiusMin, radiusMax))
     , radiusMin(radiusMin)
     , radiusMax(radiusMax)
   {}
@@ -543,9 +642,9 @@ public:
 
     return { x, y, z };
   }
-  Mat4f calculateView(const Vec3f& target) const noexcept
+  Mat4x3f calculateView(const Vec3f& target) const noexcept
   {
-    return Mat4f::lookAt(toCartesian(target), target, { 0.f, 1.f, 0.f });
+    return Mat4x3f::lookAt(toCartesian(target), target, { 0.f, 1.f, 0.f });
   }
 
   /**
@@ -560,7 +659,7 @@ public:
    */
   void rotatePhi(float dPhi) noexcept
   {
-    phi = clamp(phi + dPhi, phiMin, phiMax);
+    phi = std::clamp(phi + dPhi, phiMin, phiMax);
   }
   /**
    * @param distance Distance to zoom in if positive, zoom out if negative.
@@ -568,15 +667,15 @@ public:
   void zoom(float distance) noexcept
   {
     radius -= distance;
-    radius = clamp(radius, radiusMin, radiusMax);
+    radius = std::clamp(radius, radiusMin, radiusMax);
   }
 
 private:
   static constexpr float phiMin = degreesToRadians(0.001f); // Can't be exactly zero, otherwise shit happens
   static constexpr float phiMax = Pi - phiMin; // Can't be exactly Pi, otherwise shit happens
 
-  float phi;
   float theta;
+  float phi;
   float radius;
   float radiusMin;
   float radiusMax;

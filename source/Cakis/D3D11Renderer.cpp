@@ -73,7 +73,7 @@ Mat4f projectionMatrix = Mat4f::identity();
   Grid grids[5] = {
     {Mat4f::rotationX(degreesToRadians(90)), nullptr, calculateGridVertexCount(GameState::gridSize.x, GameState::gridSize.z)}, // Bottom.
     {Mat4f::rotationY(degreesToRadians(-90)), nullptr, calculateGridVertexCount(GameState::gridSize.z, GameState::gridSize.y)}, // Left.
-    {Mat4f::rotationY(degreesToRadians(-90)) * Mat4f::translation((float)GameState::gridSize.x, 0.f, 0.f), nullptr, calculateGridVertexCount(GameState::gridSize.z, GameState::gridSize.y)}, // Right.
+    {toMat4f(Mat3f::rotationY(degreesToRadians(-90)) * Mat4x3f::translation((float)GameState::gridSize.x, 0.f, 0.f)), nullptr, calculateGridVertexCount(GameState::gridSize.z, GameState::gridSize.y)}, // Right.
     {Mat4f::identity(), nullptr, calculateGridVertexCount(GameState::gridSize.x, GameState::gridSize.y)}, // Front.
     {Mat4f::translation(0.f, 0.f, (float)GameState::gridSize.z), nullptr, calculateGridVertexCount(GameState::gridSize.x, GameState::gridSize.y)} // Back.
   };
@@ -591,7 +591,7 @@ static void renderCubes(
 )
 {
   constexpr Vec3f cubePositionOffset = { 0.5f, 0.5f, 0.5f };
-  Mat4f baseTransform = Mat4f::translation(cubePositionOffset) * viewProjection;
+  Mat4f baseTransform = Mat4x3f::translation(cubePositionOffset) * viewProjection;
 
   context->VSSetShader(cubeVertexShader, nullptr, 0);
   context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);
@@ -628,7 +628,7 @@ static void renderCubes(
   if(currentTetracube) {
     cubeConstantBufferData.color = cubeClasses[currentTetracube->cubeClassIndex].color;
     for(const Vec3i& position : currentTetracube->positions) {
-      cubeConstantBufferData.transform = Mat4f::translation(toVec3f(position + currentTetracube->translation)) * baseTransform;
+      cubeConstantBufferData.transform = Mat4x3f::translation(toVec3f(position + currentTetracube->translation)) * baseTransform;
 
       context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
       memcpy(mappedResource.pData, &cubeConstantBufferData, sizeof(cubeConstantBufferData));
@@ -666,7 +666,7 @@ void render(const GameState& gameState)
   context->ClearRenderTargetView(renderTargetView, clearColor);
   context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  Mat4f viewMatrix = gameState.camera.calculateView({GameState::gridSize.x / 2.f, GameState::gridSize.y / 2.f, GameState::gridSize.z / 2.f });
+  Mat4x3f viewMatrix = gameState.camera.calculateView({GameState::gridSize.x / 2.f, GameState::gridSize.y / 2.f, GameState::gridSize.z / 2.f });
   Mat4f viewProjection = viewMatrix * projectionMatrix;
 
   const Tetracube* currentTetracube = nullptr;
