@@ -52,7 +52,6 @@ struct Event
     Invalid = 0,
     GameStarted,
     TetracubeDropped,
-    RowCleared,
     GameLost
   };
 };
@@ -66,13 +65,14 @@ class PlayingSpace
 {
 public:
   using ValueType = int8_t;
+  static constexpr ValueType emptyValue = -1;
 
   explicit PlayingSpace(const Vec3i& size)
     : size(size)
     , count(calculateCount(size))
     , values(new ValueType[count])
   {
-    std::fill_n(values, count, ValueType(-1));
+    std::fill_n(values, count, emptyValue);
   }
   ~PlayingSpace() { delete[] values; }
   PlayingSpace(const PlayingSpace& other)

@@ -116,6 +116,58 @@ static void tryToRotateTetracube(Tetracube* tetracube, const Mat4f& rotation, co
     std::copy(rotatedPositions, rotatedPositions + arrayCount(rotatedPositions), tetracube->positions);
   }
 }
+static bool canClearRow(const PlayingSpace& playingSpace, int rowToClear)
+{
+  for(int x = 0; x < GameState::gridSize.x; ++x) {
+    for(int z = 0; z < GameState::gridSize.z; ++z) {
+      if(playingSpace.at(x, rowToClear, z) == PlayingSpace::emptyValue) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+static void clearRow(PlayingSpace* playingSpace, int rowToClear) 
+{
+  for(int row = rowToClear; row < GameState::gridSize.y - 1; ++row) {
+    for(int x = 0; x < GameState::gridSize.x; ++x) {
+      for(int z = 0; z < GameState::gridSize.z; ++z) {
+        playingSpace->at(x, row, z) = playingSpace->at(x, row + 1, z);
+      }
+    }
+  }
+  for(int x = 0; x < GameState::gridSize.x; ++x) {
+    for(int z = 0; z < GameState::gridSize.z; ++z) {
+      playingSpace->at(x, GameState::gridSize.y - 1, z) = PlayingSpace::emptyValue;
+    }
+  }
+}
+static void checkForRowClear(GameState* state, int* rowsToCheck, int rowsToCheckCount)
+{
+  std::sort(rowsToCheck, rowsToCheck + rowsToCheckCount);
+  int rowsCleared = 0;
+  for(int i = 0; i < rowsToCheckCount; ++i) {
+    const int rowToClear = rowsToCheck[i] - rowsCleared;
+    if(canClearRow(state->playingSpace, rowToClear)) {
+      clearRow(&state->playingSpace, rowToClear);
+      ++rowsCleared;
+    }
+  }
+}
+static void checkForRowClear(GameState* state, const Tetracube& droppedTetracube)
+{
+  int rowsToCheck[arrayCount(droppedTetracube.positions)];
+  int rowsToCheckCount = 0;
+  for(const Vec3i& position : droppedTetracube.positions) {
+    int* rowsToCheckEnd = rowsToCheck + rowsToCheckCount;
+    const int row = position.y + droppedTetracube.translation.y;
+    const bool alreadyContaisRow = std::find(rowsToCheck, rowsToCheckEnd, row) != rowsToCheckEnd;
+    if(!alreadyContaisRow) {
+      rowsToCheck[rowsToCheckCount++] = row;
+    }
+  }
+  checkForRowClear(state, rowsToCheck, rowsToCheckCount);
+}
 static void updateCurrentTetracube(const GameState& lastState, GameState* nextState)
 {
   nextState->currentTetracube = lastState.currentTetracube;
@@ -184,7 +236,7 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
             newPosition.y -= moveBy;
             if(nextState->playingSpace.isInside(newPosition) &&
               nextState->playingSpace.at(newPosition) >= 0 ||
-              newPosition.y <= -1) {
+              newPosition.y == PlayingSpace::emptyValue) {
               collisionHappened = true;
               nextState->events.emplace(Event::TetracubeDropped, Event());
               goto collisionCheckEnd;
@@ -205,6 +257,9 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
               return;
             }
           }
+        }
+        if(collisionHappened) {
+          checkForRowClear(nextState, *currentTetracube);
         }
         nextState->currentTetracubeDTimeLeftover -= moveBy * fallingSpeedInverse;
         nextState->currentTetracubeDTimeLeftover = std::max(nextState->currentTetracubeDTimeLeftover, 0.f);
@@ -246,6 +301,7 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
           Vec3i translatedPosition = position + currentTetracube->translation;
           nextState->playingSpace.at(translatedPosition) = currentTetracube->cubeClassIndex;
         }
+        checkForRowClear(nextState, *currentTetracube);
         spawnTetracube(currentTetracube);
       }
     }
