@@ -234,6 +234,51 @@ constexpr inline float degreesToRadians(float degrees) noexcept
   return degrees * Pi / 180.f;
 }
 
+struct Mat3f
+{
+  constexpr static Mat3f identity() noexcept
+  {
+    return
+    {{
+      {1.0f, 0.0f, 0.0f},
+      {0.0f, 1.0f, 0.0f},
+      {0.0f, 0.0f, 1.0f}
+    }};
+  }
+  static Mat3f rotationX(float radians) noexcept
+  {
+    return
+    {{
+     {1.f,           0.f,          0.f},
+     {0.f,  cos(radians), sin(radians)},
+     {0.f, -sin(radians), cos(radians)}
+    }};
+  }
+  static Mat3f rotationY(float radians) noexcept
+  {
+    return
+    {{
+     {cos(radians), 0.f, -sin(radians)},
+     {         0.f, 1.f,           0.f},
+     {sin(radians), 0.f,  cos(radians)},
+    }};
+  }
+  static Mat3f rotationZ(float radians) noexcept
+  {
+    return
+    {{
+     { cos(radians), sin(radians), 0.f},
+     {-sin(radians), cos(radians), 0.f},
+     {          0.f,          0.f, 1.f},
+    }};
+  }
+
+  float* operator[](int index) noexcept { return values[index]; }
+  const float* operator[](int index) const noexcept { return values[index]; }
+
+  float values[3][3];
+};
+Vec3f operator*(const Vec3f& left, const Mat3f& right) noexcept;
 struct Mat4f
 {
   constexpr static Mat4f identity() noexcept
@@ -347,17 +392,6 @@ struct Mat4f
     values[3][0] += translation.x;
     values[3][1] += translation.y;
     values[3][2] += translation.z;
-  }
-  void transpose() noexcept
-  {
-    float tmp;
-    for(int i = 1; i < 4; ++i) {
-      for(int j = i; j < 4; ++j) {
-        tmp = values[i - 1][j];
-        values[i - 1][j] = values[j][i - 1];
-        values[j][i - 1] = tmp;
-      }
-    }
   }
 
   float* operator[](int index) noexcept {return values[index];}

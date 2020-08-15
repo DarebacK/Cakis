@@ -93,12 +93,12 @@ static void tryToMoveTetracube(Tetracube* tetracube, const Vec3i& moveBy, const 
     tetracube->translation += moveBy;
   }
 }
-static void tryToRotateTetracube(Tetracube* tetracube, const Mat4f& rotation, const PlayingSpace& playingSpace)
+static void tryToRotateTetracube(Tetracube* tetracube, const Mat3f& rotation, const PlayingSpace& playingSpace)
 {
   bool canRotate = true;
   Vec3i rotatedPositions[4];
   for(int i = 0; i < 4; ++i) {
-    rotatedPositions[i] = toVec3iRounded(toVec4f(tetracube->positions[i], 1.f) * rotation);
+    rotatedPositions[i] = toVec3iRounded(toVec3f(tetracube->positions[i]) * rotation);
     const Vec3i translatedRotatedPosition = rotatedPositions[i] + tetracube->translation;
     const bool isInside = playingSpace.isInside(translatedRotatedPosition);
     if(isInside && playingSpace.at(translatedRotatedPosition) >= 0) {
@@ -209,17 +209,17 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
           tryToMoveTetracube(currentTetracube, {0, 0, 1}, nextState->playingSpace);
         }
         if(nextState->input.keyboard.q.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat4f::rotationZ(Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, Mat3f::rotationZ(Pi / 2.f), nextState->playingSpace);
         } else if(nextState->input.keyboard.w.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat4f::rotationX(Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, Mat3f::rotationX(Pi / 2.f), nextState->playingSpace);
         } else if(nextState->input.keyboard.e.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat4f::rotationZ(-Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, Mat3f::rotationZ(-Pi / 2.f), nextState->playingSpace);
         } else if(nextState->input.keyboard.a.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat4f::rotationY(Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, Mat3f::rotationY(-Pi / 2.f), nextState->playingSpace);
         } else if(nextState->input.keyboard.s.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat4f::rotationX(-Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, Mat3f::rotationX(-Pi / 2.f), nextState->playingSpace);
         } else if(nextState->input.keyboard.d.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat4f::rotationY(-Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, Mat3f::rotationY(Pi / 2.f), nextState->playingSpace);
         }
       }
 

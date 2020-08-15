@@ -1,5 +1,15 @@
 #include "DarMath.hpp"
 
+Vec3f operator*(const Vec3f& left, const Mat3f& right) noexcept
+{
+  return
+  {
+    left.x * right[0][0] + left.y * right[1][0] + left.z * right[2][0],
+    left.x * right[0][1] + left.y * right[1][1] + left.z * right[2][1],
+    left.x * right[0][2] + left.y * right[1][2] + left.z * right[2][2]
+  };
+}
+
 Vec4f operator*(const Vec4f& left, const Mat4f& right) noexcept
 {
   return
