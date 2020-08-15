@@ -14,6 +14,13 @@
 #include "Game.hpp"
 #include "GameState.hpp"
 
+#define VK_Q 0x51
+#define VK_W 0x57
+#define VK_E 0x45
+#define VK_A 0x41
+#define VK_S 0x53
+#define VK_D 0x44
+
 namespace 
 {
   class GameStates
@@ -117,6 +124,24 @@ namespace
           case VK_SPACE:
             nextGameState->input.keyboard.space.pressedDown = true;
             break;
+          case VK_Q:
+            nextGameState->input.keyboard.q.pressedDown = true;
+            break;
+          case VK_W:
+            nextGameState->input.keyboard.w.pressedDown = true;
+            break;
+          case VK_E:
+            nextGameState->input.keyboard.e.pressedDown = true;
+            break;
+          case VK_A:
+            nextGameState->input.keyboard.a.pressedDown = true;
+            break;
+          case VK_S:
+            nextGameState->input.keyboard.s.pressedDown = true;
+            break;
+          case VK_D:
+            nextGameState->input.keyboard.d.pressedDown = true;
+            break;
         }
       break;
       case WM_KEYUP:
@@ -144,6 +169,24 @@ namespace
           break;
         case VK_SPACE:
           nextGameState->input.keyboard.space.pressedUp = true;
+          break;
+        case VK_Q:
+          nextGameState->input.keyboard.q.pressedUp = true;
+          break;
+        case VK_W:
+          nextGameState->input.keyboard.w.pressedUp = true;
+          break;
+        case VK_E:
+          nextGameState->input.keyboard.e.pressedUp = true;
+          break;
+        case VK_A:
+          nextGameState->input.keyboard.a.pressedUp = true;
+          break;
+        case VK_S:
+          nextGameState->input.keyboard.s.pressedUp = true;
+          break;
+        case VK_D:
+          nextGameState->input.keyboard.d.pressedUp = true;
           break;
         }
       default:
@@ -326,5 +369,5 @@ try
   return -2;
 } catch(...) {
   showErrorMessageBox("Unknown error", "Fatal error");
-  return -2;
+  return -3;
 }

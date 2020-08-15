@@ -137,7 +137,6 @@ struct Vec2i
 };
 struct Vec3i
 {
-  explicit operator Vec3f() const noexcept { return { (float)x, (float)y, (float)z }; }
   Vec3i& operator+=(const Vec3i& rhs) noexcept
   {
     x += rhs.x;
@@ -148,6 +147,10 @@ struct Vec3i
 
   int x, y, z;
 };
+constexpr inline Vec3f toVec3f(const Vec3i& v) noexcept { return { float(v.x), float(v.y), float(v.z) }; }
+constexpr inline Vec4f toVec4f(const Vec3i& v, float w) { return { float(v.x), float(v.y), float(v.z), w }; }
+inline Vec3i toVec3iRounded(const Vec3f& v) noexcept { return { int(std::round(v.x)), int(std::round(v.y)), int(std::round(v.z)) }; }
+inline Vec3i toVec3iRounded(const Vec4f& v) noexcept { return { int(std::round(v.x)), int(std::round(v.y)), int(std::round(v.z)) }; }
 constexpr inline Vec3i operator-(const Vec3i& v) noexcept { return { -v.x, -v.y, -v.z }; }
 constexpr inline Vec3i operator-(const Vec3i& left, const Vec3i& right) noexcept
 {
@@ -375,7 +378,7 @@ struct Quatf
 
   // For conversion from a matrix, check Game Engine Architecture page 399
 
-  constexpr operator Mat4f() const noexcept
+  explicit constexpr operator Mat4f() const noexcept
   {
     float xx = v.x * v.x;
     float xy = v.x * v.y;

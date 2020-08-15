@@ -628,7 +628,7 @@ static void renderCubes(
   if(currentTetracube) {
     cubeConstantBufferData.color = cubeClasses[currentTetracube->cubeClassIndex].color;
     for(const Vec3i& position : currentTetracube->positions) {
-      cubeConstantBufferData.transform = Mat4f::translation((Vec3f)position) * baseTransform;
+      cubeConstantBufferData.transform = Mat4f::translation(toVec3f(position + currentTetracube->translation)) * baseTransform;
 
       context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
       memcpy(mappedResource.pData, &cubeConstantBufferData, sizeof(cubeConstantBufferData));

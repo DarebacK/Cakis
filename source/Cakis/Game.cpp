@@ -5,18 +5,19 @@
 #include <cstdlib>
 #include <ctime>
 
-static constexpr Vec3i tetraCubePositions[][4] = {
-  {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}}, // I
-  {{1, 0, 0}, {2, 0, 0}, {1, 0, 1}, {2, 0, 1}}, // O
-  {{1, 0, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}}, // T
-  {{0, 0, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}}, // L
-  {{2, 0, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}}, // J
-  {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {2, 0, 1}}, // S
-  {{1, 0, 0}, {2, 0, 0}, {0, 0, 1}, {1, 0, 1}}, // Z
-  {{1, 0, 0}, {1, 0, 1}, {2, 0, 1}, {1, 1, 1}}, // B
-  {{1, 0, 0}, {1, 0, 1}, {2, 0, 1}, {1, 1, 0}}, // D
-  {{1, 0, 0}, {1, 0, 1}, {2, 0, 1}, {2, 1, 1}}  // F
+static constexpr Vec3i tetracubePositions[][4] = {
+  {{-1, 0, 0}, { 0, 0, 0}, { 1, 0, 0}, {2, 0, 0}}, // I
+  {{ 0, 0, 0}, { 1, 0, 0}, { 0, 0, 1}, {1, 0, 1}}, // O
+  {{ 0, 0, 0}, {-1, 0, 1}, { 0, 0, 1}, {1, 0, 1}}, // T
+  {{-1, 0, 0}, {-1, 0, 1}, { 0, 0, 1}, {1, 0, 1}}, // L
+  {{ 1, 0, 0}, {-1, 0, 1}, { 0, 0, 1}, {1, 0, 1}}, // J
+  {{-1, 0, 0}, { 0, 0, 0}, { 0, 0, 1}, {1, 0, 1}}, // S
+  {{ 0, 0, 0}, { 1, 0, 0}, {-1, 0, 1}, {0, 0, 1}}, // Z
+  {{ 0, 0, 0}, { 0, 0, 1}, { 1, 0, 1}, {0, 1, 1}}, // B
+  {{ 0, 0, 0}, { 0, 0, 1}, { 1, 0, 1}, {0, 1, 0}}, // D
+  {{ 0, 0, 0}, { 0, 0, 1}, { 1, 0, 1}, {1, 1, 1}}  // F
 };
+static constexpr Vec3i tetracubeOrigin = {1, 0, 0};
 CubeClass cubeClasses[] = {
   {ColorRgbaf{  0.f,   1.f,   1.f, 1.f}},
   {ColorRgbaf{  1.f,   1.f,   0.f, 1.f}},
@@ -65,7 +66,7 @@ static void spawnTetracube(Tetracube* tetracube)
 {
   int tetracubeIndex = std::rand() % arrayCount(cubeClasses);
   std::copy(
-    tetraCubePositions[tetracubeIndex], tetraCubePositions[tetracubeIndex] + 4,
+    tetracubePositions[tetracubeIndex], tetracubePositions[tetracubeIndex] + 4,
     tetracube->positions
   );
   Vec3i translationToCenter = {
@@ -73,17 +74,15 @@ static void spawnTetracube(Tetracube* tetracube)
     GameState::gridSize.y + 1,
     (int)std::floor(GameState::gridSize.z / 2.f) - 1
   };
-  for(Vec3i& position : tetracube->positions) {
-    position += translationToCenter;
-  }
+  tetracube->translation = tetracubeOrigin + translationToCenter;
 
   tetracube->cubeClassIndex = (PlayingSpace::ValueType)tetracubeIndex;
 }
-static void moveTetracube(Tetracube* tetracube, const Vec3i& moveBy, const PlayingSpace& playingSpace)
+static void tryToMoveTetracube(Tetracube* tetracube, const Vec3i& moveBy, const PlayingSpace& playingSpace)
 {
   bool isBlockedByAnotherCube = false;
   for(const Vec3i& position : tetracube->positions) {
-    Vec3i movedBy = position + moveBy;
+    Vec3i movedBy = position + tetracube->translation + moveBy;
     if(playingSpace.isInside(movedBy) &&
       playingSpace.at(movedBy) >= 0) {
       isBlockedByAnotherCube = true;
@@ -91,9 +90,30 @@ static void moveTetracube(Tetracube* tetracube, const Vec3i& moveBy, const Playi
     }
   }
   if(!isBlockedByAnotherCube) {
-    for(Vec3i& position : tetracube->positions) {
-      position += moveBy;
+    tetracube->translation += moveBy;
+  }
+}
+static void tryToRotateTetracube(Tetracube* tetracube, const Mat4f& rotation, const PlayingSpace& playingSpace)
+{
+  bool canRotate = true;
+  Vec3i rotatedPositions[4];
+  for(int i = 0; i < 4; ++i) {
+    rotatedPositions[i] = toVec3iRounded(toVec4f(tetracube->positions[i], 1.f) * rotation);
+    const Vec3i translatedRotatedPosition = rotatedPositions[i] + tetracube->translation;
+    const bool isInside = playingSpace.isInside(translatedRotatedPosition);
+    if(isInside && playingSpace.at(translatedRotatedPosition) >= 0) {
+      canRotate = false;
+      break;
+    } else if(!playingSpace.isInside(
+      translatedRotatedPosition.x, 
+      std::min(0, translatedRotatedPosition.y)/*Ignore y above playing space*/, 
+      translatedRotatedPosition.z)) {
+      canRotate = false;
+      break;
     }
+  }
+  if(canRotate) {
+    std::copy(rotatedPositions, rotatedPositions + arrayCount(rotatedPositions), tetracube->positions);
   }
 }
 static void updateCurrentTetracube(const GameState& lastState, GameState* nextState)
@@ -120,20 +140,34 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
         int currentTetracubeZMax = 0;
         int currentTetracubeYMin = GameState::gridSize.y - 1;
         for(const Vec3i& position : currentTetracube->positions) {
-          currentTetracubeXMin = std::min(currentTetracubeXMin, position.x);
-          currentTetracubeXMax = std::max(currentTetracubeXMax, position.x);
-          currentTetracubeZMin = std::min(currentTetracubeZMin, position.z);
-          currentTetracubeZMax = std::max(currentTetracubeZMax, position.z);
-          currentTetracubeYMin = std::min(currentTetracubeYMin, position.y);
+          Vec3i translatedPosition = position + currentTetracube->translation;
+          currentTetracubeXMin = std::min(currentTetracubeXMin, translatedPosition.x);
+          currentTetracubeXMax = std::max(currentTetracubeXMax, translatedPosition.x);
+          currentTetracubeZMin = std::min(currentTetracubeZMin, translatedPosition.z);
+          currentTetracubeZMax = std::max(currentTetracubeZMax, translatedPosition.z);
+          currentTetracubeYMin = std::min(currentTetracubeYMin, translatedPosition.y);
         }
         if(nextState->input.keyboard.left.pressedDown && currentTetracubeXMin > 0) {
-          moveTetracube(currentTetracube, {-1, 0, 0}, nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, {-1, 0, 0}, nextState->playingSpace);
         } else if(nextState->input.keyboard.right.pressedDown && currentTetracubeXMax < GameState::gridSize.x - 1) {
-          moveTetracube(currentTetracube, {1, 0, 0}, nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, {1, 0, 0}, nextState->playingSpace);
         } else if(nextState->input.keyboard.down.pressedDown && currentTetracubeZMin > 0) {
-          moveTetracube(currentTetracube, {0, 0, -1}, nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, {0, 0, -1}, nextState->playingSpace);
         } else if(nextState->input.keyboard.up.pressedDown && currentTetracubeZMax < GameState::gridSize.z - 1) {
-          moveTetracube(currentTetracube, {0, 0, 1}, nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, {0, 0, 1}, nextState->playingSpace);
+        }
+        if(nextState->input.keyboard.q.pressedDown) {
+          tryToRotateTetracube(currentTetracube, Mat4f::rotationZ(Pi / 2.f), nextState->playingSpace);
+        } else if(nextState->input.keyboard.w.pressedDown) {
+          tryToRotateTetracube(currentTetracube, Mat4f::rotationX(Pi / 2.f), nextState->playingSpace);
+        } else if(nextState->input.keyboard.e.pressedDown) {
+          tryToRotateTetracube(currentTetracube, Mat4f::rotationZ(-Pi / 2.f), nextState->playingSpace);
+        } else if(nextState->input.keyboard.a.pressedDown) {
+          tryToRotateTetracube(currentTetracube, Mat4f::rotationY(Pi / 2.f), nextState->playingSpace);
+        } else if(nextState->input.keyboard.s.pressedDown) {
+          tryToRotateTetracube(currentTetracube, Mat4f::rotationX(-Pi / 2.f), nextState->playingSpace);
+        } else if(nextState->input.keyboard.d.pressedDown) {
+          tryToRotateTetracube(currentTetracube, Mat4f::rotationY(-Pi / 2.f), nextState->playingSpace);
         }
       }
 
@@ -146,10 +180,11 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
         int moveBy;
         for(moveBy = 1; moveBy <= toMove; ++moveBy) {
           for(const Vec3i& position : currentTetracube->positions) {
-            int newY = position.y - moveBy;
-            if(nextState->playingSpace.isInside(position.x, newY, position.z) &&
-              nextState->playingSpace.at(position.x, newY, position.z) >= 0 ||
-              newY <= -1) {
+            Vec3i newPosition = position + currentTetracube->translation;
+            newPosition.y -= moveBy;
+            if(nextState->playingSpace.isInside(newPosition) &&
+              nextState->playingSpace.at(newPosition) >= 0 ||
+              newPosition.y <= -1) {
               collisionHappened = true;
               nextState->events.emplace(Event::TetracubeDropped, Event());
               goto collisionCheckEnd;
@@ -158,13 +193,13 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
         }
         collisionCheckEnd:
         --moveBy;
+        currentTetracube->translation.y -= moveBy;
         for(Vec3i& position : currentTetracube->positions) {
-          position.y -= moveBy;
+          Vec3i translatedPosition = position + currentTetracube->translation;
           if(collisionHappened) {
-            if(nextState->playingSpace.isInside(position)) {
-              nextState->playingSpace.at(position) = currentTetracube->cubeClassIndex;
-            }
-            else {
+            if(nextState->playingSpace.isInside(translatedPosition)) {
+              nextState->playingSpace.at(translatedPosition) = currentTetracube->cubeClassIndex;
+            } else {
               nextState->events.emplace(Event::GameLost, Event());
               logInfo("Lose condition triggered.");
               return;
@@ -181,22 +216,24 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
       int toMove = 0;
       while(true) {
         for(const Vec3i& position : currentTetracube->positions) {
-          int nextY = position.y - toMove - 1;
-          bool isBlockedByACube = (nextState->playingSpace.isInside(position.x, nextY, position.z) && nextState->playingSpace.at(position.x, nextY, position.z) >= 0);
-          if(nextY < 0 || isBlockedByACube) {
+          Vec3i nextPosition = position + currentTetracube->translation;
+          nextPosition.y = nextPosition.y - toMove - 1;
+          bool isBlockedByACube = (nextState->playingSpace.isInside(nextPosition) && nextState->playingSpace.at(nextPosition) >= 0);
+          if(nextPosition.y < 0 || isBlockedByACube) {
             goto dropDistanceCalculationEnd;
           }
         }
         ++toMove;
       }
       dropDistanceCalculationEnd:
+      currentTetracube->translation.y -= toMove;
 
       bool loseConditionTriggered = false;
-      for(Vec3i& position : currentTetracube->positions) {
-        if(!nextState->playingSpace.isInside(position.x, position.y - toMove, position.z)) {
+      for(const Vec3i& position : currentTetracube->positions) {
+        Vec3i translatedPosition = position + currentTetracube->translation;
+        if(!nextState->playingSpace.isInside(translatedPosition)) {
           loseConditionTriggered = true;
         }
-        position.y -= toMove;
       }
 
       nextState->events.emplace(Event::TetracubeDropped, Event());
@@ -206,7 +243,8 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
         return;
       } else {
         for(const Vec3i& position : currentTetracube->positions) {
-          nextState->playingSpace.at(position.x, position.y, position.z) = currentTetracube->cubeClassIndex;
+          Vec3i translatedPosition = position + currentTetracube->translation;
+          nextState->playingSpace.at(translatedPosition) = currentTetracube->cubeClassIndex;
         }
         spawnTetracube(currentTetracube);
       }

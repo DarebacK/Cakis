@@ -35,6 +35,8 @@ struct Keyboard
   Key F1;
   Key rightAlt;
   Key space;
+  Key q, w, e;
+  Key a, s, d;
 };
 
 struct Input
@@ -107,8 +109,9 @@ public:
 
   bool isInside(int x, int y, int z) const noexcept 
   {
-    int offset = x + z * size.x + y * size.x * size.z;
-    return offset >= 0 && offset < count;
+    return x >= 0 && x < size.x &&
+      y >= 0 && y < size.y &&
+      z >= 0 && z < size.z;
   };
   bool isInside(const Vec3i& position) const noexcept { return isInside(position.x, position.y, position.z); };
   ValueType at(int x, int y, int z) const noexcept 
@@ -142,6 +145,7 @@ private:
 struct Tetracube
 {
   Vec3i positions[4];
+  Vec3i translation;
   PlayingSpace::ValueType cubeClassIndex;
 };
 
