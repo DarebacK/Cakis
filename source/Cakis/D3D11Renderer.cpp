@@ -173,16 +173,16 @@ Mat4f projectionMatrix = Mat4f::identity();
 
 // Cube
 CComPtr<ID3D11Buffer> cubeVertexBuffer = nullptr;
+CComPtr<ID3D11Buffer> cubeInstanceBuffer = nullptr;
+struct CubeInstanceData
+{
+  Mat4f transform;
+  ColorRgbaf color;
+} cubeInstanceData[GameState::gridSize.x * GameState::gridSize.y * GameState::gridSize.z + 4];
 CComPtr<ID3D11Buffer> cubeIndexBuffer = nullptr;
 CComPtr<ID3D11VertexShader> cubeVertexShader = nullptr;
 CComPtr<ID3D11PixelShader> cubePixelShader = nullptr;
 CComPtr<ID3D11InputLayout> cubeInputLayout = nullptr;
-CComPtr<ID3D11Buffer> cubeConstantBuffer = nullptr;
-struct alignas(16) CubeConstantBufferData
-{
-  Mat4f transform;
-  ColorRgbaf color;
-};
 
 static void* loadShaderFile(const char* fileName, SIZE_T* shaderSize)
 {
@@ -465,15 +465,25 @@ void initialize(HWND window)
     {  0.5f,  0.5f,  0.5f },
     { -0.5f,  0.5f,  0.5f }
   };
-  D3D11_BUFFER_DESC cubeVBDesc
+  D3D11_BUFFER_DESC cubeVertexBufferDesc
   {
     sizeof(cubeVertices),
     D3D11_USAGE_IMMUTABLE,
     D3D11_BIND_VERTEX_BUFFER
   };
   D3D11_SUBRESOURCE_DATA cubeVBData {cubeVertices, 0, 0};
-  if(FAILED(device->CreateBuffer(&cubeVBDesc, &cubeVBData, &cubeVertexBuffer))) {
+  if(FAILED(device->CreateBuffer(&cubeVertexBufferDesc, &cubeVBData, &cubeVertexBuffer))) {
     throw InitializeException("Failed to create cube vertex buffer.");
+  }
+  D3D11_BUFFER_DESC cubeInstanceBufferDesc
+  {
+    sizeof(cubeInstanceData),
+    D3D11_USAGE_DYNAMIC,
+    D3D11_BIND_VERTEX_BUFFER,
+    D3D11_CPU_ACCESS_WRITE
+  };
+  if(FAILED(device->CreateBuffer(&cubeInstanceBufferDesc, nullptr, &cubeInstanceBuffer))) {
+    throw InitializeException("Failed to create cube instance buffer.");
   }
   short cubeIndices[] = { 
     0,4,5, 0,5,1, // front
@@ -494,18 +504,15 @@ void initialize(HWND window)
     throw InitializeException("Failed to create cube index buffer.");
   }
   D3D11_INPUT_ELEMENT_DESC cubeInputElementDescs[] = {
-    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0}
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"INSTANCE_TRANSFORM", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_TRANSFORM", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_TRANSFORM", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_TRANSFORM", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1}
   };
   cubeVertexShader = loadVertexShader("cube", cubeInputElementDescs, arrayCount(cubeInputElementDescs), &cubeInputLayout);
   cubePixelShader = loadPixelShader("cube");
-  D3D11_BUFFER_DESC cubeCBDesc
-  {
-    sizeof(CubeConstantBufferData), 
-    D3D11_USAGE_DYNAMIC,
-    D3D11_BIND_CONSTANT_BUFFER,
-    D3D11_CPU_ACCESS_WRITE
-  };
-  device->CreateBuffer(&cubeCBDesc, nullptr, &cubeConstantBuffer);
 
   initializeGrid();
 
@@ -594,49 +601,45 @@ static void renderCubes(
   Mat4f baseTransform = Mat4x3f::translation(cubePositionOffset) * viewProjection;
 
   context->VSSetShader(cubeVertexShader, nullptr, 0);
-  context->VSSetConstantBuffers(0, 1, &cubeConstantBuffer.p);
   context->PSSetShader(cubePixelShader, nullptr, 0);
   context->IASetInputLayout(cubeInputLayout);
-  constexpr UINT cubeVertexBufferStride = sizeof(Vec3f);
-  constexpr UINT cubeVertexBufferOffset = 0;
-  context->IASetVertexBuffers(0, 1, &cubeVertexBuffer.p, &cubeVertexBufferStride, &cubeVertexBufferOffset);
+  ID3D11Buffer* const vertexBuffers[] = {cubeVertexBuffer.p, cubeInstanceBuffer.p};
+  constexpr UINT cubeVertexBufferStrides[] = { sizeof(Vec3f), sizeof(CubeInstanceData) };
+  constexpr UINT cubeVertexBufferOffsets[] = {0, 0};
+  context->IASetVertexBuffers(0, arrayCount(vertexBuffers), vertexBuffers, cubeVertexBufferStrides, cubeVertexBufferOffsets);
   context->IASetIndexBuffer(cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
   context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
   D3D11_MAPPED_SUBRESOURCE mappedResource;
 
   Vec3i size = playingSpace.getSize();
-  CubeConstantBufferData cubeConstantBufferData;
+  int instanceCount = 0;
   for(int y = 0; y < size.y; ++y) {
     for(int z = 0; z < size.z; ++z) {
       for(int x = 0; x < size.x; ++x) {
         PlayingSpace::ValueType cubeClassIndex = playingSpace.at(x, y, z);
         if(cubeClassIndex >= 0) {
-          cubeConstantBufferData.transform = Mat4f::translation((float)x, (float)y, (float)z) * baseTransform;
-          cubeConstantBufferData.color = cubeClasses[cubeClassIndex].color;
-
-          context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-          memcpy(mappedResource.pData, &cubeConstantBufferData, sizeof(cubeConstantBufferData));
-          context->Unmap(cubeConstantBuffer, 0);
-
-          context->DrawIndexed(36, 0, 0);
+          cubeInstanceData[instanceCount].transform = Mat4f::translation((float)x, (float)y, (float)z) * baseTransform;
+          cubeInstanceData[instanceCount].color = cubeClasses[cubeClassIndex].color;
+          ++instanceCount;
         }
       }
     }
   }
 
   if(currentTetracube) {
-    cubeConstantBufferData.color = cubeClasses[currentTetracube->cubeClassIndex].color;
     for(const Vec3i& position : currentTetracube->positions) {
-      cubeConstantBufferData.transform = Mat4x3f::translation(toVec3f(position + currentTetracube->translation)) * baseTransform;
-
-      context->Map(cubeConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-      memcpy(mappedResource.pData, &cubeConstantBufferData, sizeof(cubeConstantBufferData));
-      context->Unmap(cubeConstantBuffer, 0);
-
-      context->DrawIndexed(36, 0, 0);
+      cubeInstanceData[instanceCount].transform = Mat4x3f::translation(toVec3f(position + currentTetracube->translation)) * baseTransform;
+      cubeInstanceData[instanceCount].color = cubeClasses[currentTetracube->cubeClassIndex].color;
+      ++instanceCount;
     }
   }
+
+  context->Map(cubeInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, &cubeInstanceData, sizeof(cubeInstanceData));
+  context->Unmap(cubeInstanceBuffer, 0);
+
+  context->DrawIndexedInstanced(36, instanceCount, 0, 0, 0);
 }
 
 void render(const GameState& gameState)

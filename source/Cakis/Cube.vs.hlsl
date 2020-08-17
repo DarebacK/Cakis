@@ -1,11 +1,5 @@
 #pragma pack_matrix(row_major)
 
-cbuffer Transformation
-{
-  float4x4 transform;
-  float4 color;
-};
-
 struct Output
 {
   float4 position : SV_POSITION;
@@ -13,7 +7,9 @@ struct Output
 };
 
 Output main(
-  float3 position : POSITION
+  float3 position : POSITION,
+  float4x4 transform : INSTANCE_TRANSFORM,
+  float4 color : INSTANCE_COLOR
 )
 {
   Output output;
