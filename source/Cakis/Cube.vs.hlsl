@@ -2,6 +2,7 @@
 
 struct Output
 {
+  float3 originalPosition : POSITION;
   float4 position : SV_POSITION;
   float4 color : COLOR;
 };
@@ -13,6 +14,7 @@ Output main(
 )
 {
   Output output;
+  output.originalPosition = position;
   output.position = mul(float4(position, 1.0f), transform);
   output.color = float4(color);
   return output;
