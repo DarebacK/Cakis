@@ -230,6 +230,10 @@ constexpr inline float degreesToRadians(float degrees) noexcept
 {
   return degrees * Pi / 180.f;
 }
+constexpr inline float radiansToDegrees(float radians) noexcept
+{
+  return radians * 180.f / Pi;
+}
 
 struct Mat3f
 {
@@ -647,6 +651,7 @@ public:
     return Mat4x3f::lookAt(toCartesian(target), target, { 0.f, 1.f, 0.f });
   }
 
+  float getTheta() const noexcept { return theta; }
   /**
    * @param dTheta Radians to rotate in theta direction, which moves camera side to side.
    */

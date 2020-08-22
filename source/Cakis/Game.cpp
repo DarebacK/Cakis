@@ -18,7 +18,7 @@ static constexpr Vec3i tetracubePositions[][4] = {
   {{ 0, 0, 0}, { 0, 0, 1}, { 1, 0, 1}, {1, 1, 1}}  // F
 };
 static constexpr Vec3i tetracubeOrigin = {1, 0, 0};
-CubeClass cubeClasses[] = {
+static CubeClass cubeClasses[] = {
   {ColorRgbaf{  0.f,   1.f,   1.f, 1.f}},
   {ColorRgbaf{  1.f,   1.f,   0.f, 1.f}},
   {ColorRgbaf{  1.f,   0.f,   1.f, 1.f}},
@@ -29,6 +29,12 @@ CubeClass cubeClasses[] = {
   {ColorRgbaf{ 0.5f, 0.19f,   0.f, 1.f}},
   {ColorRgbaf{0.25f, 0.25f, 0.25f, 1.f}},
   {ColorRgbaf{0.77f, 0.77f, 0.77f, 1.f}}
+};
+static constexpr Vec3i tetracubeMovementByQuadrant[4][4] = {
+  {{  1, 0,  0 }, { -1, 0,  0 }, {  0, 0,  1 }, {  0, 0, -1 }},
+  {{  0, 0, -1 }, {  0, 0,  1 }, {  1, 0,  0 }, { -1, 0,  0 }},
+  {{ -1, 0,  0 }, {  1, 0,  0 }, {  0, 0, -1 }, {  0, 0,  1 }},
+  {{  0, 0,  1 }, {  0, 0, -1 }, { -1, 0,  0 }, {  1, 0,  0 }}
 };
 
 Game::Game()
@@ -80,16 +86,16 @@ static void spawnTetracube(Tetracube* tetracube)
 }
 static void tryToMoveTetracube(Tetracube* tetracube, const Vec3i& moveBy, const PlayingSpace& playingSpace)
 {
-  bool isBlockedByAnotherCube = false;
+  bool canMove = true;
   for(const Vec3i& position : tetracube->positions) {
     Vec3i movedBy = position + tetracube->translation + moveBy;
-    if(playingSpace.isInside(movedBy) &&
-      playingSpace.at(movedBy) >= 0) {
-      isBlockedByAnotherCube = true;
+    if(!playingSpace.isInside(movedBy.x, 0, movedBy.z) ||
+      (playingSpace.isInside(movedBy) && playingSpace.at(movedBy) >= 0)) {
+      canMove = false;
       break;
     }
   }
-  if(!isBlockedByAnotherCube) {
+  if(canMove) {
     tetracube->translation += moveBy;
   }
 }
@@ -172,6 +178,8 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
 {
   nextState->currentTetracube = lastState.currentTetracube;
 
+  int cameraQuadrant = int((clampAngle(nextState->camera.getTheta() + Pi / 4.f)) / (Pi / 2.f));
+
   if(nextState->phase == GameState::Phase::Playing) {
     nextState->currentTetracubeFallingSpeed = lastState.currentTetracubeFallingSpeed;
     nextState->currentTetracubeDTimeLeftover = lastState.currentTetracubeDTimeLeftover + nextState->dTime;;
@@ -186,27 +194,14 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
       }
       else {
         Tetracube* currentTetracube = &nextState->currentTetracube;
-        int currentTetracubeXMin = GameState::gridSize.x - 1;
-        int currentTetracubeXMax = 0;
-        int currentTetracubeZMin = GameState::gridSize.z - 1;
-        int currentTetracubeZMax = 0;
-        int currentTetracubeYMin = GameState::gridSize.y - 1;
-        for(const Vec3i& position : currentTetracube->positions) {
-          Vec3i translatedPosition = position + currentTetracube->translation;
-          currentTetracubeXMin = std::min(currentTetracubeXMin, translatedPosition.x);
-          currentTetracubeXMax = std::max(currentTetracubeXMax, translatedPosition.x);
-          currentTetracubeZMin = std::min(currentTetracubeZMin, translatedPosition.z);
-          currentTetracubeZMax = std::max(currentTetracubeZMax, translatedPosition.z);
-          currentTetracubeYMin = std::min(currentTetracubeYMin, translatedPosition.y);
-        }
-        if(nextState->input.keyboard.left.pressedDown && currentTetracubeXMin > 0) {
-          tryToMoveTetracube(currentTetracube, {-1, 0, 0}, nextState->playingSpace);
-        } else if(nextState->input.keyboard.right.pressedDown && currentTetracubeXMax < GameState::gridSize.x - 1) {
-          tryToMoveTetracube(currentTetracube, {1, 0, 0}, nextState->playingSpace);
-        } else if(nextState->input.keyboard.down.pressedDown && currentTetracubeZMin > 0) {
-          tryToMoveTetracube(currentTetracube, {0, 0, -1}, nextState->playingSpace);
-        } else if(nextState->input.keyboard.up.pressedDown && currentTetracubeZMax < GameState::gridSize.z - 1) {
-          tryToMoveTetracube(currentTetracube, {0, 0, 1}, nextState->playingSpace);
+        if(nextState->input.keyboard.left.pressedDown) {
+          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][0], nextState->playingSpace);
+        } else if(nextState->input.keyboard.right.pressedDown) {
+          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][1], nextState->playingSpace);
+        } else if(nextState->input.keyboard.down.pressedDown) {
+          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][2], nextState->playingSpace);
+        } else if(nextState->input.keyboard.up.pressedDown) {
+          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][3], nextState->playingSpace);
         }
         if(nextState->input.keyboard.q.pressedDown) {
           tryToRotateTetracube(currentTetracube, Mat3f::rotationZ(Pi / 2.f), nextState->playingSpace);
