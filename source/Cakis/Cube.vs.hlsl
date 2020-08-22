@@ -4,7 +4,7 @@ struct Output
 {
   float3 originalPosition : POSITION;
   float4 position : SV_POSITION;
-  float4 color : COLOR;
+  nointerpolation float4 color : COLOR;
 };
 
 Output main(
