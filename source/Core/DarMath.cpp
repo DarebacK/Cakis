@@ -29,6 +29,23 @@ Vec4f operator*(const Vec4f& left, const Mat4x3f& right) noexcept
     left.w,
   };
 }
+Mat3f operator*(const Mat3f& left, const Mat3f& right) noexcept
+{
+  return
+  {
+    left[0][0] * right[0][0] + left[0][1] * right[1][0] + left[0][2] * right[2][0],
+    left[0][0] * right[0][1] + left[0][1] * right[1][1] + left[0][2] * right[2][1],
+    left[0][0] * right[0][2] + left[0][1] * right[1][2] + left[0][2] * right[2][2],
+
+    left[1][0] * right[0][0] + left[1][1] * right[1][0] + left[1][2] * right[2][0],
+    left[1][0] * right[0][1] + left[1][1] * right[1][1] + left[1][2] * right[2][1],
+    left[1][0] * right[0][2] + left[1][1] * right[1][2] + left[1][2] * right[2][2],
+
+    left[2][0] * right[0][0] + left[2][1] * right[1][0] + left[2][2] * right[2][0],
+    left[2][0] * right[0][1] + left[2][1] * right[1][1] + left[2][2] * right[2][1],
+    left[2][0] * right[0][2] + left[2][1] * right[1][2] + left[2][2] * right[2][2]
+  };
+}
 Mat4x3f operator*(const Mat3f& left, const Mat4x3f& right) noexcept
 {
   return

@@ -18,7 +18,7 @@ static constexpr Vec3i tetracubePositions[][4] = {
   {{ 0, 0, 0}, { 0, 0, 1}, { 1, 0, 1}, {1, 1, 1}}  // F
 };
 static constexpr Vec3i tetracubeOrigin = {1, 0, 0};
-static CubeClass cubeClasses[] = {
+static const CubeClass cubeClasses[] = {
   {ColorRgbaf{  0.f,   1.f,   1.f, 1.f}},
   {ColorRgbaf{  1.f,   1.f,   0.f, 1.f}},
   {ColorRgbaf{  1.f,   0.f,   1.f, 1.f}},
@@ -30,11 +30,48 @@ static CubeClass cubeClasses[] = {
   {ColorRgbaf{0.25f, 0.25f, 0.25f, 1.f}},
   {ColorRgbaf{0.77f, 0.77f, 0.77f, 1.f}}
 };
-static constexpr Vec3i tetracubeMovementByQuadrant[4][4] = {
-  {{  1, 0,  0 }, { -1, 0,  0 }, {  0, 0,  1 }, {  0, 0, -1 }},
-  {{  0, 0, -1 }, {  0, 0,  1 }, {  1, 0,  0 }, { -1, 0,  0 }},
-  {{ -1, 0,  0 }, {  1, 0,  0 }, {  0, 0, -1 }, {  0, 0,  1 }},
-  {{  0, 0,  1 }, {  0, 0, -1 }, { -1, 0,  0 }, {  1, 0,  0 }}
+struct TetracubeTransformation
+{
+  Vec3i movement[4];
+  Mat3f rotation[6];
+};
+static const TetracubeTransformation tetracubeTransformationsByQuadrant[4] = {
+  {{{ 1, 0, 0 }, { -1, 0, 0 }, { 0, 0, 1 }, { 0, 0, -1 }}, // left, right, down, up
+  {
+    Mat3f::rotationZ(-Pi / 2.f), // q
+    Mat3f::rotationX(-Pi / 2.f), // w
+    Mat3f::rotationZ( Pi / 2.f), // e
+    Mat3f::rotationY(-Pi / 2.f), // a
+    Mat3f::rotationX( Pi / 2.f), // s
+    Mat3f::rotationY( Pi / 2.f)  // d
+  }},
+  {{{ 0, 0, -1 }, { 0, 0, 1 }, { 1, 0, 0 }, { -1, 0, 0 }},
+  {
+    Mat3f::rotationX(-Pi / 2.f),
+    Mat3f::rotationZ( Pi / 2.f),
+    Mat3f::rotationX( Pi / 2.f),
+    Mat3f::rotationY(-Pi / 2.f),
+    Mat3f::rotationZ(-Pi / 2.f),
+    Mat3f::rotationY( Pi / 2.f)
+  }},
+  {{{ -1, 0, 0 }, { 1, 0, 0 }, { 0, 0, -1 }, { 0, 0, 1 }},
+  {
+    Mat3f::rotationZ( Pi / 2.f),
+    Mat3f::rotationX( Pi / 2.f),
+    Mat3f::rotationZ(-Pi / 2.f),
+    Mat3f::rotationY(-Pi / 2.f),
+    Mat3f::rotationX(-Pi / 2.f),
+    Mat3f::rotationY( Pi / 2.f)
+  }},
+  {{{ 0, 0, 1 }, { 0, 0, -1 }, { -1, 0, 0 }, { 1, 0, 0 }},
+  {
+    Mat3f::rotationX( Pi / 2.f),
+    Mat3f::rotationZ(-Pi / 2.f),
+    Mat3f::rotationX(-Pi / 2.f),
+    Mat3f::rotationY(-Pi / 2.f),
+    Mat3f::rotationZ( Pi / 2.f),
+    Mat3f::rotationY( Pi / 2.f)
+  }}
 };
 
 Game::Game()
@@ -178,8 +215,6 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
 {
   nextState->currentTetracube = lastState.currentTetracube;
 
-  int cameraQuadrant = int((clampAngle(nextState->camera.getTheta() + Pi / 4.f)) / (Pi / 2.f));
-
   if(nextState->phase == GameState::Phase::Playing) {
     nextState->currentTetracubeFallingSpeed = lastState.currentTetracubeFallingSpeed;
     nextState->currentTetracubeDTimeLeftover = lastState.currentTetracubeDTimeLeftover + nextState->dTime;;
@@ -194,27 +229,29 @@ static void updateCurrentTetracube(const GameState& lastState, GameState* nextSt
       }
       else {
         Tetracube* currentTetracube = &nextState->currentTetracube;
+        const int cameraQuadrant = int((clampAngle(nextState->camera.getTheta() + Pi / 4.f)) / (Pi / 2.f));
+        const TetracubeTransformation& transformation = tetracubeTransformationsByQuadrant[cameraQuadrant];
         if(nextState->input.keyboard.left.pressedDown) {
-          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][0], nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, transformation.movement[0], nextState->playingSpace);
         } else if(nextState->input.keyboard.right.pressedDown) {
-          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][1], nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, transformation.movement[1], nextState->playingSpace);
         } else if(nextState->input.keyboard.down.pressedDown) {
-          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][2], nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, transformation.movement[2], nextState->playingSpace);
         } else if(nextState->input.keyboard.up.pressedDown) {
-          tryToMoveTetracube(currentTetracube, tetracubeMovementByQuadrant[cameraQuadrant][3], nextState->playingSpace);
+          tryToMoveTetracube(currentTetracube, transformation.movement[3], nextState->playingSpace);
         }
         if(nextState->input.keyboard.q.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat3f::rotationZ(Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, transformation.rotation[0], nextState->playingSpace);
         } else if(nextState->input.keyboard.w.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat3f::rotationX(Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, transformation.rotation[1], nextState->playingSpace);
         } else if(nextState->input.keyboard.e.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat3f::rotationZ(-Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, transformation.rotation[2], nextState->playingSpace);
         } else if(nextState->input.keyboard.a.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat3f::rotationY(-Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, transformation.rotation[3], nextState->playingSpace);
         } else if(nextState->input.keyboard.s.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat3f::rotationX(-Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, transformation.rotation[4], nextState->playingSpace);
         } else if(nextState->input.keyboard.d.pressedDown) {
-          tryToRotateTetracube(currentTetracube, Mat3f::rotationY(Pi / 2.f), nextState->playingSpace);
+          tryToRotateTetracube(currentTetracube, transformation.rotation[5], nextState->playingSpace);
         }
       }
 

@@ -280,6 +280,7 @@ struct Mat3f
   float values[3][3];
 };
 Vec3f operator*(const Vec3f& left, const Mat3f& right) noexcept;
+Mat3f operator*(const Mat3f& left, const Mat3f& right) noexcept;
 /**
  * @brief Optimization for Matrices where last column is 0.f, 0.f, 0.f, 1.f
  */
