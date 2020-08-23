@@ -594,7 +594,7 @@ static void renderCubes(
   const PlayingSpace& playingSpace, 
   const Mat4f& viewProjection, 
   const CubeClass* cubeClasses,
-  const Tetracube* currentTetracube
+  const Tetracube& currentTetracube
 )
 {
   constexpr Vec3f cubePositionOffset = { 0.5f, 0.5f, 0.5f };
@@ -627,12 +627,10 @@ static void renderCubes(
     }
   }
 
-  if(currentTetracube) {
-    for(const Vec3i& position : currentTetracube->positions) {
-      cubeInstanceData[instanceCount].transform = Mat4x3f::translation(toVec3f(position + currentTetracube->translation)) * baseTransform;
-      cubeInstanceData[instanceCount].color = cubeClasses[currentTetracube->cubeClassIndex].color;
-      ++instanceCount;
-    }
+  for(const Vec3i& position : currentTetracube.positions) {
+    cubeInstanceData[instanceCount].transform = Mat4x3f::translation(toVec3f(position + currentTetracube.translation)) * baseTransform;
+    cubeInstanceData[instanceCount].color = cubeClasses[currentTetracube.cubeClassIndex].color;
+    ++instanceCount;
   }
 
   context->Map(cubeInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -672,11 +670,7 @@ void render(const GameState& gameState)
   Mat4x3f viewMatrix = gameState.camera.calculateView({GameState::gridSize.x / 2.f, GameState::gridSize.y / 2.f, GameState::gridSize.z / 2.f });
   Mat4f viewProjection = viewMatrix * projectionMatrix;
 
-  const Tetracube* currentTetracube = nullptr;
-  if(gameState.events.count(Event::TetracubeDropped) == 0) {
-    currentTetracube = &gameState.currentTetracube;
-  }
-  renderCubes(gameState.playingSpace, viewProjection, gameState.cubeClasses, currentTetracube);
+  renderCubes(gameState.playingSpace, viewProjection, gameState.cubeClasses, gameState.currentTetracube);
 
   renderGrids(viewProjection);
 
