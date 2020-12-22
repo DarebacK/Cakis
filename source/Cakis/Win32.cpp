@@ -13,6 +13,7 @@
 #include "D3D11Renderer.hpp"
 #include "Game.hpp"
 #include "GameState.hpp"
+#include "VulkanRenderer.h"
 
 #define VK_Q 0x51
 #define VK_W 0x57
@@ -45,6 +46,7 @@ namespace
   GameState* lastGameState = nullptr;
   GameState* nextGameState = nullptr;
   int frameCount = 0;
+  VulkanRenderer* rendererPtr = nullptr;
 
   LRESULT CALLBACK WindowProc(
     HWND   windowHandle,
@@ -61,7 +63,9 @@ namespace
         if(newClientAreaWidth != clientAreaWidth || newClientAreaHeight != clientAreaHeight) {
           clientAreaWidth = newClientAreaWidth;
           clientAreaHeight = newClientAreaHeight;
-          Renderer::onWindowResize(clientAreaWidth, clientAreaHeight);
+          if(rendererPtr) {
+            rendererPtr->onWindowResize(clientAreaWidth, clientAreaHeight);
+          }
         }
       }
       break;
@@ -306,7 +310,8 @@ try
     return -1;
   }
 
-  Renderer::initialize(window);
+  VulkanRenderer renderer(window);
+  rendererPtr = &renderer;
 
   Audio audio;
 
@@ -349,7 +354,7 @@ try
 
       game.update(*lastGameState, nextGameState);
 
-      Renderer::render(*nextGameState);
+      renderer.render(*nextGameState);
 
       audio.update(*nextGameState);
 
