@@ -1,5 +1,7 @@
 #define DAR_MODULE_NAME "VulkanRenderer"
 
+#include "VulkanRenderer.h"
+
 #include <memory>
 #include <vector>
 #include <set>
@@ -12,10 +14,10 @@
 #define VK_NO_PROTOTYPES
 #include "vulkan.h"
 
-#include "DarEngine.hpp"
-#include "VulkanRenderer.h"
 #include "ApplicationInfo.hpp"
+#include "DarEngine.hpp"
 #include "Exception.hpp"
+#include "File.hpp"
 
 namespace 
 {
@@ -100,6 +102,8 @@ VkImage presentationImage = nullptr;
 VkQueue graphicsQueue = nullptr;
 VkQueue transferQueue = nullptr;
 VkQueue presentQueue = nullptr;
+VkShaderModule triangleVertexShader = nullptr;
+VkShaderModule triangleFragmentShader = nullptr;
 
 uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
 {
@@ -245,6 +249,16 @@ void initInstance()
     VkDebugUtilsMessengerEXT messenger = nullptr;
     checkResult(vkCreateDebugUtilsMessengerEXT(instance, &messengerCreateInfo, allocator, &messenger));
   #endif
+}
+
+void initializePresentationSurface(HWND window)
+{
+  VkWin32SurfaceCreateInfoKHR surfaceCreateInfo{};
+  surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+  surfaceCreateInfo.hinstance = GetModuleHandle(NULL);
+  surfaceCreateInfo.hwnd = window;
+  checkResult(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, allocator, &presentationSurface));
+  assert(presentationSurface != nullptr);
 }
 
 VkPhysicalDevice findSuitablePhysicalDevice()
@@ -399,6 +413,34 @@ bool initSwapchain(VkPhysicalDevice physicalDevice)
   return true;
 }
 
+#define getShaderPath(shaderName) "shaders/" shaderName ".spv"
+
+VkShaderModule createShaderModule(const std::vector<uint8_t>& code)
+{
+  VkShaderModuleCreateInfo createInfo;
+  createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  createInfo.pNext = nullptr;
+  createInfo.flags = 0;
+  createInfo.codeSize = code.size();
+  createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+  VkShaderModule shaderModule;
+  checkResult(vkCreateShaderModule(device, &createInfo, allocator, &shaderModule));
+
+  return shaderModule;
+}
+
+void initializeShaders()
+{
+  std::vector<uint8_t> shaderCode;
+
+  De::readEntireFile(getShaderPath("triangle.frag"), shaderCode);
+  triangleVertexShader = createShaderModule(shaderCode);
+
+  De::readEntireFile(getShaderPath("triangle.frag"), shaderCode);
+  triangleFragmentShader = createShaderModule(shaderCode);
+}
+
 } // anonymous namespace
 
 VulkanRenderer::VulkanRenderer(HWND window)
@@ -412,18 +454,14 @@ VulkanRenderer::VulkanRenderer(HWND window)
   #include "ListOfVulkanFunctions.inl"
   initInstance();
 
-  VkWin32SurfaceCreateInfoKHR surfaceCreateInfo{};
-  surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-  surfaceCreateInfo.hinstance = GetModuleHandle(NULL);
-  surfaceCreateInfo.hwnd = window;
-  checkResult(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, allocator, &presentationSurface));
-  assert(presentationSurface != nullptr);
+  initializePresentationSurface(window);
 
   VkPhysicalDevice physicalDevice = findSuitablePhysicalDevice();
   initDevice(physicalDevice);
   if(!initSwapchain(physicalDevice)) {
     throw Exception("Failed to initialize swapchain.");
   }
+  initializeShaders();
 }
 
 void VulkanRenderer::onWindowResize(int clientAreaWidth, int clientAreaHeight)

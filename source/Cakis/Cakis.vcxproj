@@ -74,6 +74,9 @@ copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudio.dll" "$(TargetDir)"
 fmodstudio -build "$(SolutionDir)assets\audio\Cakis\Cakis.fspro"
 xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /y /e /i</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if not exist "$(OutDir)shaders" mkdir "$(OutDir)shaders"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -93,6 +96,9 @@ copy /y "$(SolutionDir)libraries\FMOD_2_00_10\fmodstudioL.dll" "$(TargetDir)";
 call fmodstudio -build "$(SolutionDir)assets\audio\Cakis\Cakis.fspro"
 xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /y /e /i</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if not exist "$(OutDir)shaders" mkdir "$(OutDir)shaders"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Audio.cpp" />
@@ -119,6 +125,20 @@ xcopy "$(SolutionDir)assets\audio\Cakis\Build\Desktop" "$(TargetDir)\audio" /s /
   <ItemGroup>
     <None Include="..\..\assets\audio\Cakis\Cakis.fspro" />
     <None Include="ListOfVulkanFunctions.inl" />
+    <CustomBuild Include="triangle.frag">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(ProjectDir)..\..\tools\glslc.exe" "%(Identity)" -o "$(OutDir)shaders\%(Identity).spv"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(ProjectDir)..\..\tools\glslc.exe" "%(Identity)" -o "$(OutDir)shaders\%(Identity).spv"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)shaders\%(Identity).spv</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)shaders\%(Identity).spv</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="triangle.vert">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(ProjectDir)..\..\tools\glslc.exe" "%(Identity)" -o "$(OutDir)shaders\%(Identity).spv"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(ProjectDir)..\..\tools\glslc.exe" "%(Identity)" -o "$(OutDir)shaders\%(Identity).spv"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)shaders\%(Identity).spv</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)shaders\%(Identity).spv</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <UpToDateCheckInput Include="..\..\assets\audio\Cakis\**" />

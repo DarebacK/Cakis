@@ -68,4 +68,12 @@
       <Filter>Source Files\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="triangle.vert">
+      <Filter>Source Files\Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="triangle.frag">
+      <Filter>Source Files\Shaders</Filter>
+    </CustomBuild>
+  </ItemGroup>
 </Project>

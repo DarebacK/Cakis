@@ -19,6 +19,7 @@
       <SubType>
       </SubType>
     </ClCompile>
+    <ClCompile Include="File.cpp" />
     <ClCompile Include="Library.cpp">
       <SubType>
       </SubType>
@@ -37,6 +38,7 @@
       <SubType>
       </SubType>
     </ClInclude>
+    <ClInclude Include="File.hpp" />
     <ClInclude Include="Library.hpp">
       <SubType>
       </SubType>
