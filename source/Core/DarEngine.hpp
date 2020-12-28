@@ -9,24 +9,23 @@ using byte = unsigned char;
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
 #include <windows.h>
 
   #define logError(message, ...) \
   { \
-    char stringBuffer[256]; \
+    char stringBuffer[512]; \
     _snprintf_s(stringBuffer, sizeof(stringBuffer), "[ERROR][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
     OutputDebugStringA(stringBuffer); \
   }
   #define logWarning(message, ...) \
   { \
-    char stringBuffer[256]; \
+    char stringBuffer[512]; \
     _snprintf_s(stringBuffer, sizeof(stringBuffer), "[WARN][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
     OutputDebugStringA(stringBuffer); \
   }
   #define logInfo(message, ...) \
   { \
-    char stringBuffer[256]; \
+    char stringBuffer[512]; \
     _snprintf_s(stringBuffer, sizeof(stringBuffer), "[INFO][" DAR_MODULE_NAME "] " message "\n", __VA_ARGS__); \
     OutputDebugStringA(stringBuffer); \
   }

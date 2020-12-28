@@ -588,7 +588,7 @@ static void resolveRenderTargetIntoBackBuffer()
   if(SUCCEEDED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)))) {
     context->ResolveSubresource(backBuffer, 0, renderTarget, 0, swapChainDesc.Format);
   } else {
-    logError("resolveRenderTargetIntoBackBuffer failed. Failed to get swapchain's back buffer.");
+    logError("resolveRenderTargetIntoBackBuffer failed. Failed to get swapChain's back buffer.");
   }
 }
 
