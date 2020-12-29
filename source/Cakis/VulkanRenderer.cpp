@@ -91,6 +91,7 @@ VkInstance instance = nullptr;
 std::vector<VkExtensionProperties> availableInstanceExtensions;
 const De::ApplicationInfo applicationInfo = {}; 
 const VkAllocationCallbacks* allocator = nullptr;
+VkPhysicalDevice physicalDevice = nullptr;
 VkDevice device = nullptr;
 VkSurfaceKHR presentationSurface = nullptr;
 VkSwapchainCreateInfoKHR swapChainInfo = {};
@@ -99,13 +100,14 @@ VkImage* swapChainImages = nullptr;
 VkImageView* swapChainImageViews = nullptr;
 VkFramebuffer* swapChainFramebuffers = nullptr;
 VkCommandBuffer* swapChainCommandBuffers = nullptr;
-VkSemaphore* swapChainImageAvailableSemaphores = nullptr;
-VkSemaphore* swapChainImageRenderFinishedSemaphores = nullptr;
 VkFence* swapChainImageFences = nullptr;
 uint32_t swapChainImageCount = 0;
+constexpr int maxFramesInFlight = 2;
+VkSemaphore swapChainImageAvailableSemaphores[maxFramesInFlight];
+VkSemaphore swapChainImageRenderFinishedSemaphores[maxFramesInFlight];
+VkFence swapChainImagesInFlightFences[maxFramesInFlight];
+
 VkCommandPool swapChainCommandPool = nullptr;
-//VkFence presentationImageFence = nullptr;
-//VkImage presentationImage = nullptr;
 uint32_t graphicsQueueFamilyIndex = UINT32_MAX;
 VkQueue graphicsQueue = nullptr;
 VkQueue transferQueue = nullptr;
@@ -317,7 +319,7 @@ void loadDeviceExtensionFunctions()
   if(!name) throw VulkanRenderer::Exception{std::string("could not load vulkan function ") + std::string(#name)};
   #include "ListOfVulkanFunctions.inl"
 }
-void initDevice(VkPhysicalDevice physicalDevice)
+void initDevice()
 {
   VkDeviceQueueCreateInfo queueInfo{};
   queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -349,18 +351,7 @@ void initDevice(VkPhysicalDevice physicalDevice)
   presentQueue = graphicsQueue;
 }
 
-VkFence createFence(int flags)
-{
-  VkFenceCreateInfo createInfo;
-  createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  createInfo.pNext = nullptr;
-  createInfo.flags = flags;
-  VkFence fence = nullptr;
-  checkResult(vkCreateFence(device, &createInfo, allocator, &fence));
-  return fence;
-}
-
-bool initSwapChain(VkPhysicalDevice physicalDevice)
+bool initSwapChain()
 {
   uint32_t presentModesCount;
   if(!checkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, presentationSurface, &presentModesCount, nullptr))) return false;
@@ -400,7 +391,7 @@ bool initSwapChain(VkPhysicalDevice physicalDevice)
   if(!checkResult(vkCreateSwapchainKHR(device, &swapChainInfo, allocator, &swapChain))) return false;
 
   if(!checkResult(vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, nullptr))) return false;
-  swapChainImages = (VkImage*)malloc(swapChainImageCount * sizeof(VkImage));
+  swapChainImages = new VkImage[swapChainImageCount];
   if(!checkResult(vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, swapChainImages))) return false;
 
   swapChainImageViews = new VkImageView[swapChainImageCount];
@@ -418,7 +409,6 @@ bool initSwapChain(VkPhysicalDevice physicalDevice)
     checkResult(vkCreateImageView(device, &imageViewCreateInfo, allocator, swapChainImageViews + i));
   }
 
-  /*presentationImageFence = createFence(false);*/
   return true;
 }
 
@@ -719,7 +709,7 @@ private:
   VkCommandBuffer commandBuffer;
 };
 
-void initializeCommandBuffers()
+void initializeCommandPool()
 {
   VkCommandPoolCreateInfo poolInfo;
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -728,7 +718,10 @@ void initializeCommandBuffers()
   poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
 
   checkResult(vkCreateCommandPool(device, &poolInfo, allocator, &swapChainCommandPool));
+}
 
+void initializeCommandBuffers()
+{
   swapChainCommandBuffers = new VkCommandBuffer[swapChainImageCount];
 
   VkCommandBufferAllocateInfo allocateInfo;
@@ -766,10 +759,6 @@ void initializeCommandBuffers()
 
 void initializeSyncObjects()
 {
-  swapChainImageAvailableSemaphores = new VkSemaphore[swapChainImageCount];
-  swapChainImageRenderFinishedSemaphores = new VkSemaphore[swapChainImageCount];
-  swapChainImageFences = new VkFence[swapChainImageCount];
-
   VkSemaphoreCreateInfo semaphoreInfo;
   semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   semaphoreInfo.pNext = nullptr;
@@ -780,11 +769,46 @@ void initializeSyncObjects()
   fenceInfo.pNext = nullptr;
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+  for(int i = 0; i < maxFramesInFlight; ++i) {
     checkResult(vkCreateSemaphore(device, &semaphoreInfo, allocator, swapChainImageAvailableSemaphores + i));
     checkResult(vkCreateSemaphore(device, &semaphoreInfo, allocator, swapChainImageRenderFinishedSemaphores + i));
-    checkResult(vkCreateFence(device, &fenceInfo, allocator, swapChainImageFences + i));
+    checkResult(vkCreateFence(device, &fenceInfo, allocator, swapChainImagesInFlightFences + i));
   }
+}
+
+void cleanupSwapChainContext()
+{
+  vkFreeCommandBuffers(device, swapChainCommandPool, swapChainImageCount, swapChainCommandBuffers);
+  delete[] swapChainCommandBuffers;
+
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    vkDestroyFramebuffer(device, swapChainFramebuffers[i], allocator);
+    vkDestroyImageView(device, swapChainImageViews[i], allocator);
+  }
+  delete[] swapChainFramebuffers;
+  delete[] swapChainImageViews;
+
+  vkDestroyPipeline(device, graphicsPipeline, allocator);
+  vkDestroyPipelineLayout(device, pipelineLayout, allocator);
+
+  vkDestroyRenderPass(device, renderPass, allocator);
+
+  vkDestroySwapchainKHR(device, swapChain, allocator);
+  delete[] swapChainImages;
+
+  delete[] swapChainImageFences;
+}
+
+void initializeSwapChainContext()
+{
+  if(!initSwapChain()) {
+    throw VulkanRenderer::Exception("Failed to initialize swapChain.");
+  }
+  initializeRenderPass();
+  initializePipeline();
+  initializeSwapChainFramebuffers();
+  initializeCommandBuffers();
+  swapChainImageFences = new VkFence[swapChainImageCount]();
 }
 
 } // anonymous namespace
@@ -802,37 +826,41 @@ VulkanRenderer::VulkanRenderer(HWND window)
 
   initializePresentationSurface(window);
 
-  VkPhysicalDevice physicalDevice = findSuitablePhysicalDevice();
-  initDevice(physicalDevice);
-  if(!initSwapChain(physicalDevice)) {
-    throw Exception("Failed to initialize swapChain.");
-  }
-  initializeRenderPass();
-  initializePipeline();
-  initializeSwapChainFramebuffers();
-  initializeCommandBuffers();
+  physicalDevice = findSuitablePhysicalDevice();
+  initDevice();
+  initializeCommandPool();
+  initializeSwapChainContext();
   initializeSyncObjects();
 }
 
 void VulkanRenderer::onWindowResize(int clientAreaWidth, int clientAreaHeight)
 {
+  if(vkDeviceWaitIdle(device) != VK_SUCCESS) {
+    logError("Failed to wait for device idle during window resize");
+  }
 
+  cleanupSwapChainContext();
 }
 
 void VulkanRenderer::render(const GameState& gameState)
 {
-  uint32_t syncIndex = renderCount % swapChainImageCount;
+  uint32_t syncIndex = renderCount % maxFramesInFlight;
+
+  if(vkWaitForFences(device, 1, &swapChainImagesInFlightFences[syncIndex], VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+    logError("Failed to wait for a image in flight fence with index %u.", syncIndex);
+  }
 
   uint32_t imageIndex;
-  //TODO: error handling
   VkSemaphore swapChainImageAvailableSemaphore = swapChainImageAvailableSemaphores[syncIndex];
+  //TODO: error handling
   vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, swapChainImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-  VkFence renderCommandsExecutedFence = swapChainImageFences[syncIndex];
-  if(vkWaitForFences(device, 1, &renderCommandsExecutedFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-    logError("Failed to wait for a swapchain image fence with index %u.", syncIndex);
+  if(swapChainImageFences[imageIndex]) {
+    if(vkWaitForFences(device, 1, &swapChainImageFences[imageIndex], VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+      logError("Failed to wait for a swapchain image fence with index %u.", imageIndex);
+    }
   }
-  vkResetFences(device, 1, &renderCommandsExecutedFence);
+  swapChainImageFences[imageIndex] = swapChainImagesInFlightFences[syncIndex];
   
   VkSubmitInfo submitInfo;
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -847,7 +875,11 @@ void VulkanRenderer::render(const GameState& gameState)
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = &swapChainImageRenderFinishedSemaphore;
 
-  checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, renderCommandsExecutedFence));
+  if(vkResetFences(device, 1, &swapChainImageFences[imageIndex]) != VK_SUCCESS) {
+    logError("Failed to reset a swapchain image fence with index %u.", imageIndex);
+  }
+
+  checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapChainImageFences[imageIndex]));
 
   VkPresentInfoKHR presentInfo;
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
