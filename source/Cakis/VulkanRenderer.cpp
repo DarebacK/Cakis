@@ -811,6 +811,16 @@ void initializeSwapChainContext()
   swapChainImageFences = new VkFence[swapChainImageCount]();
 }
 
+void recreateSwapChainContext()
+{
+  if(vkDeviceWaitIdle(device) != VK_SUCCESS) {
+    logError("Failed to wait for device idle during window resize");
+  }
+
+  cleanupSwapChainContext();
+  initializeSwapChainContext();
+}
+
 } // anonymous namespace
 
 VulkanRenderer::VulkanRenderer(HWND window)
@@ -835,11 +845,7 @@ VulkanRenderer::VulkanRenderer(HWND window)
 
 void VulkanRenderer::onWindowResize(int clientAreaWidth, int clientAreaHeight)
 {
-  if(vkDeviceWaitIdle(device) != VK_SUCCESS) {
-    logError("Failed to wait for device idle during window resize");
-  }
-
-  cleanupSwapChainContext();
+  recreateSwapChainContext();
 }
 
 void VulkanRenderer::render(const GameState& gameState)
@@ -852,8 +858,19 @@ void VulkanRenderer::render(const GameState& gameState)
 
   uint32_t imageIndex;
   VkSemaphore swapChainImageAvailableSemaphore = swapChainImageAvailableSemaphores[syncIndex];
-  //TODO: error handling
-  vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, swapChainImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+  VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, swapChainImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+  bool isSwapChainSuboptimal = false;
+  if(result == VK_SUBOPTIMAL_KHR) {
+    logWarning("Suboptimal swap chain detected after acquiring next swap chain image.");
+    isSwapChainSuboptimal = true;
+  } else if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+    logError("Failed to acquire next swap chain image because swap chain is out of date.");
+    recreateSwapChainContext();
+    return;
+  } else if(result != VK_SUCCESS) {
+    logError("Failed to acquire next swap chain image.");
+    return;
+  }
 
   if(swapChainImageFences[imageIndex]) {
     if(vkWaitForFences(device, 1, &swapChainImageFences[imageIndex], VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
@@ -891,8 +908,21 @@ void VulkanRenderer::render(const GameState& gameState)
   presentInfo.pImageIndices = &imageIndex;
   presentInfo.pResults = nullptr;
 
-  //TODO: error handling
-  vkQueuePresentKHR(presentQueue, &presentInfo);
+  result = vkQueuePresentKHR(presentQueue, &presentInfo);
+  if(result == VK_SUBOPTIMAL_KHR) {
+    logWarning("Suboptimal swap chain detected after presenting swap chain image.");
+    isSwapChainSuboptimal = true;
+  } else if(result == VK_ERROR_OUT_OF_DATE_KHR) {
+    logError("Failed to present swap chain image because swap chain is out of date.");
+    recreateSwapChainContext();
+  } else if(result != VK_SUCCESS) { 
+    logError("Failed to present swapchain image.");
+  }
 
   ++renderCount;
+
+  if(isSwapChainSuboptimal) {
+    logInfo("Recreating swap chain because it is suboptimal.");
+    recreateSwapChainContext();
+  }
 }
