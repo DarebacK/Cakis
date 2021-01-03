@@ -16,6 +16,7 @@
 
 #include "ApplicationInfo.hpp"
 #include "DarEngine.hpp"
+#include <DarMath.hpp>
 #include "Exception.hpp"
 #include "File.hpp"
 
@@ -92,6 +93,7 @@ std::vector<VkExtensionProperties> availableInstanceExtensions;
 const De::ApplicationInfo applicationInfo = {}; 
 const VkAllocationCallbacks* allocator = nullptr;
 VkPhysicalDevice physicalDevice = nullptr;
+VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties = {};
 VkDevice device = nullptr;
 VkSurfaceKHR presentationSurface = nullptr;
 VkSwapchainCreateInfoKHR swapChainInfo = {};
@@ -116,6 +118,29 @@ VkRenderPass renderPass = nullptr;
 VkPipelineLayout pipelineLayout = nullptr;
 VkPipeline graphicsPipeline = nullptr;
 uint64_t renderCount = 0;
+
+struct TriangleVertex {
+  Vec2f position;
+  Vec3f color;
+};
+const TriangleVertex triangleVertices[] = {
+  {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+  {{0.5f, 0.5f},  {0.0f, 1.0f, 0.0f}},
+  {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+};
+VkBuffer triangleVertexBuffer = nullptr;
+VkDeviceMemory triangleVertexBufferMemory = nullptr;
+
+uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+  for(uint32_t i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++) {
+    if((typeFilter & (1 << i)) && (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+
+  throw VulkanRenderer::Exception("Memory type not found.");
+}
 
 uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
 {
@@ -300,6 +325,12 @@ VkPhysicalDevice findSuitablePhysicalDevice()
   //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
   //}
   return physicalDevices[0];
+}
+
+void initializePhysicalDevice()
+{
+  physicalDevice = findSuitablePhysicalDevice();
+  vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
 }
 
 void loadDeviceCoreFunctions()
@@ -530,14 +561,23 @@ void initializePipeline()
   shaderStageInfos[1].pName = "main";
   shaderStageInfos[1].pSpecializationInfo = nullptr;
 
+  VkVertexInputBindingDescription triangleVertexInputBindingDescription;
+  triangleVertexInputBindingDescription.binding = 0;
+  triangleVertexInputBindingDescription.stride = sizeof(TriangleVertex);
+  triangleVertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  VkVertexInputAttributeDescription triangleVertexInputAttributeDescriptions[] = {
+    {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(TriangleVertex, position)},
+    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TriangleVertex, color)}
+  };
+
   VkPipelineVertexInputStateCreateInfo vertexInputStateInfo;
   vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
   vertexInputStateInfo.pNext = nullptr;
   vertexInputStateInfo.flags = 0;
-  vertexInputStateInfo.vertexBindingDescriptionCount = 0;
-  vertexInputStateInfo.pVertexBindingDescriptions = nullptr;
-  vertexInputStateInfo.vertexAttributeDescriptionCount = 0;
-  vertexInputStateInfo.pVertexAttributeDescriptions = nullptr;
+  vertexInputStateInfo.vertexBindingDescriptionCount = 1;
+  vertexInputStateInfo.pVertexBindingDescriptions = &triangleVertexInputBindingDescription;
+  vertexInputStateInfo.vertexAttributeDescriptionCount = arrayCount(triangleVertexInputAttributeDescriptions);
+  vertexInputStateInfo.pVertexAttributeDescriptions = triangleVertexInputAttributeDescriptions;
 
   VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo;
   inputAssemblyStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -753,7 +793,10 @@ void initializeCommandBuffers()
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    const VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &triangleVertexBuffer, &offset);
+
+    vkCmdDraw(commandBuffer, arrayCount(triangleVertices), 1, 0, 0);
   }
 }
 
@@ -774,6 +817,37 @@ void initializeSyncObjects()
     checkResult(vkCreateSemaphore(device, &semaphoreInfo, allocator, swapChainImageRenderFinishedSemaphores + i));
     checkResult(vkCreateFence(device, &fenceInfo, allocator, swapChainImagesInFlightFences + i));
   }
+}
+
+void initializeVertexBuffer()
+{
+  VkBufferCreateInfo bufferInfo;
+  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  bufferInfo.pNext = nullptr;
+  bufferInfo.flags = 0;
+  bufferInfo.size = sizeof(triangleVertices);
+  bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  bufferInfo.queueFamilyIndexCount = 0;
+  bufferInfo.pQueueFamilyIndices = nullptr;
+  checkResult(vkCreateBuffer(device, &bufferInfo, allocator, &triangleVertexBuffer));
+
+  VkMemoryRequirements memoryRequirements;
+  vkGetBufferMemoryRequirements(device, triangleVertexBuffer, &memoryRequirements);
+
+  VkMemoryAllocateInfo memoryAllocateInfo;
+  memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  memoryAllocateInfo.pNext = nullptr;
+  memoryAllocateInfo.allocationSize = memoryRequirements.size;
+  memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  checkResult(vkAllocateMemory(device, &memoryAllocateInfo, allocator, &triangleVertexBufferMemory));
+
+  checkResult(vkBindBufferMemory(device, triangleVertexBuffer, triangleVertexBufferMemory, 0));
+
+  void* bufferData;
+  checkResult(vkMapMemory(device, triangleVertexBufferMemory, 0, bufferInfo.size, 0, &bufferData));
+  memcpy(bufferData, triangleVertices, bufferInfo.size);
+  vkUnmapMemory(device, triangleVertexBufferMemory);
 }
 
 void cleanupSwapChainContext()
@@ -836,9 +910,10 @@ VulkanRenderer::VulkanRenderer(HWND window)
 
   initializePresentationSurface(window);
 
-  physicalDevice = findSuitablePhysicalDevice();
+  initializePhysicalDevice();
   initDevice();
   initializeCommandPool();
+  initializeVertexBuffer();
   initializeSwapChainContext();
   initializeSyncObjects();
 }
