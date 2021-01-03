@@ -109,7 +109,7 @@ VkSemaphore swapChainImageAvailableSemaphores[maxFramesInFlight];
 VkSemaphore swapChainImageRenderFinishedSemaphores[maxFramesInFlight];
 VkFence swapChainImagesInFlightFences[maxFramesInFlight];
 
-VkCommandPool swapChainCommandPool = nullptr;
+VkCommandPool graphicsCommandPool = nullptr;
 uint32_t graphicsQueueFamilyIndex = UINT32_MAX;
 VkQueue graphicsQueue = nullptr;
 VkQueue transferQueue = nullptr;
@@ -140,6 +140,173 @@ uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
   }
 
   throw VulkanRenderer::Exception("Memory type not found.");
+}
+
+class CommandRecorder
+{
+public:
+  explicit CommandRecorder(VkCommandBuffer commandBuffer, VkCommandBufferUsageFlags flags = 0)
+    : commandBuffer(commandBuffer)
+  {
+    VkCommandBufferBeginInfo beginInfo;
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.pNext = nullptr;
+    beginInfo.flags = flags;
+    beginInfo.pInheritanceInfo = nullptr;
+
+    checkResult(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+  }
+  CommandRecorder(const CommandRecorder& other) = delete;
+  CommandRecorder(CommandRecorder&& other) = delete;
+  ~CommandRecorder()
+  {
+    VkResult result = vkEndCommandBuffer(commandBuffer);
+    if(result != VK_SUCCESS) {
+      logError("Failed to end command buffer: %d", result);
+    }
+  }
+
+private:
+  VkCommandBuffer commandBuffer;
+};
+
+class PrimaryCommandBuffer
+{
+public:
+  explicit PrimaryCommandBuffer(VkCommandPool commandPool)
+    : commandPool(commandPool)
+  {
+    VkCommandBufferAllocateInfo allocateInfo;
+    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocateInfo.pNext = nullptr;
+    allocateInfo.commandPool = commandPool;
+    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandBufferCount = 1;
+    checkResult(vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer));
+  }
+  PrimaryCommandBuffer(const PrimaryCommandBuffer& other) = delete;
+  PrimaryCommandBuffer(PrimaryCommandBuffer&& other) = delete;
+  ~PrimaryCommandBuffer()
+  {
+    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+  }
+
+  operator VkCommandBuffer() const { return commandBuffer; }
+
+private:
+  VkCommandPool commandPool;
+  VkCommandBuffer commandBuffer;
+};
+
+class RenderPassRecorder
+{
+public:
+  RenderPassRecorder(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo& beginInfo, VkSubpassContents contents)
+    : commandBuffer(commandBuffer)
+  {
+    vkCmdBeginRenderPass(commandBuffer, &beginInfo, contents);
+  }
+  RenderPassRecorder(const RenderPassRecorder& other) = delete;
+  RenderPassRecorder(RenderPassRecorder&& other) = delete;
+  ~RenderPassRecorder()
+  {
+    vkCmdEndRenderPass(commandBuffer);
+  }
+
+private:
+  VkCommandBuffer commandBuffer;
+};
+
+class Buffer
+{
+public:
+  Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+  {
+    VkBufferCreateInfo bufferInfo;
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.pNext = nullptr;
+    bufferInfo.flags = 0;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    bufferInfo.queueFamilyIndexCount = 0;
+    bufferInfo.pQueueFamilyIndices = nullptr;
+    checkResult(vkCreateBuffer(device, &bufferInfo, allocator, &buffer));
+
+    VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
+
+    VkMemoryAllocateInfo memoryAllocateInfo;
+    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocateInfo.pNext = nullptr;
+    memoryAllocateInfo.allocationSize = memoryRequirements.size;
+    memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
+    checkResult(vkAllocateMemory(device, &memoryAllocateInfo, allocator, &memory));
+
+    checkResult(vkBindBufferMemory(device, buffer, memory, 0));
+  }
+  Buffer(const Buffer& other) = delete;
+  Buffer(Buffer&& other) = delete;
+  ~Buffer()
+  {
+    vkDestroyBuffer(device, buffer, allocator);
+    vkFreeMemory(device, memory, allocator);
+  }
+
+  void write(const void* srcData, size_t size)
+  {
+    void* bufferData;
+    checkResult(vkMapMemory(device, memory, 0, size, 0, &bufferData));
+    memcpy(bufferData, srcData, size);
+    vkUnmapMemory(device, memory);
+  }
+
+  void copyTo(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+  {
+    VkBufferCopy bufferCopy;
+    bufferCopy.srcOffset = 0;
+    bufferCopy.dstOffset = 0;
+    bufferCopy.size = size;
+    vkCmdCopyBuffer(commandBuffer, buffer, dstBuffer, 1, &bufferCopy);
+  }
+
+private:
+  VkBuffer buffer;
+  VkDeviceMemory memory;
+};
+
+class StagingBuffer : public Buffer
+{
+public:
+  StagingBuffer(VkDeviceSize size)
+    : Buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+  {}
+};
+
+void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* bufferMemory)
+{
+  VkBufferCreateInfo bufferInfo;
+  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  bufferInfo.pNext = nullptr;
+  bufferInfo.flags = 0;
+  bufferInfo.size = size;
+  bufferInfo.usage = usage;
+  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  bufferInfo.queueFamilyIndexCount = 0;
+  bufferInfo.pQueueFamilyIndices = nullptr;
+  checkResult(vkCreateBuffer(device, &bufferInfo, allocator, buffer));
+
+  VkMemoryRequirements memoryRequirements;
+  vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
+
+  VkMemoryAllocateInfo memoryAllocateInfo;
+  memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  memoryAllocateInfo.pNext = nullptr;
+  memoryAllocateInfo.allocationSize = memoryRequirements.size;
+  memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
+  checkResult(vkAllocateMemory(device, &memoryAllocateInfo, allocator, bufferMemory));
+
+  checkResult(vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
 }
 
 uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
@@ -702,53 +869,6 @@ void initializeSwapChainFramebuffers()
   }
 }
 
-class CommandRecorder
-{
-public:
-  explicit CommandRecorder(VkCommandBuffer commandBuffer)
-    : commandBuffer(commandBuffer)
-  {
-    VkCommandBufferBeginInfo beginInfo;
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.pNext = nullptr;
-    beginInfo.flags = 0;
-    beginInfo.pInheritanceInfo = nullptr;
-
-    checkResult(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-  }
-  CommandRecorder(const CommandRecorder& other) = delete;
-  CommandRecorder(CommandRecorder&& other) = delete;
-  ~CommandRecorder()
-  {
-    VkResult result = vkEndCommandBuffer(commandBuffer);
-    if(result != VK_SUCCESS) {
-      logError("Failed to end command buffer: %d", result);
-    }
-  }
-
-private:
-  VkCommandBuffer commandBuffer;
-};
-
-class RenderPassRecorder
-{
-public:
-  RenderPassRecorder(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo& beginInfo, VkSubpassContents contents)
-    : commandBuffer(commandBuffer)
-  {
-    vkCmdBeginRenderPass(commandBuffer, &beginInfo, contents);
-  }
-  RenderPassRecorder(const RenderPassRecorder& other) = delete;
-  RenderPassRecorder(RenderPassRecorder&& other) = delete;
-  ~RenderPassRecorder()
-  {
-    vkCmdEndRenderPass(commandBuffer);
-  }
-
-private:
-  VkCommandBuffer commandBuffer;
-};
-
 void initializeCommandPool()
 {
   VkCommandPoolCreateInfo poolInfo;
@@ -757,7 +877,7 @@ void initializeCommandPool()
   poolInfo.flags = 0;
   poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
 
-  checkResult(vkCreateCommandPool(device, &poolInfo, allocator, &swapChainCommandPool));
+  checkResult(vkCreateCommandPool(device, &poolInfo, allocator, &graphicsCommandPool));
 }
 
 void initializeCommandBuffers()
@@ -767,7 +887,7 @@ void initializeCommandBuffers()
   VkCommandBufferAllocateInfo allocateInfo;
   allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocateInfo.pNext = nullptr;
-  allocateInfo.commandPool = swapChainCommandPool;
+  allocateInfo.commandPool = graphicsCommandPool;
   allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocateInfo.commandBufferCount = swapChainImageCount;
   checkResult(vkAllocateCommandBuffers(device, &allocateInfo, swapChainCommandBuffers));
@@ -821,38 +941,37 @@ void initializeSyncObjects()
 
 void initializeVertexBuffer()
 {
-  VkBufferCreateInfo bufferInfo;
-  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  bufferInfo.pNext = nullptr;
-  bufferInfo.flags = 0;
-  bufferInfo.size = sizeof(triangleVertices);
-  bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  bufferInfo.queueFamilyIndexCount = 0;
-  bufferInfo.pQueueFamilyIndices = nullptr;
-  checkResult(vkCreateBuffer(device, &bufferInfo, allocator, &triangleVertexBuffer));
+  constexpr VkDeviceSize bufferSize = sizeof(triangleVertices);
+  createBuffer(
+    bufferSize, 
+    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    &triangleVertexBuffer, 
+    &triangleVertexBufferMemory
+  );
 
-  VkMemoryRequirements memoryRequirements;
-  vkGetBufferMemoryRequirements(device, triangleVertexBuffer, &memoryRequirements);
+  StagingBuffer stagingBuffer(bufferSize);
+  stagingBuffer.write(triangleVertices, bufferSize);
 
-  VkMemoryAllocateInfo memoryAllocateInfo;
-  memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memoryAllocateInfo.pNext = nullptr;
-  memoryAllocateInfo.allocationSize = memoryRequirements.size;
-  memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  checkResult(vkAllocateMemory(device, &memoryAllocateInfo, allocator, &triangleVertexBufferMemory));
+  PrimaryCommandBuffer commandBuffer(graphicsCommandPool);
+  {
+    CommandRecorder recorder(commandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    stagingBuffer.copyTo(commandBuffer, triangleVertexBuffer, bufferSize);
+  }
 
-  checkResult(vkBindBufferMemory(device, triangleVertexBuffer, triangleVertexBufferMemory, 0));
+  VkSubmitInfo submitInfo{};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  VkCommandBuffer commandBufferHandle = commandBuffer;
+  submitInfo.pCommandBuffers = &commandBufferHandle;
 
-  void* bufferData;
-  checkResult(vkMapMemory(device, triangleVertexBufferMemory, 0, bufferInfo.size, 0, &bufferData));
-  memcpy(bufferData, triangleVertices, bufferInfo.size);
-  vkUnmapMemory(device, triangleVertexBufferMemory);
+  vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(graphicsQueue);
 }
 
 void cleanupSwapChainContext()
 {
-  vkFreeCommandBuffers(device, swapChainCommandPool, swapChainImageCount, swapChainCommandBuffers);
+  vkFreeCommandBuffers(device, graphicsCommandPool, swapChainImageCount, swapChainCommandBuffers);
   delete[] swapChainCommandBuffers;
 
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
