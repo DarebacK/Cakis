@@ -119,17 +119,24 @@ VkPipelineLayout pipelineLayout = nullptr;
 VkPipeline graphicsPipeline = nullptr;
 uint64_t renderCount = 0;
 
-struct TriangleVertex {
+struct SquareVertex {
   Vec2f position;
   Vec3f color;
 };
-const TriangleVertex triangleVertices[] = {
-  {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-  {{0.5f, 0.5f},  {0.0f, 1.0f, 0.0f}},
-  {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+const SquareVertex squareVertices[] = {
+  {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+  {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+  {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+  {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}
 };
-VkBuffer triangleVertexBuffer = nullptr;
-VkDeviceMemory triangleVertexBufferMemory = nullptr;
+const uint16_t squareIndices[] = {
+  0, 1, 2,
+  2, 3, 0
+};
+VkBuffer squareVertexBuffer = nullptr;
+VkDeviceMemory squareVertexBufferMemory = nullptr;
+VkBuffer squareIndexBuffer = nullptr;
+VkDeviceMemory squareIndexBufferMemory = nullptr;
 
 uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
@@ -694,10 +701,10 @@ void initializePipeline()
 
 #define getShaderPath(shaderName) "shaders/" shaderName ".spv"
   De::readEntireFile(getShaderPath("triangle.vert"), shaderCode);
-  ShaderModule triangleVertexShader(reinterpret_cast<uint32_t*>(shaderCode.data()), shaderCode.size());
+  ShaderModule squareVertexShader(reinterpret_cast<uint32_t*>(shaderCode.data()), shaderCode.size());
 
   De::readEntireFile(getShaderPath("triangle.frag"), shaderCode);
-  ShaderModule triangleFragmentShader(reinterpret_cast<uint32_t*>(shaderCode.data()), shaderCode.size());
+  ShaderModule squareFragmentShader(reinterpret_cast<uint32_t*>(shaderCode.data()), shaderCode.size());
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo;
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -716,7 +723,7 @@ void initializePipeline()
   shaderStageInfos[0].pNext = nullptr;
   shaderStageInfos[0].flags = 0;
   shaderStageInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-  shaderStageInfos[0].module = triangleVertexShader;
+  shaderStageInfos[0].module = squareVertexShader;
   shaderStageInfos[0].pName = "main";
   shaderStageInfos[0].pSpecializationInfo = nullptr;
 
@@ -724,17 +731,17 @@ void initializePipeline()
   shaderStageInfos[1].pNext = nullptr;
   shaderStageInfos[1].flags = 0;
   shaderStageInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  shaderStageInfos[1].module = triangleFragmentShader;
+  shaderStageInfos[1].module = squareFragmentShader;
   shaderStageInfos[1].pName = "main";
   shaderStageInfos[1].pSpecializationInfo = nullptr;
 
-  VkVertexInputBindingDescription triangleVertexInputBindingDescription;
-  triangleVertexInputBindingDescription.binding = 0;
-  triangleVertexInputBindingDescription.stride = sizeof(TriangleVertex);
-  triangleVertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-  VkVertexInputAttributeDescription triangleVertexInputAttributeDescriptions[] = {
-    {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(TriangleVertex, position)},
-    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(TriangleVertex, color)}
+  VkVertexInputBindingDescription squareVertexInputBindingDescription;
+  squareVertexInputBindingDescription.binding = 0;
+  squareVertexInputBindingDescription.stride = sizeof(SquareVertex);
+  squareVertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  VkVertexInputAttributeDescription squareVertexInputAttributeDescriptions[] = {
+    {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(SquareVertex, position)},
+    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SquareVertex, color)}
   };
 
   VkPipelineVertexInputStateCreateInfo vertexInputStateInfo;
@@ -742,9 +749,9 @@ void initializePipeline()
   vertexInputStateInfo.pNext = nullptr;
   vertexInputStateInfo.flags = 0;
   vertexInputStateInfo.vertexBindingDescriptionCount = 1;
-  vertexInputStateInfo.pVertexBindingDescriptions = &triangleVertexInputBindingDescription;
-  vertexInputStateInfo.vertexAttributeDescriptionCount = arrayCount(triangleVertexInputAttributeDescriptions);
-  vertexInputStateInfo.pVertexAttributeDescriptions = triangleVertexInputAttributeDescriptions;
+  vertexInputStateInfo.pVertexBindingDescriptions = &squareVertexInputBindingDescription;
+  vertexInputStateInfo.vertexAttributeDescriptionCount = arrayCount(squareVertexInputAttributeDescriptions);
+  vertexInputStateInfo.pVertexAttributeDescriptions = squareVertexInputAttributeDescriptions;
 
   VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo;
   inputAssemblyStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -914,9 +921,11 @@ void initializeCommandBuffers()
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
     const VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &triangleVertexBuffer, &offset);
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &squareVertexBuffer, &offset);
 
-    vkCmdDraw(commandBuffer, arrayCount(triangleVertices), 1, 0, 0);
+    vkCmdBindIndexBuffer(commandBuffer, squareIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vkCmdDrawIndexed(commandBuffer, arrayCount(squareIndices), 1, 0, 0, 0);
   }
 }
 
@@ -939,24 +948,38 @@ void initializeSyncObjects()
   }
 }
 
-void initializeVertexBuffer()
+void initializeSquareBuffers()
 {
-  constexpr VkDeviceSize bufferSize = sizeof(triangleVertices);
+  constexpr VkDeviceSize vertexBufferSize = sizeof(squareVertices);
   createBuffer(
-    bufferSize, 
+    vertexBufferSize, 
     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    &triangleVertexBuffer, 
-    &triangleVertexBufferMemory
+    &squareVertexBuffer, 
+    &squareVertexBufferMemory
   );
 
-  StagingBuffer stagingBuffer(bufferSize);
-  stagingBuffer.write(triangleVertices, bufferSize);
+  constexpr VkDeviceSize indexBufferSize = sizeof(squareIndices);
+  createBuffer(
+    indexBufferSize,
+    VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    &squareIndexBuffer,
+    &squareIndexBufferMemory
+  );
+
+  StagingBuffer vertexStagingBuffer(vertexBufferSize);
+  vertexStagingBuffer.write(squareVertices, vertexBufferSize);
+
+  StagingBuffer indexStagingBuffer(indexBufferSize);
+  indexStagingBuffer.write(squareIndices, indexBufferSize);
 
   PrimaryCommandBuffer commandBuffer(graphicsCommandPool);
   {
     CommandRecorder recorder(commandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    stagingBuffer.copyTo(commandBuffer, triangleVertexBuffer, bufferSize);
+
+    vertexStagingBuffer.copyTo(commandBuffer, squareVertexBuffer, vertexBufferSize);
+    indexStagingBuffer.copyTo(commandBuffer, squareIndexBuffer, indexBufferSize);
   }
 
   VkSubmitInfo submitInfo{};
@@ -1032,7 +1055,7 @@ VulkanRenderer::VulkanRenderer(HWND window)
   initializePhysicalDevice();
   initDevice();
   initializeCommandPool();
-  initializeVertexBuffer();
+  initializeSquareBuffers();
   initializeSwapChainContext();
   initializeSyncObjects();
 }
