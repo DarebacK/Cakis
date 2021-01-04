@@ -98,11 +98,15 @@ VkDevice device = nullptr;
 VkSurfaceKHR presentationSurface = nullptr;
 VkSwapchainCreateInfoKHR swapChainInfo = {};
 VkSwapchainKHR swapChain = nullptr;
-VkImage* swapChainImages = nullptr;
-VkImageView* swapChainImageViews = nullptr;
-VkFramebuffer* swapChainFramebuffers = nullptr;
-VkCommandBuffer* swapChainCommandBuffers = nullptr;
-VkFence* swapChainImageFences = nullptr;
+struct SwapChainImageContext
+{
+  VkImage image;
+  VkImageView imageView;
+  VkFramebuffer frameBuffer;
+  VkCommandBuffer commandBuffer;
+  VkFence fence;
+};
+SwapChainImageContext* swapChainImageContexts = nullptr;
 uint32_t swapChainImageCount = 0;
 constexpr int maxFramesInFlight = 2;
 VkSemaphore swapChainImageAvailableSemaphores[maxFramesInFlight];
@@ -596,10 +600,13 @@ bool initSwapChain()
   if(!checkResult(vkCreateSwapchainKHR(device, &swapChainInfo, allocator, &swapChain))) return false;
 
   if(!checkResult(vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, nullptr))) return false;
-  swapChainImages = new VkImage[swapChainImageCount];
+  swapChainImageContexts = new SwapChainImageContext[swapChainImageCount]();
+  VkImage swapChainImages[32];
   if(!checkResult(vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, swapChainImages))) return false;
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    swapChainImageContexts[i].image = swapChainImages[i];
+  }
 
-  swapChainImageViews = new VkImageView[swapChainImageCount];
   VkImageViewCreateInfo imageViewCreateInfo{};
   imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -611,7 +618,7 @@ bool initSwapChain()
   imageViewCreateInfo.subresourceRange.layerCount = 1;
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
     imageViewCreateInfo.image = swapChainImages[i];
-    checkResult(vkCreateImageView(device, &imageViewCreateInfo, allocator, swapChainImageViews + i));
+    checkResult(vkCreateImageView(device, &imageViewCreateInfo, allocator, &swapChainImageContexts[i].imageView));
   }
 
   return true;
@@ -859,8 +866,6 @@ void initializePipeline()
 
 void initializeSwapChainFramebuffers()
 {
-  swapChainFramebuffers = new VkFramebuffer[swapChainImageCount];
-
   VkFramebufferCreateInfo framebufferInfo;
   framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   framebufferInfo.pNext = nullptr;
@@ -871,8 +876,8 @@ void initializeSwapChainFramebuffers()
   framebufferInfo.height = swapChainInfo.imageExtent.height;
   framebufferInfo.layers = 1;
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
-    framebufferInfo.pAttachments = swapChainImageViews + i;
-    checkResult(vkCreateFramebuffer(device, &framebufferInfo, allocator, swapChainFramebuffers + i));
+    framebufferInfo.pAttachments = &swapChainImageContexts[i].imageView;
+    checkResult(vkCreateFramebuffer(device, &framebufferInfo, allocator, &swapChainImageContexts[i].frameBuffer));
   }
 }
 
@@ -889,15 +894,17 @@ void initializeCommandPool()
 
 void initializeCommandBuffers()
 {
-  swapChainCommandBuffers = new VkCommandBuffer[swapChainImageCount];
-
   VkCommandBufferAllocateInfo allocateInfo;
   allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocateInfo.pNext = nullptr;
   allocateInfo.commandPool = graphicsCommandPool;
   allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocateInfo.commandBufferCount = swapChainImageCount;
+  VkCommandBuffer swapChainCommandBuffers[32];
   checkResult(vkAllocateCommandBuffers(device, &allocateInfo, swapChainCommandBuffers));
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    swapChainImageContexts[i].commandBuffer = swapChainCommandBuffers[i];
+  }
 
   VkRenderPassBeginInfo renderPassBeginInfo;
   renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -911,11 +918,11 @@ void initializeCommandBuffers()
   renderPassBeginInfo.clearValueCount = 1;
   renderPassBeginInfo.pClearValues = &clearColor;
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
-    VkCommandBuffer commandBuffer = swapChainCommandBuffers[i];
+    VkCommandBuffer commandBuffer = swapChainImageContexts[i].commandBuffer;
 
     CommandRecorder commandRecorder(commandBuffer);
 
-    renderPassBeginInfo.framebuffer = swapChainFramebuffers[i];
+    renderPassBeginInfo.framebuffer = swapChainImageContexts[i].frameBuffer;
     RenderPassRecorder renderPassRecorder(commandBuffer, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -994,15 +1001,16 @@ void initializeSquareBuffers()
 
 void cleanupSwapChainContext()
 {
+  VkCommandBuffer swapChainCommandBuffers[32];
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    swapChainCommandBuffers[i] = swapChainImageContexts[i].commandBuffer;
+  }
   vkFreeCommandBuffers(device, graphicsCommandPool, swapChainImageCount, swapChainCommandBuffers);
-  delete[] swapChainCommandBuffers;
 
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
-    vkDestroyFramebuffer(device, swapChainFramebuffers[i], allocator);
-    vkDestroyImageView(device, swapChainImageViews[i], allocator);
+    vkDestroyFramebuffer(device, swapChainImageContexts[i].frameBuffer, allocator);
+    vkDestroyImageView(device, swapChainImageContexts[i].imageView, allocator);
   }
-  delete[] swapChainFramebuffers;
-  delete[] swapChainImageViews;
 
   vkDestroyPipeline(device, graphicsPipeline, allocator);
   vkDestroyPipelineLayout(device, pipelineLayout, allocator);
@@ -1010,9 +1018,8 @@ void cleanupSwapChainContext()
   vkDestroyRenderPass(device, renderPass, allocator);
 
   vkDestroySwapchainKHR(device, swapChain, allocator);
-  delete[] swapChainImages;
 
-  delete[] swapChainImageFences;
+  delete[] swapChainImageContexts;
 }
 
 void initializeSwapChainContext()
@@ -1024,7 +1031,6 @@ void initializeSwapChainContext()
   initializePipeline();
   initializeSwapChainFramebuffers();
   initializeCommandBuffers();
-  swapChainImageFences = new VkFence[swapChainImageCount]();
 }
 
 void recreateSwapChainContext()
@@ -1089,12 +1095,12 @@ void VulkanRenderer::render(const GameState& gameState)
     return;
   }
 
-  if(swapChainImageFences[imageIndex]) {
-    if(vkWaitForFences(device, 1, &swapChainImageFences[imageIndex], VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+  if(swapChainImageContexts[imageIndex].fence) {
+    if(vkWaitForFences(device, 1, &swapChainImageContexts[imageIndex].fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
       logError("Failed to wait for a swapchain image fence with index %u.", imageIndex);
     }
   }
-  swapChainImageFences[imageIndex] = swapChainImagesInFlightFences[syncIndex];
+  swapChainImageContexts[imageIndex].fence = swapChainImagesInFlightFences[syncIndex];
   
   VkSubmitInfo submitInfo;
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1104,16 +1110,16 @@ void VulkanRenderer::render(const GameState& gameState)
   VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
   submitInfo.pWaitDstStageMask = waitStages;
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = swapChainCommandBuffers + imageIndex;
+  submitInfo.pCommandBuffers = &swapChainImageContexts[imageIndex].commandBuffer;
   VkSemaphore swapChainImageRenderFinishedSemaphore = swapChainImageRenderFinishedSemaphores[syncIndex];
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = &swapChainImageRenderFinishedSemaphore;
 
-  if(vkResetFences(device, 1, &swapChainImageFences[imageIndex]) != VK_SUCCESS) {
+  if(vkResetFences(device, 1, &swapChainImageContexts[imageIndex].fence) != VK_SUCCESS) {
     logError("Failed to reset a swapchain image fence with index %u.", imageIndex);
   }
 
-  checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapChainImageFences[imageIndex]));
+  checkResult(vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapChainImageContexts[imageIndex].fence));
 
   VkPresentInfoKHR presentInfo;
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
