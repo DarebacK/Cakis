@@ -127,18 +127,20 @@ struct SquareVertex {
   Vec2f position;
   Vec3f color;
 };
-const SquareVertex squareVertices[] = {
-  {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-  {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-  {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-  {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}
-};
-const uint16_t squareIndices[] = {
-  0, 1, 2,
-  2, 3, 0
-};
-VkBuffer squareVertexBuffer = nullptr;
-VkDeviceMemory squareVertexBufferMemory = nullptr;
+struct SquareData {
+  const SquareVertex vertices[4] = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}}
+  };
+  const uint16_t indices[6] = {
+    0, 1, 2,
+    2, 3, 0
+  };
+} squareData;
+VkBuffer squareDataBuffer = nullptr;
+VkDeviceMemory squareDataBufferMemory = nullptr;
 VkBuffer squareIndexBuffer = nullptr;
 VkDeviceMemory squareIndexBufferMemory = nullptr;
 
@@ -927,12 +929,12 @@ void initializeCommandBuffers()
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    const VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &squareVertexBuffer, &offset);
+    const VkDeviceSize offset = offsetof(SquareData, vertices);
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &squareDataBuffer, &offset);
 
-    vkCmdBindIndexBuffer(commandBuffer, squareIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, squareDataBuffer, offsetof(SquareData, indices), VK_INDEX_TYPE_UINT16);
 
-    vkCmdDrawIndexed(commandBuffer, arrayCount(squareIndices), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, arrayCount(squareData.indices), 1, 0, 0, 0);
   }
 }
 
@@ -957,36 +959,25 @@ void initializeSyncObjects()
 
 void initializeSquareBuffers()
 {
-  constexpr VkDeviceSize vertexBufferSize = sizeof(squareVertices);
+  constexpr VkDeviceSize vertexBufferSize = sizeof(squareData.vertices);
+  constexpr VkDeviceSize indexBufferSize = sizeof(squareData.indices);
+  constexpr VkDeviceSize bufferSize = sizeof(squareData);
   createBuffer(
-    vertexBufferSize, 
-    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+    bufferSize, 
+    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    &squareVertexBuffer, 
-    &squareVertexBufferMemory
+    &squareDataBuffer, 
+    &squareDataBufferMemory
   );
 
-  constexpr VkDeviceSize indexBufferSize = sizeof(squareIndices);
-  createBuffer(
-    indexBufferSize,
-    VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    &squareIndexBuffer,
-    &squareIndexBufferMemory
-  );
-
-  StagingBuffer vertexStagingBuffer(vertexBufferSize);
-  vertexStagingBuffer.write(squareVertices, vertexBufferSize);
-
-  StagingBuffer indexStagingBuffer(indexBufferSize);
-  indexStagingBuffer.write(squareIndices, indexBufferSize);
+  StagingBuffer squareDataStagingBuffer(bufferSize);
+  squareDataStagingBuffer.write(&squareData, bufferSize);
 
   PrimaryCommandBuffer commandBuffer(graphicsCommandPool);
   {
     CommandRecorder recorder(commandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-    vertexStagingBuffer.copyTo(commandBuffer, squareVertexBuffer, vertexBufferSize);
-    indexStagingBuffer.copyTo(commandBuffer, squareIndexBuffer, indexBufferSize);
+    squareDataStagingBuffer.copyTo(commandBuffer, squareDataBuffer, bufferSize);
   }
 
   VkSubmitInfo submitInfo{};
