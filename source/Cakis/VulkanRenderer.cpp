@@ -19,6 +19,7 @@
 #include <DarMath.hpp>
 #include "Exception.hpp"
 #include "File.hpp"
+#include "GameState.hpp"
 
 namespace 
 {
@@ -105,9 +106,14 @@ struct SwapChainImageContext
   VkFramebuffer frameBuffer;
   VkCommandBuffer commandBuffer;
   VkFence fence;
+
+  VkBuffer squareUniformBuffer;
+  VkDeviceMemory squareUniformBufferMemory;
+  VkDescriptorSet squareUniformBufferDescriptorSet;
 };
 SwapChainImageContext* swapChainImageContexts = nullptr;
 uint32_t swapChainImageCount = 0;
+VkDescriptorPool descriptorPool = nullptr;
 constexpr int maxFramesInFlight = 2;
 VkSemaphore swapChainImageAvailableSemaphores[maxFramesInFlight];
 VkSemaphore swapChainImageRenderFinishedSemaphores[maxFramesInFlight];
@@ -119,6 +125,7 @@ VkQueue graphicsQueue = nullptr;
 VkQueue transferQueue = nullptr;
 VkQueue presentQueue = nullptr;
 VkRenderPass renderPass = nullptr;
+VkDescriptorSetLayout squareUniformBufferDescriptorSetLayout = nullptr;
 VkPipelineLayout pipelineLayout = nullptr;
 VkPipeline graphicsPipeline = nullptr;
 uint64_t renderCount = 0;
@@ -141,8 +148,9 @@ struct SquareData {
 } squareData;
 VkBuffer squareDataBuffer = nullptr;
 VkDeviceMemory squareDataBufferMemory = nullptr;
-VkBuffer squareIndexBuffer = nullptr;
-VkDeviceMemory squareIndexBufferMemory = nullptr;
+struct SquareUniformBufferData {
+  Mat4f transform;
+};
 
 uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
@@ -490,7 +498,7 @@ VkPhysicalDevice findSuitablePhysicalDevice()
   //  checkResult(vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, nullptr));
   //  std::vector<VkExtensionProperties> availableExtensions;
   //  availableExtensions.resize(extensionsCount);
-  //  checkResult(vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, availableExtensions.data()));
+  //  checkResult(vkEnumerateDeviceExtensionProperties(handle, nullptr, &extensionsCount, availableExtensions.bufferData()));
 
   //  VkPhysicalDeviceFeatures features;
   //  vkGetPhysicalDeviceFeatures(handle, &features);
@@ -502,7 +510,7 @@ VkPhysicalDevice findSuitablePhysicalDevice()
   //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, nullptr);
   //  std::vector<VkQueueFamilyProperties> queueFamiliesProperties;
   //  queueFamiliesProperties.resize(queueFamiliesCount);
-  //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.data());
+  //  vkGetPhysicalDeviceQueueFamilyProperties(handle, &queueFamiliesCount, queueFamiliesProperties.bufferData());
   //}
   return physicalDevices[0];
 }
@@ -704,6 +712,24 @@ private:
   VkShaderModule handle;
 };
 
+void initializeDescriptorSetLayout()
+{
+  VkDescriptorSetLayoutBinding binding;
+  binding.binding = 0;
+  binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  binding.descriptorCount = 1;
+  binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+  VkDescriptorSetLayoutCreateInfo info;
+  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  info.pNext = nullptr;
+  info.flags = 0;
+  info.bindingCount = 1;
+  info.pBindings = &binding;
+
+  checkResult(vkCreateDescriptorSetLayout(device, &info, nullptr, &squareUniformBufferDescriptorSetLayout));
+}
+
 void initializePipeline()
 {
   std::vector<uint8_t> shaderCode;
@@ -719,8 +745,8 @@ void initializePipeline()
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.pNext = nullptr;
   pipelineLayoutInfo.flags = 0;
-  pipelineLayoutInfo.setLayoutCount = 0;
-  pipelineLayoutInfo.pSetLayouts = nullptr;
+  pipelineLayoutInfo.setLayoutCount = 1;
+  pipelineLayoutInfo.pSetLayouts = &squareUniformBufferDescriptorSetLayout;
   pipelineLayoutInfo.pushConstantRangeCount = 0;
   pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -866,6 +892,21 @@ void initializePipeline()
   checkResult(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, allocator, &graphicsPipeline));
 }
 
+void initializeUniformBuffers()
+{
+  constexpr VkDeviceSize bufferSize = sizeof(SquareUniformBufferData);
+
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    createBuffer(
+      bufferSize,
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      &swapChainImageContexts[i].squareUniformBuffer,
+      &swapChainImageContexts[i].squareUniformBufferMemory
+    );
+  }
+}
+
 void initializeSwapChainFramebuffers()
 {
   VkFramebufferCreateInfo framebufferInfo;
@@ -920,11 +961,12 @@ void initializeCommandBuffers()
   renderPassBeginInfo.clearValueCount = 1;
   renderPassBeginInfo.pClearValues = &clearColor;
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
-    VkCommandBuffer commandBuffer = swapChainImageContexts[i].commandBuffer;
+    SwapChainImageContext& context = swapChainImageContexts[i];
+    VkCommandBuffer commandBuffer = context.commandBuffer;
 
     CommandRecorder commandRecorder(commandBuffer);
 
-    renderPassBeginInfo.framebuffer = swapChainImageContexts[i].frameBuffer;
+    renderPassBeginInfo.framebuffer = context.frameBuffer;
     RenderPassRecorder renderPassRecorder(commandBuffer, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -933,6 +975,17 @@ void initializeCommandBuffers()
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &squareDataBuffer, &offset);
 
     vkCmdBindIndexBuffer(commandBuffer, squareDataBuffer, offsetof(SquareData, indices), VK_INDEX_TYPE_UINT16);
+
+    vkCmdBindDescriptorSets(
+      commandBuffer, 
+      VK_PIPELINE_BIND_POINT_GRAPHICS, 
+      pipelineLayout, 
+      0, 
+      1, 
+      &context.squareUniformBufferDescriptorSet, 
+      0, 
+      nullptr
+    );
 
     vkCmdDrawIndexed(commandBuffer, arrayCount(squareData.indices), 1, 0, 0, 0);
   }
@@ -990,6 +1043,53 @@ void initializeSquareBuffers()
   vkQueueWaitIdle(graphicsQueue);
 }
 
+void initializeSquareUniformBufferDescriptors()
+{
+  VkDescriptorPoolSize poolSize;
+  poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  poolSize.descriptorCount = swapChainImageCount;
+
+  VkDescriptorPoolCreateInfo poolInfo;
+  poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  poolInfo.pNext = nullptr;
+  poolInfo.flags = 0;
+  poolInfo.maxSets = swapChainImageCount;
+  poolInfo.poolSizeCount = 1;
+  poolInfo.pPoolSizes = &poolSize;
+  checkResult(vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool));
+
+  VkDescriptorSetLayout layouts[16];
+  std::fill_n(layouts, swapChainImageCount, squareUniformBufferDescriptorSetLayout);
+  VkDescriptorSetAllocateInfo setAllocateInfo;
+  setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  setAllocateInfo.pNext = nullptr;
+  setAllocateInfo.descriptorPool = descriptorPool;
+  setAllocateInfo.descriptorSetCount = swapChainImageCount;
+  setAllocateInfo.pSetLayouts = layouts;
+  VkDescriptorSet descriptorSets[16];
+  checkResult(vkAllocateDescriptorSets(device, &setAllocateInfo, descriptorSets));
+
+  VkDescriptorBufferInfo bufferInfo;
+  bufferInfo.offset = 0;
+  bufferInfo.range = sizeof(SquareUniformBufferData);
+  VkWriteDescriptorSet setWriteInfo;
+  setWriteInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  setWriteInfo.pNext = nullptr;
+  setWriteInfo.dstBinding = 0;
+  setWriteInfo.dstArrayElement = 0;
+  setWriteInfo.descriptorCount = 1;
+  setWriteInfo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  setWriteInfo.pBufferInfo = &bufferInfo;
+
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    SwapChainImageContext& context = swapChainImageContexts[i];
+    context.squareUniformBufferDescriptorSet = descriptorSets[i];
+    bufferInfo.buffer = context.squareUniformBuffer;
+    setWriteInfo.dstSet = context.squareUniformBufferDescriptorSet;
+    vkUpdateDescriptorSets(device, 1, &setWriteInfo, 0, nullptr);
+  }
+}
+
 void cleanupSwapChainContext()
 {
   VkCommandBuffer swapChainCommandBuffers[32];
@@ -1006,6 +1106,13 @@ void cleanupSwapChainContext()
   vkDestroyPipeline(device, graphicsPipeline, allocator);
   vkDestroyPipelineLayout(device, pipelineLayout, allocator);
 
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    vkDestroyBuffer(device, swapChainImageContexts[i].squareUniformBuffer, nullptr);
+    vkFreeMemory(device, swapChainImageContexts[i].squareUniformBufferMemory, nullptr);
+  }
+
+  vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
   vkDestroyRenderPass(device, renderPass, allocator);
 
   vkDestroySwapchainKHR(device, swapChain, allocator);
@@ -1019,7 +1126,10 @@ void initializeSwapChainContext()
     throw VulkanRenderer::Exception("Failed to initialize swapChain.");
   }
   initializeRenderPass();
+  initializeDescriptorSetLayout();
   initializePipeline();
+  initializeUniformBuffers();
+  initializeSquareUniformBufferDescriptors();
   initializeSwapChainFramebuffers();
   initializeCommandBuffers();
 }
@@ -1032,6 +1142,19 @@ void recreateSwapChainContext()
 
   cleanupSwapChainContext();
   initializeSwapChainContext();
+}
+
+void updateUniformBuffer(uint32_t swapChainImageIndex, float dTime)
+{
+  SquareUniformBufferData bufferData;
+  bufferData.transform = Mat4f::translation({0.25f, 0.25f, 0.f});
+
+  VkDeviceMemory memory = swapChainImageContexts[swapChainImageIndex].squareUniformBufferMemory;
+  void* data;
+  constexpr VkDeviceSize bufferSize = sizeof(bufferData);
+  checkResult(vkMapMemory(device, memory, 0, bufferSize, 0, &data));
+  memcpy(data, &bufferData, bufferSize);
+  vkUnmapMemory(device, memory);
 }
 
 } // anonymous namespace
@@ -1093,6 +1216,8 @@ void VulkanRenderer::render(const GameState& gameState)
   }
   swapChainImageContexts[imageIndex].fence = swapChainImagesInFlightFences[syncIndex];
   
+  updateUniformBuffer(imageIndex, gameState.dTime);
+
   VkSubmitInfo submitInfo;
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.pNext = nullptr;
