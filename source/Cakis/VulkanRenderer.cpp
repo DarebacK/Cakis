@@ -15,10 +15,10 @@
 #include "vulkan.h"
 
 #include "ApplicationInfo.hpp"
-#include "DarEngine.hpp"
+#include <DarEngine.hpp>
 #include <DarMath.hpp>
-#include "Exception.hpp"
-#include "File.hpp"
+#include <Exception.hpp>
+#include <File.hpp>
 #include "GameState.hpp"
 
 namespace 
@@ -94,8 +94,10 @@ std::vector<VkExtensionProperties> availableInstanceExtensions;
 const De::ApplicationInfo applicationInfo = {}; 
 const VkAllocationCallbacks* allocator = nullptr;
 VkPhysicalDevice physicalDevice = nullptr;
+VkPhysicalDeviceProperties physicalDeviceProperties = {};
 VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties = {};
 VkDevice device = nullptr;
+
 VkSurfaceKHR presentationSurface = nullptr;
 VkSwapchainCreateInfoKHR swapChainInfo = {};
 VkSwapchainKHR swapChain = nullptr;
@@ -129,6 +131,13 @@ VkDescriptorSetLayout squareUniformBufferDescriptorSetLayout = nullptr;
 VkPipelineLayout pipelineLayout = nullptr;
 VkPipeline graphicsPipeline = nullptr;
 uint64_t renderCount = 0;
+struct RenderTarget
+{
+  VkImage colorImage;
+  VkDeviceMemory colorImageMemory;
+  VkImageView colorImageView;
+  VkSampleCountFlagBits sampleCount;
+} renderTarget = {};
 
 struct SquareVertex {
   Vec2f position;
@@ -330,6 +339,64 @@ void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
   checkResult(vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
 }
 
+void create2DImage(
+  uint32_t width, 
+  uint32_t height, 
+  VkFormat format, 
+  uint32_t mipLevels, 
+  VkSampleCountFlagBits sampleCount, 
+  VkImageUsageFlags usage,
+  VkMemoryPropertyFlags memoryProperties,
+  VkImageAspectFlags aspectMask,
+  VkImage* image,
+  VkDeviceMemory* imageMemory,
+  VkImageView* imageView
+)
+{
+  VkImageCreateInfo imageInfo;
+  imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  imageInfo.pNext = nullptr;
+  imageInfo.flags = 0;
+  imageInfo.imageType = VK_IMAGE_TYPE_2D;
+  imageInfo.format = format;
+  imageInfo.extent = {width, height, 1};
+  imageInfo.mipLevels = mipLevels;
+  imageInfo.arrayLayers = 1;
+  imageInfo.samples = sampleCount;
+  imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+  imageInfo.usage = usage;
+  imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  imageInfo.queueFamilyIndexCount = 0;
+  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  checkResult(vkCreateImage(device, &imageInfo, nullptr, image));
+
+  VkMemoryRequirements memoryRequirements;
+  vkGetImageMemoryRequirements(device, *image, &memoryRequirements);
+  VkMemoryAllocateInfo memoryInfo;
+  memoryInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  memoryInfo.pNext = nullptr;
+  memoryInfo.allocationSize = memoryRequirements.size;
+  memoryInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, memoryProperties);
+  checkResult(vkAllocateMemory(device, &memoryInfo, nullptr, imageMemory));
+
+  checkResult(vkBindImageMemory(device, *image, *imageMemory, 0));
+
+  VkImageViewCreateInfo viewInfo;
+  viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  viewInfo.pNext = nullptr;
+  viewInfo.flags = 0;
+  viewInfo.image = *image;
+  viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  viewInfo.format = imageInfo.format;
+  viewInfo.components = {};
+  viewInfo.subresourceRange.aspectMask = aspectMask;
+  viewInfo.subresourceRange.baseMipLevel = 0;
+  viewInfo.subresourceRange.levelCount = mipLevels;
+  viewInfo.subresourceRange.baseArrayLayer = 0;
+  viewInfo.subresourceRange.layerCount = 1;
+  checkResult(vkCreateImageView(device, &viewInfo, nullptr, imageView));
+}
+
 uint32_t selectUniversalQueueFamily(VkPhysicalDevice physicalDevice)
 {
   uint32_t queueFamiliesCount;
@@ -518,7 +585,18 @@ VkPhysicalDevice findSuitablePhysicalDevice()
 void initializePhysicalDevice()
 {
   physicalDevice = findSuitablePhysicalDevice();
+  vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
+}
+
+VkSampleCountFlagBits selectSampleCount()
+{
+  const VkPhysicalDeviceLimits& limits = physicalDeviceProperties.limits;
+  VkSampleCountFlags counts = limits.framebufferColorSampleCounts & limits.framebufferDepthSampleCounts;
+  if(counts & VK_SAMPLE_COUNT_8_BIT) return VK_SAMPLE_COUNT_8_BIT;
+  if(counts & VK_SAMPLE_COUNT_4_BIT) return VK_SAMPLE_COUNT_4_BIT;
+  if(counts & VK_SAMPLE_COUNT_2_BIT) return VK_SAMPLE_COUNT_2_BIT;
+  return VK_SAMPLE_COUNT_1_BIT;
 }
 
 void loadDeviceCoreFunctions()
@@ -636,20 +714,35 @@ bool initSwapChain()
 
 void initializeRenderPass()
 {
-  VkAttachmentDescription colorAttachmentDesc;
-  colorAttachmentDesc.flags = 0;
-  colorAttachmentDesc.format = swapChainInfo.imageFormat;
-  colorAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-  colorAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  colorAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  colorAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  colorAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  colorAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  VkAttachmentDescription attachments[2];
+  // color attachment
+  attachments[0].flags = 0;
+  attachments[0].format = swapChainInfo.imageFormat;
+  attachments[0].samples = renderTarget.sampleCount;
+  attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  // resolve attachment
+  attachments[1].flags = 0;
+  attachments[1].format = swapChainInfo.imageFormat;
+  attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+  attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  attachments[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
   VkAttachmentReference colorAttachmentRef;
   colorAttachmentRef.attachment = 0;
   colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference colorAttachmentResolveRef;
+  colorAttachmentResolveRef.attachment = 1;
+  colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
   VkSubpassDescription subpassDesc;
   subpassDesc.flags = 0;
@@ -658,7 +751,7 @@ void initializeRenderPass()
   subpassDesc.pInputAttachments = nullptr;
   subpassDesc.colorAttachmentCount = 1;
   subpassDesc.pColorAttachments = &colorAttachmentRef;
-  subpassDesc.pResolveAttachments = nullptr;
+  subpassDesc.pResolveAttachments = &colorAttachmentResolveRef;
   subpassDesc.pDepthStencilAttachment = nullptr;
   subpassDesc.preserveAttachmentCount = 0;
   subpassDesc.pPreserveAttachments = nullptr;
@@ -676,8 +769,8 @@ void initializeRenderPass()
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   renderPassInfo.pNext = nullptr;
   renderPassInfo.flags = 0;
-  renderPassInfo.attachmentCount = 1;
-  renderPassInfo.pAttachments = &colorAttachmentDesc;
+  renderPassInfo.attachmentCount = arrayCount(attachments);
+  renderPassInfo.pAttachments = attachments;
   renderPassInfo.subpassCount = 1;
   renderPassInfo.pSubpasses = &subpassDesc;
   renderPassInfo.dependencyCount = 1;
@@ -835,7 +928,7 @@ void initializePipeline()
   multisampleStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampleStateInfo.pNext = nullptr;
   multisampleStateInfo.flags = 0;
-  multisampleStateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  multisampleStateInfo.rasterizationSamples = renderTarget.sampleCount;
   multisampleStateInfo.sampleShadingEnable = VK_FALSE;
   multisampleStateInfo.minSampleShading = 1.f;
   multisampleStateInfo.pSampleMask = nullptr;
@@ -914,12 +1007,13 @@ void initializeSwapChainFramebuffers()
   framebufferInfo.pNext = nullptr;
   framebufferInfo.flags = 0;
   framebufferInfo.renderPass = renderPass;
-  framebufferInfo.attachmentCount = 1;
   framebufferInfo.width = swapChainInfo.imageExtent.width;
   framebufferInfo.height = swapChainInfo.imageExtent.height;
   framebufferInfo.layers = 1;
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
-    framebufferInfo.pAttachments = &swapChainImageContexts[i].imageView;
+    VkImageView attachments[] = { renderTarget.colorImageView, swapChainImageContexts[i].imageView};
+    framebufferInfo.attachmentCount = arrayCount(attachments);
+    framebufferInfo.pAttachments = attachments;
     checkResult(vkCreateFramebuffer(device, &framebufferInfo, allocator, &swapChainImageContexts[i].frameBuffer));
   }
 }
@@ -933,6 +1027,24 @@ void initializeCommandPool()
   poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
 
   checkResult(vkCreateCommandPool(device, &poolInfo, allocator, &graphicsCommandPool));
+}
+
+void initializeRenderTarget()
+{
+  renderTarget.sampleCount = selectSampleCount();
+  create2DImage(
+    swapChainInfo.imageExtent.width, 
+    swapChainInfo.imageExtent.height, 
+    swapChainInfo.imageFormat, 
+    1, 
+    renderTarget.sampleCount,
+    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    VK_IMAGE_ASPECT_COLOR_BIT,
+    &renderTarget.colorImage,
+    &renderTarget.colorImageMemory,
+    &renderTarget.colorImageView
+  );
 }
 
 void initializeCommandBuffers()
@@ -1103,6 +1215,10 @@ void cleanupSwapChainContext()
     vkDestroyImageView(device, swapChainImageContexts[i].imageView, allocator);
   }
 
+  vkDestroyImageView(device, renderTarget.colorImageView, nullptr);
+  vkDestroyImage(device, renderTarget.colorImage, nullptr);
+  vkFreeMemory(device, renderTarget.colorImageMemory, nullptr);
+
   vkDestroyPipeline(device, graphicsPipeline, allocator);
   vkDestroyPipelineLayout(device, pipelineLayout, allocator);
 
@@ -1125,6 +1241,7 @@ void initializeSwapChainContext()
   if(!initSwapChain()) {
     throw VulkanRenderer::Exception("Failed to initialize swapChain.");
   }
+  initializeRenderTarget();
   initializeRenderPass();
   initializeDescriptorSetLayout();
   initializePipeline();
@@ -1147,7 +1264,7 @@ void recreateSwapChainContext()
 void updateUniformBuffer(uint32_t swapChainImageIndex, float dTime)
 {
   SquareUniformBufferData bufferData;
-  bufferData.transform = Mat4f::translation({0.25f, 0.25f, 0.f});
+  bufferData.transform = Mat4f::translation({0.25f, 0.25f, 0.f}) * Mat4f::rotationZ(Pi / 8);
 
   VkDeviceMemory memory = swapChainImageContexts[swapChainImageIndex].squareUniformBufferMemory;
   void* data;
