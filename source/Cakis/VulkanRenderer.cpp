@@ -110,9 +110,11 @@ struct SwapChainImageContext
   VkFence fence;
 
   VkBuffer squareUniformBuffer;
-  VkDeviceMemory squareUniformBufferMemory;
   VkDescriptorSet squareUniformBufferDescriptorSet;
 };
+VkDeviceMemory squareUniformBufferMemory = nullptr;
+uint8_t* squareUniformBufferMappedData;
+VkDeviceSize squareUniformBufferMemoryOffset = 0;
 SwapChainImageContext* swapChainImageContexts = nullptr;
 uint32_t swapChainImageCount = 0;
 VkDescriptorPool descriptorPool = nullptr;
@@ -313,7 +315,7 @@ public:
   {}
 };
 
-void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* bufferMemory)
+VkBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage)
 {
   VkBufferCreateInfo bufferInfo;
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -324,18 +326,29 @@ void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
   bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   bufferInfo.queueFamilyIndexCount = 0;
   bufferInfo.pQueueFamilyIndices = nullptr;
-  checkResult(vkCreateBuffer(device, &bufferInfo, allocator, buffer));
-
+  VkBuffer buffer;
+  checkResult(vkCreateBuffer(device, &bufferInfo, allocator, &buffer));
+  return buffer;
+}
+VkDeviceMemory createBufferMemory(VkBuffer buffer, int bufferCount, VkMemoryPropertyFlags properties)
+{
   VkMemoryRequirements memoryRequirements;
-  vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
+  vkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
 
   VkMemoryAllocateInfo memoryAllocateInfo;
   memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   memoryAllocateInfo.pNext = nullptr;
-  memoryAllocateInfo.allocationSize = memoryRequirements.size;
+  memoryAllocateInfo.allocationSize = memoryRequirements.size * bufferCount;
   memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
-  checkResult(vkAllocateMemory(device, &memoryAllocateInfo, allocator, bufferMemory));
+  VkDeviceMemory bufferMemory;
+  checkResult(vkAllocateMemory(device, &memoryAllocateInfo, allocator, &bufferMemory));
+  return bufferMemory;
 
+}
+void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* bufferMemory)
+{
+  *buffer = createBuffer(size, usage);
+  *bufferMemory = createBufferMemory(*buffer, 1, properties);
   checkResult(vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
 }
 
@@ -990,14 +1003,39 @@ void initializeUniformBuffers()
   constexpr VkDeviceSize bufferSize = sizeof(SquareUniformBufferData);
 
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
-    createBuffer(
+    swapChainImageContexts[i].squareUniformBuffer = createBuffer(
       bufferSize,
-      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-      &swapChainImageContexts[i].squareUniformBuffer,
-      &swapChainImageContexts[i].squareUniformBufferMemory
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
     );
   }
+
+  VkMemoryRequirements memoryRequirements;
+  vkGetBufferMemoryRequirements(device, swapChainImageContexts[0].squareUniformBuffer, &memoryRequirements);
+  squareUniformBufferMemoryOffset = memoryRequirements.size;
+
+  squareUniformBufferMemory = createBufferMemory(
+    swapChainImageContexts[0].squareUniformBuffer, 
+    swapChainImageCount, 
+    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+  );
+
+  for(uint32_t i = 0; i < swapChainImageCount; ++i) {
+    checkResult(vkBindBufferMemory(
+      device, 
+      swapChainImageContexts[i].squareUniformBuffer, 
+      squareUniformBufferMemory, 
+      i * squareUniformBufferMemoryOffset
+    ));
+  }
+
+  checkResult(vkMapMemory(
+    device,
+    squareUniformBufferMemory,
+    0,
+    memoryRequirements.size * swapChainImageCount,
+    0,
+    reinterpret_cast<void**>(&squareUniformBufferMappedData)
+  ));
 }
 
 void initializeSwapChainFramebuffers()
@@ -1224,8 +1262,8 @@ void cleanupSwapChainContext()
 
   for(uint32_t i = 0; i < swapChainImageCount; ++i) {
     vkDestroyBuffer(device, swapChainImageContexts[i].squareUniformBuffer, nullptr);
-    vkFreeMemory(device, swapChainImageContexts[i].squareUniformBufferMemory, nullptr);
   }
+  vkFreeMemory(device, squareUniformBufferMemory, nullptr);
 
   vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
@@ -1266,12 +1304,13 @@ void updateUniformBuffer(uint32_t swapChainImageIndex, float dTime)
   SquareUniformBufferData bufferData;
   bufferData.transform = Mat4f::translation({0.25f, 0.25f, 0.f}) * Mat4f::rotationZ(Pi / 8);
 
-  VkDeviceMemory memory = swapChainImageContexts[swapChainImageIndex].squareUniformBufferMemory;
-  void* data;
   constexpr VkDeviceSize bufferSize = sizeof(bufferData);
-  checkResult(vkMapMemory(device, memory, 0, bufferSize, 0, &data));
-  memcpy(data, &bufferData, bufferSize);
-  vkUnmapMemory(device, memory);
+  const VkDeviceSize offset = swapChainImageIndex * squareUniformBufferMemoryOffset;
+  memcpy(
+    squareUniformBufferMappedData + offset, 
+    &bufferData, 
+    bufferSize
+  );
 }
 
 } // anonymous namespace
