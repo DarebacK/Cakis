@@ -1,5 +1,5 @@
 # Cakis
-A 3D tetris game. Possibly with cake theme :) Work in progress.
+A 3D tetris game prototype.
 
 ### Current status demo
 
