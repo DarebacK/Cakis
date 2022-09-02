@@ -46,7 +46,7 @@ namespace
   GameState* lastGameState = nullptr;
   GameState* nextGameState = nullptr;
   int frameCount = 0;
-  VulkanRenderer* rendererPtr = nullptr;
+  D3D11Renderer* rendererPtr = nullptr;
 
   LRESULT CALLBACK WindowProc(
     HWND   windowHandle,
@@ -310,7 +310,7 @@ try
     return -1;
   }
 
-  VulkanRenderer renderer(window);
+  D3D11Renderer renderer(window);
   rendererPtr = &renderer;
 
   Audio audio;

@@ -1189,8 +1189,8 @@ void initializeSquareBuffers()
   VkCommandBuffer commandBufferHandle = commandBuffer;
   submitInfo.pCommandBuffers = &commandBufferHandle;
 
-  vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-  vkQueueWaitIdle(graphicsQueue);
+  vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(transferQueue);
 }
 
 void initializeSquareUniformBufferDescriptors()
